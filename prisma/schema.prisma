@@ -1,0 +1,136 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── ENUMS ──────────────────────────────────────────────────────────────────
+
+enum Currency {
+  ARS
+  USD
+}
+
+enum TransactionType {
+  EXPENSE
+  INCOME
+  STOCK_PURCHASE
+  CRYPTO_PURCHASE
+}
+
+enum TransactionSource {
+  PERSONAL
+  PHOTOGRAPHY
+}
+
+enum InvestmentType {
+  STOCK
+  CRYPTO
+}
+
+enum SessionType {
+  SPORT
+  EVENT
+  OTHER
+}
+
+enum SessionStatus {
+  PENDING      // coordinando con el cliente
+  CONFIRMED    // sesión confirmada
+  SHOT         // sesión realizada, editando fotos
+  DELIVERED    // fotos entregadas
+  PAID         // pago recibido
+  COMPLETED    // todo finalizado
+}
+
+// ─── FINANZAS ────────────────────────────────────────────────────────────────
+
+// Billeteras virtuales (Mercado Pago, Ualá, etc.)
+model Wallet {
+  id        String   @id @default(cuid())
+  name      String
+  currency  Currency
+  balance   Float    @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Cuentas foráneas (Wise, Payoneer, etc.)
+model ForeignAccount {
+  id        String   @id @default(cuid())
+  name      String
+  currency  Currency
+  balance   Float    @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Portfolio de inversiones (acciones y crypto)
+model Investment {
+  id          String         @id @default(cuid())
+  ticker      String
+  name        String?
+  type        InvestmentType
+  quantity    Float
+  avgBuyPrice Float          // precio promedio de compra en USD
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+}
+
+// Movimientos: gastos, ingresos, compras de activos
+model Transaction {
+  id          String            @id @default(cuid())
+  type        TransactionType
+  amount      Float
+  currency    Currency
+  category    String
+  description String?
+  source      TransactionSource // PERSONAL o PHOTOGRAPHY
+  date        DateTime
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  sessionId   String?
+  session     Session?          @relation(fields: [sessionId], references: [id])
+}
+
+// ─── FOTOGRAFÍA ──────────────────────────────────────────────────────────────
+
+model Client {
+  id        String    @id @default(cuid())
+  name      String
+  instagram String?
+  phone     String?
+  notes     String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  sessions  Session[]
+}
+
+model Session {
+  id                String        @id @default(cuid())
+  clientId          String
+  client            Client        @relation(fields: [clientId], references: [id])
+  type              SessionType
+  eventName         String?
+  date              DateTime
+  durationMinutes   Int?
+  price             Float
+  currency          Currency
+  photosDelivered   Int?
+  status            SessionStatus @default(PENDING)
+
+  googleCalendarId  String?
+  driveUrl          String?
+  instagramThreadId String?
+
+  notes             String?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  transactions      Transaction[]
+}

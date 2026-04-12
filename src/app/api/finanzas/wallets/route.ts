@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
     data: {
       name: body.name,
       currency: body.currency,
-      balance: body.balance ?? 0,
+      balance: Number(body.balance ?? 0),
     },
   });
   return Response.json(wallet, { status: 201 });

@@ -14,7 +14,7 @@ export default function FotografiaLayout({
 }) {
   return (
     <div className="flex h-screen overflow-hidden">
-      <Sidebar title="📷 Fotografía" items={navItems} homeHref="/fotografia" />
+      <Sidebar title="📷 Fotografía" items={navItems} homeHref="/fotografia" switchHref="/finanzas" switchLabel="← 💰 Ir a Finanzas" />
       <main className="flex-1 overflow-y-auto p-8">{children}</main>
     </div>
   );

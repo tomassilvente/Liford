@@ -1,11 +1,11 @@
 export type {
-  Wallet,
-  ForeignAccount,
-  Investment,
-  Transaction,
-  Client,
-  Session,
-} from "@/generated/prisma";
+  WalletModel as Wallet,
+  ForeignAccountModel as ForeignAccount,
+  InvestmentModel as Investment,
+  TransactionModel as Transaction,
+  ClientModel as Client,
+  SessionModel as Session,
+} from "@/generated/prisma/models";
 
 export {
   Currency,
@@ -14,4 +14,4 @@ export {
   InvestmentType,
   SessionType,
   SessionStatus,
-} from "@/generated/prisma";
+} from "@/generated/prisma/enums";

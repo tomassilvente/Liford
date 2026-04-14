@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { LuTrendingUp, LuCoins, LuPlus } from "react-icons/lu";
 
 const EJEMPLOS: Record<string, string[]> = {
   STOCK: ["AAPL", "MSFT", "GOOGL", "AMZN", "TSLA", "GGAL", "YPF"],
@@ -57,7 +58,7 @@ export default function InversionForm() {
         onClick={() => setOpen(true)}
         className="flex items-center gap-2 rounded-xl border border-dashed border-neutral-700 px-5 py-4 text-sm text-neutral-400 transition-colors hover:border-neutral-500 hover:text-white"
       >
-        <span className="text-lg">+</span> Agregar inversión
+        <LuPlus size={16} /> Agregar inversión
       </button>
     );
   }
@@ -66,20 +67,20 @@ export default function InversionForm() {
     <form onSubmit={handleSubmit} className="rounded-xl bg-neutral-800 p-6 ring-1 ring-blue-500">
       <p className="mb-4 text-sm font-medium text-white">Nueva inversión</p>
 
-      {/* Tipo */}
       <div className="mb-4 flex gap-2">
         {(["STOCK", "CRYPTO"] as const).map((t) => (
           <button
             key={t}
             type="button"
             onClick={() => setType(t)}
-            className={`rounded-lg px-4 py-1.5 text-xs font-medium transition-colors ${
+            className={`flex items-center gap-1.5 rounded-lg px-4 py-1.5 text-xs font-medium transition-colors ${
               type === t
                 ? "bg-blue-600 text-white"
                 : "bg-neutral-700 text-neutral-400 hover:text-white"
             }`}
           >
-            {t === "STOCK" ? "📈 Acción" : "🪙 Crypto"}
+            {t === "STOCK" ? <LuTrendingUp size={13} /> : <LuCoins size={13} />}
+            {t === "STOCK" ? "Acción" : "Crypto"}
           </button>
         ))}
       </div>

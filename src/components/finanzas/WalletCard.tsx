@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { LuPencil, LuTrash2 } from "react-icons/lu";
 import type { WalletModel as Wallet } from "@/generated/prisma/models";
 
 function formatCurrency(amount: number, currency: string) {
@@ -94,14 +95,14 @@ export default function WalletCard({ wallet }: { wallet: Wallet }) {
             className="rounded-lg p-1.5 text-neutral-400 hover:bg-neutral-700 hover:text-white"
             title="Editar"
           >
-            ✏️
+            <LuPencil size={14} />
           </button>
           <button
             onClick={handleDelete}
             className="rounded-lg p-1.5 text-neutral-400 hover:bg-neutral-700 hover:text-red-400"
             title="Eliminar"
           >
-            🗑️
+            <LuTrash2 size={14} />
           </button>
         </div>
       </div>

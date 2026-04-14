@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import type { ReactNode } from "react";
 
 interface NavItem {
   href: string;
   label: string;
-  icon: string;
+  icon: ReactNode;
 }
 
 interface SidebarProps {
@@ -15,9 +16,11 @@ interface SidebarProps {
   homeHref: string;
   switchHref: string;
   switchLabel: string;
+  switchIcon?: ReactNode;
+  footer?: ReactNode;
 }
 
-export default function Sidebar({ title, items, homeHref, switchHref, switchLabel }: SidebarProps) {
+export default function Sidebar({ title, items, homeHref, switchHref, switchLabel, switchIcon, footer }: SidebarProps) {
   const pathname = usePathname();
 
   return (
@@ -38,19 +41,21 @@ export default function Sidebar({ title, items, homeHref, switchHref, switchLabe
                   : "text-neutral-400 hover:bg-neutral-800 hover:text-white"
               }`}
             >
-              <span>{item.icon}</span>
+              {item.icon}
               {item.label}
             </Link>
           );
         })}
       </nav>
-      <div className="mt-auto">
+      <div className="mt-auto flex flex-col gap-1">
         <Link
           href={switchHref}
           className="flex items-center gap-2 rounded-lg px-3 py-2 text-xs text-neutral-500 hover:text-neutral-300 transition-colors"
         >
+          {switchIcon}
           {switchLabel}
         </Link>
+        {footer && <div className="border-t border-neutral-800 pt-1">{footer}</div>}
       </div>
     </aside>
   );

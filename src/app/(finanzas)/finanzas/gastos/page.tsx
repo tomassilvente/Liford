@@ -2,8 +2,16 @@ export const dynamic = "force-dynamic";
 
 import { db } from "@/lib/db";
 import { TransactionType, TransactionSource } from "@/generated/prisma/enums";
+import { requireSession } from "@/lib/auth";
 import type { TransactionModel as Transaction } from "@/generated/prisma/models";
 import GastoForm from "@/components/finanzas/GastoForm";
+import TransactionRow from "@/components/finanzas/TransactionRow";
+import MonthFilter from "@/components/finanzas/MonthFilter";
+
+const CATEGORIAS_GASTO = [
+  "Alimentación", "Transporte", "Entretenimiento", "Salud",
+  "Servicios", "Ropa", "Educación", "Suscripciones", "Otro",
+];
 
 function formatCurrency(amount: number, currency: string) {
   return new Intl.NumberFormat("es-AR", {
@@ -13,24 +21,34 @@ function formatCurrency(amount: number, currency: string) {
   }).format(amount);
 }
 
-function formatDate(date: Date) {
-  return new Intl.DateTimeFormat("es-AR", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  }).format(new Date(date));
+function currentYM() {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
 }
 
-export default async function GastosPage() {
+export default async function GastosPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ mes?: string }>;
+}) {
+  const { userId } = await requireSession();
+  const { mes } = await searchParams;
+
+  const ym = mes ?? currentYM();
+  const [year, month] = ym.split("-").map(Number);
+  const from = new Date(year, month - 1, 1);
+  const to = new Date(year, month, 1);
+
   const [wallets, gastos] = await Promise.all([
-    db.wallet.findMany({ orderBy: { name: "asc" } }),
+    db.wallet.findMany({ where: { userId }, orderBy: { name: "asc" } }),
     db.transaction.findMany({
       where: {
+        userId,
         type: TransactionType.EXPENSE,
         source: TransactionSource.PERSONAL,
+        date: { gte: from, lt: to },
       },
       orderBy: { date: "desc" },
-      take: 50,
     }),
   ]);
 
@@ -51,45 +69,35 @@ export default async function GastosPage() {
         <GastoForm wallets={wallets} />
       </div>
 
-      {/* Totales rápidos */}
-      {gastos.length > 0 && (
-        <div className="mt-8 flex flex-wrap gap-3">
-          {Object.entries(totalPorMoneda).map(([currency, total]) => (
-            <div key={currency} className="rounded-xl bg-neutral-800 px-5 py-3">
-              <p className="text-xs text-neutral-400">Total gastos ({currency})</p>
-              <p className="mt-1 text-lg font-bold text-red-400">
-                {formatCurrency(total as number, currency)}
-              </p>
-            </div>
-          ))}
-        </div>
-      )}
+      <div className="mt-8 flex flex-wrap items-center justify-between gap-4">
+        <MonthFilter selected={ym} />
+        {Object.entries(totalPorMoneda).map(([currency, total]) => (
+          <div key={currency} className="rounded-xl bg-neutral-800 px-5 py-3">
+            <p className="text-xs text-neutral-400">Total gastos ({currency})</p>
+            <p className="mt-1 text-lg font-bold text-red-400">
+              {formatCurrency(total as number, currency)}
+            </p>
+          </div>
+        ))}
+      </div>
 
-      {/* Lista de gastos */}
       <div className="mt-6">
-        <h2 className="mb-3 text-sm font-medium text-neutral-400">Últimos gastos</h2>
-
         {gastos.length === 0 ? (
-          <p className="text-sm text-neutral-500">Todavía no registraste ningún gasto.</p>
+          <p className="text-sm text-neutral-500">No hay gastos registrados en este período.</p>
         ) : (
-          <div className="flex flex-col gap-2">
+          <div className="rounded-lg bg-neutral-800 divide-y divide-neutral-700">
             {gastos.map((g: Transaction) => (
-              <div
+              <TransactionRow
                 key={g.id}
-                className="flex items-center justify-between rounded-lg bg-neutral-800 px-4 py-3"
-              >
-                <div className="flex items-center gap-3">
-                  <div>
-                    <p className="text-sm font-medium text-white">{g.description}</p>
-                    <p className="text-xs text-neutral-500">
-                      {g.category} · {formatDate(g.date)}
-                    </p>
-                  </div>
-                </div>
-                <p className="text-sm font-semibold text-red-400">
-                  -{formatCurrency(g.amount, g.currency)}
-                </p>
-              </div>
+                id={g.id}
+                description={g.description ?? ""}
+                category={g.category}
+                date={g.date.toISOString()}
+                amount={g.amount}
+                currency={g.currency}
+                type="EXPENSE"
+                categories={CATEGORIAS_GASTO}
+              />
             ))}
           </div>
         )}

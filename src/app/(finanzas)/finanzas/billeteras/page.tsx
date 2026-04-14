@@ -2,8 +2,11 @@ export const dynamic = "force-dynamic";
 
 import { db } from "@/lib/db";
 import { fetchCotizaciones } from "@/lib/cotizaciones";
+import { requireSession } from "@/lib/auth";
 import WalletCard from "@/components/finanzas/WalletCard";
 import WalletForm from "@/components/finanzas/WalletForm";
+import ForeignAccountCard from "@/components/finanzas/ForeignAccountCard";
+import ForeignAccountForm from "@/components/finanzas/ForeignAccountForm";
 import Link from "next/link";
 
 function fmtARS(n: number) {
@@ -14,9 +17,12 @@ function fmtUSD(n: number) {
 }
 
 export default async function BilleterasPage() {
-  const [wallets, investments] = await Promise.all([
-    db.wallet.findMany({ orderBy: { createdAt: "asc" } }),
-    db.investment.findMany(),
+  const { userId } = await requireSession();
+
+  const [wallets, foreignAccounts, investments] = await Promise.all([
+    db.wallet.findMany({ where: { userId }, orderBy: { createdAt: "asc" } }),
+    db.foreignAccount.findMany({ where: { userId }, orderBy: { createdAt: "asc" } }),
+    db.investment.findMany({ where: { userId } }),
   ]);
 
   const tickers = investments.map((i) => i.ticker);
@@ -29,7 +35,8 @@ export default async function BilleterasPage() {
 
   const totalARS = wallets.filter((w) => w.currency === "ARS").reduce((s, w) => s + w.balance, 0);
   const walletsUSD = wallets.filter((w) => w.currency === "USD").reduce((s, w) => s + w.balance, 0);
-  const totalUSD = walletsUSD + portfolioUSD;
+  const foreignUSD = foreignAccounts.filter((a) => a.currency === "USD").reduce((s, a) => s + a.balance, 0);
+  const totalUSD = walletsUSD + foreignUSD + portfolioUSD;
 
   return (
     <div>
@@ -47,15 +54,17 @@ export default async function BilleterasPage() {
         <div className="rounded-xl bg-neutral-900 px-5 py-3">
           <p className="text-xs text-neutral-400">Total USD</p>
           <p className="mt-1 text-lg font-bold text-white">{fmtUSD(totalUSD)}</p>
-          {investments.length > 0 && (
-            <p className="mt-0.5 text-xs text-neutral-600">
-              Billeteras {fmtUSD(walletsUSD)} + Portfolio {fmtUSD(portfolioUSD)}
-            </p>
-          )}
+          <p className="mt-0.5 text-xs text-neutral-600">
+            {[
+              walletsUSD > 0 && `Billeteras ${fmtUSD(walletsUSD)}`,
+              foreignUSD > 0 && `Foráneas ${fmtUSD(foreignUSD)}`,
+              portfolioUSD > 0 && `Portfolio ${fmtUSD(portfolioUSD)}`,
+            ].filter(Boolean).join(" · ")}
+          </p>
         </div>
       </div>
 
-      {/* Billeteras */}
+      {/* Billeteras locales */}
       <div className="mt-8">
         <p className="mb-3 text-xs font-medium uppercase tracking-wider text-neutral-500">Billeteras</p>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -66,7 +75,21 @@ export default async function BilleterasPage() {
         </div>
       </div>
 
-      {/* Portfolio como card de solo lectura */}
+      {/* Cuentas foráneas */}
+      <div className="mt-8">
+        <p className="mb-3 text-xs font-medium uppercase tracking-wider text-neutral-500">
+          Cuentas foráneas
+          <span className="ml-2 normal-case text-neutral-600">Payoneer, Wise, Deel, etc.</span>
+        </p>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {foreignAccounts.map((a) => (
+            <ForeignAccountCard key={a.id} account={a} />
+          ))}
+          <ForeignAccountForm />
+        </div>
+      </div>
+
+      {/* Portfolio */}
       {investments.length > 0 && (
         <div className="mt-8">
           <p className="mb-3 text-xs font-medium uppercase tracking-wider text-neutral-500">Portfolio de inversiones</p>

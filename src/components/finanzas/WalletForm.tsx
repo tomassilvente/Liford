@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { LuPlus } from "react-icons/lu";
 
 export default function WalletForm() {
   const router = useRouter();
@@ -49,7 +50,7 @@ export default function WalletForm() {
         onClick={() => setOpen(true)}
         className="flex items-center gap-2 rounded-xl border border-dashed border-neutral-700 px-5 py-4 text-sm text-neutral-400 transition-colors hover:border-neutral-500 hover:text-white"
       >
-        <span className="text-lg">+</span> Agregar billetera
+        <LuPlus size={16} /> Agregar billetera
       </button>
     );
   }

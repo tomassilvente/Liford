@@ -145,8 +145,9 @@ export async function POST(request: NextRequest) {
   }
 
   // Buscar billetera por moneda
+  const whatsappUserId = process.env.WHATSAPP_USER_ID;
   const wallet = await db.wallet.findFirst({
-    where: { currency: parsed.currency },
+    where: { currency: parsed.currency, ...(whatsappUserId && { userId: whatsappUserId }) },
     orderBy: { createdAt: "asc" },
   });
   console.log(`[WhatsApp] Billetera encontrada:`, wallet?.name ?? "ninguna");
@@ -163,6 +164,7 @@ export async function POST(request: NextRequest) {
   await db.$transaction([
     db.transaction.create({
       data: {
+        userId: wallet.userId,
         type: parsed.type === "EXPENSE" ? TransactionType.EXPENSE : TransactionType.INCOME,
         source: TransactionSource.PERSONAL,
         amount: parsed.amount,

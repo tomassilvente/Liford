@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { LuPencil, LuTrash2, LuTrendingUp, LuCoins, LuArrowUp, LuArrowDown } from "react-icons/lu";
 import type { InvestmentModel as Investment } from "@/generated/prisma/models";
 import type { Cotizacion } from "@/lib/cotizaciones";
 import PriceHistoryChart from "./PriceHistoryChart";
@@ -71,7 +72,7 @@ export default function InversionCard({ investment, cotizacion }: InversionCardP
     return (
       <div className="rounded-xl bg-neutral-800 p-5 ring-1 ring-blue-500">
         <div className="mb-3 flex items-center gap-2">
-          <span className="text-xs text-neutral-500">{investment.type === "STOCK" ? "📈" : "🪙"}</span>
+          {investment.type === "STOCK" ? <LuTrendingUp size={14} className="text-neutral-500" /> : <LuCoins size={14} className="text-neutral-500" />}
           <p className="font-bold text-white">{investment.ticker}</p>
         </div>
         <div className="flex flex-col gap-3">
@@ -107,12 +108,14 @@ export default function InversionCard({ investment, cotizacion }: InversionCardP
 
   return (
     <div className="rounded-xl bg-neutral-800">
-      {/* Header */}
       <div className="group p-5">
         <div className="flex items-start justify-between">
           <div className="flex-1">
             <div className="flex items-center gap-2">
-              <span className="text-xs text-neutral-500">{investment.type === "STOCK" ? "📈" : "🪙"}</span>
+              {investment.type === "STOCK"
+                ? <LuTrendingUp size={14} className="text-neutral-500" />
+                : <LuCoins size={14} className="text-neutral-500" />
+              }
               <p className="font-bold text-white">{investment.ticker}</p>
               {investment.name && <span className="text-xs text-neutral-500">{investment.name}</span>}
               {cotizacion?.marketState && (
@@ -129,13 +132,16 @@ export default function InversionCard({ investment, cotizacion }: InversionCardP
           </div>
           <div className="flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
             <button onClick={() => setEditing(true)}
-              className="rounded-lg p-1.5 text-neutral-400 hover:bg-neutral-700 hover:text-white" title="Editar">✏️</button>
+              className="rounded-lg p-1.5 text-neutral-400 hover:bg-neutral-700 hover:text-white" title="Editar">
+              <LuPencil size={14} />
+            </button>
             <button onClick={handleDelete}
-              className="rounded-lg p-1.5 text-neutral-400 hover:bg-neutral-700 hover:text-red-400" title="Eliminar">🗑️</button>
+              className="rounded-lg p-1.5 text-neutral-400 hover:bg-neutral-700 hover:text-red-400" title="Eliminar">
+              <LuTrash2 size={14} />
+            </button>
           </div>
         </div>
 
-        {/* Precio + variación diaria */}
         <div className="mt-3 flex items-end gap-3">
           <p className="text-2xl font-bold text-white">
             {valorActual !== null ? fmt(valorActual) : "—"}
@@ -144,7 +150,10 @@ export default function InversionCard({ investment, cotizacion }: InversionCardP
             <div className={`mb-0.5 flex items-center gap-1 text-sm font-medium ${
               cotizacion.changePct >= 0 ? "text-green-400" : "text-red-400"
             }`}>
-              <span>{cotizacion.changePct >= 0 ? "▲" : "▼"}</span>
+              {cotizacion.changePct >= 0
+                ? <LuArrowUp size={13} />
+                : <LuArrowDown size={13} />
+              }
               <span>{cotizacion.changePct >= 0 ? "+" : ""}{cotizacion.changePct.toFixed(2)}%</span>
               {cotizacion.changeAmount !== null && (
                 <span className="text-xs text-neutral-500">
@@ -155,13 +164,12 @@ export default function InversionCard({ investment, cotizacion }: InversionCardP
           )}
         </div>
 
-        {/* P&L de la posición */}
         <div className="mt-3 grid grid-cols-2 gap-2">
           <div className="rounded-lg bg-neutral-900 px-3 py-2">
             <p className="text-xs text-neutral-500">Valor actual</p>
-            
             <p className="mt-0.5 text-sm font-semibold text-white">
-              {cp !== null ? fmt(cp) : "—"}</p>
+              {cp !== null ? fmt(cp) : "—"}
+            </p>
           </div>
           <div className="rounded-lg bg-neutral-900 px-3 py-2">
             <p className="text-xs text-neutral-500">Invertido</p>
@@ -180,7 +188,6 @@ export default function InversionCard({ investment, cotizacion }: InversionCardP
           </div>
         </div>
 
-        {/* Toggle detalles */}
         {!cotizacion?.error && cp !== null && (
           <button
             onClick={() => setExpanded(!expanded)}
@@ -191,7 +198,6 @@ export default function InversionCard({ investment, cotizacion }: InversionCardP
         )}
       </div>
 
-      {/* Detalles expandidos */}
       {expanded && cotizacion && (
         <div className="border-t border-neutral-700 px-5 pb-5 pt-4">
           <PriceHistoryChart ticker={investment.ticker} currentPrice={cp} />
@@ -231,7 +237,6 @@ export default function InversionCard({ investment, cotizacion }: InversionCardP
               </p>
             </div>
 
-            {/* Distancia al máx/mín de 52 sem */}
             {cotizacion.week52High !== null && cp !== null && (
               <div className="col-span-2">
                 <p className="mb-1 text-xs text-neutral-500">Posición en rango de 52 semanas</p>

@@ -7,7 +7,7 @@ const EXPENSE_CATEGORIES = [
   "Servicios", "Ropa", "Educación", "Suscripciones", "Otro",
 ];
 const INCOME_CATEGORIES = [
-  "Sueldo", "Freelance", "Venta", "Inversión",
+  "Sueldo", "Freelance", "Fotografía", "Venta", "Inversión",
   "Transferencia recibida", "Reembolso", "Otro",
 ];
 

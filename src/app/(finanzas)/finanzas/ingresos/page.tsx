@@ -2,8 +2,16 @@ export const dynamic = "force-dynamic";
 
 import { db } from "@/lib/db";
 import { TransactionType, TransactionSource } from "@/generated/prisma/enums";
+import { requireSession } from "@/lib/auth";
 import type { TransactionModel as Transaction } from "@/generated/prisma/models";
 import IngresoForm from "@/components/finanzas/IngresoForm";
+import TransactionRow from "@/components/finanzas/TransactionRow";
+import MonthFilter from "@/components/finanzas/MonthFilter";
+
+const CATEGORIAS_INGRESO = [
+  "Sueldo", "Freelance", "Fotografía", "Venta", "Inversión",
+  "Transferencia recibida", "Reembolso", "Otro",
+];
 
 function formatCurrency(amount: number, currency: string) {
   return new Intl.NumberFormat("es-AR", {
@@ -13,24 +21,34 @@ function formatCurrency(amount: number, currency: string) {
   }).format(amount);
 }
 
-function formatDate(date: Date) {
-  return new Intl.DateTimeFormat("es-AR", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  }).format(new Date(date));
+function currentYM() {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
 }
 
-export default async function IngresosPage() {
+export default async function IngresosPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ mes?: string }>;
+}) {
+  const { userId } = await requireSession();
+  const { mes } = await searchParams;
+
+  const ym = mes ?? currentYM();
+  const [year, month] = ym.split("-").map(Number);
+  const from = new Date(year, month - 1, 1);
+  const to = new Date(year, month, 1);
+
   const [wallets, ingresos] = await Promise.all([
-    db.wallet.findMany({ orderBy: { name: "asc" } }),
+    db.wallet.findMany({ where: { userId }, orderBy: { name: "asc" } }),
     db.transaction.findMany({
       where: {
+        userId,
         type: TransactionType.INCOME,
         source: TransactionSource.PERSONAL,
+        date: { gte: from, lt: to },
       },
       orderBy: { date: "desc" },
-      take: 50,
     }),
   ]);
 
@@ -51,41 +69,35 @@ export default async function IngresosPage() {
         <IngresoForm wallets={wallets} />
       </div>
 
-      {ingresos.length > 0 && (
-        <div className="mt-8 flex flex-wrap gap-3">
-          {Object.entries(totalPorMoneda).map(([currency, total]) => (
-            <div key={currency} className="rounded-xl bg-neutral-800 px-5 py-3">
-              <p className="text-xs text-neutral-400">Total ingresos ({currency})</p>
-              <p className="mt-1 text-lg font-bold text-green-400">
-                {formatCurrency(total as number, currency)}
-              </p>
-            </div>
-          ))}
-        </div>
-      )}
+      <div className="mt-8 flex flex-wrap items-center justify-between gap-4">
+        <MonthFilter selected={ym} />
+        {Object.entries(totalPorMoneda).map(([currency, total]) => (
+          <div key={currency} className="rounded-xl bg-neutral-800 px-5 py-3">
+            <p className="text-xs text-neutral-400">Total ingresos ({currency})</p>
+            <p className="mt-1 text-lg font-bold text-green-400">
+              {formatCurrency(total as number, currency)}
+            </p>
+          </div>
+        ))}
+      </div>
 
       <div className="mt-6">
-        <h2 className="mb-3 text-sm font-medium text-neutral-400">Últimos ingresos</h2>
-
         {ingresos.length === 0 ? (
-          <p className="text-sm text-neutral-500">Todavía no registraste ningún ingreso.</p>
+          <p className="text-sm text-neutral-500">No hay ingresos registrados en este período.</p>
         ) : (
-          <div className="flex flex-col gap-2">
+          <div className="rounded-lg bg-neutral-800 divide-y divide-neutral-700">
             {ingresos.map((t: Transaction) => (
-              <div
+              <TransactionRow
                 key={t.id}
-                className="flex items-center justify-between rounded-lg bg-neutral-800 px-4 py-3"
-              >
-                <div>
-                  <p className="text-sm font-medium text-white">{t.description}</p>
-                  <p className="text-xs text-neutral-500">
-                    {t.category} · {formatDate(t.date)}
-                  </p>
-                </div>
-                <p className="text-sm font-semibold text-green-400">
-                  +{formatCurrency(t.amount, t.currency)}
-                </p>
-              </div>
+                id={t.id}
+                description={t.description ?? ""}
+                category={t.category}
+                date={t.date.toISOString()}
+                amount={t.amount}
+                currency={t.currency}
+                type="INCOME"
+                categories={CATEGORIAS_INGRESO}
+              />
             ))}
           </div>
         )}

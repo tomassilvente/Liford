@@ -1,12 +1,19 @@
 import { db } from "@/lib/db";
 import { NextRequest } from "next/server";
+import { getApiSession } from "@/lib/auth";
 
 export async function GET() {
-  const inversiones = await db.investment.findMany({ orderBy: { createdAt: "asc" } });
+  const session = await getApiSession();
+  if (!session) return Response.json({ error: "No autenticado" }, { status: 401 });
+
+  const inversiones = await db.investment.findMany({ where: { userId: session.userId }, orderBy: { createdAt: "asc" } });
   return Response.json(inversiones);
 }
 
 export async function POST(request: NextRequest) {
+  const session = await getApiSession();
+  if (!session) return Response.json({ error: "No autenticado" }, { status: 401 });
+
   const body = await request.json();
   const { ticker, name, type, quantity, avgBuyPrice } = body;
 
@@ -14,8 +21,9 @@ export async function POST(request: NextRequest) {
     return Response.json({ error: "Faltan campos requeridos" }, { status: 400 });
   }
 
-  // Si ya existe ese ticker, actualiza cantidad y precio promedio ponderado
-  const existing = await db.investment.findFirst({ where: { ticker: ticker.toUpperCase() } });
+  const existing = await db.investment.findFirst({
+    where: { ticker: ticker.toUpperCase(), userId: session.userId },
+  });
 
   if (existing) {
     const totalQty = existing.quantity + Number(quantity);
@@ -31,6 +39,7 @@ export async function POST(request: NextRequest) {
 
   const inversion = await db.investment.create({
     data: {
+      userId: session.userId,
       ticker: ticker.toUpperCase(),
       name: name ?? null,
       type,

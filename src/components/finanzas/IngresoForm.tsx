@@ -7,6 +7,7 @@ import type { WalletModel as Wallet } from "@/generated/prisma/models";
 const CATEGORIAS = [
   "Sueldo",
   "Freelance",
+  "Fotografía",
   "Venta",
   "Inversión",
   "Transferencia recibida",

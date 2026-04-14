@@ -2,12 +2,14 @@ export const dynamic = "force-dynamic";
 
 import { db } from "@/lib/db";
 import { fetchCotizaciones } from "@/lib/cotizaciones";
+import { requireSession } from "@/lib/auth";
 import InversionCard from "@/components/finanzas/InversionCard";
 import InversionForm from "@/components/finanzas/InversionForm";
 import PortfolioAllocationChart from "@/components/finanzas/PortfolioAllocationChart";
 
 export default async function InversionesPage() {
-  const inversiones = await db.investment.findMany({ orderBy: { createdAt: "asc" } });
+  const { userId } = await requireSession();
+  const inversiones = await db.investment.findMany({ where: { userId }, orderBy: { createdAt: "asc" } });
 
   const tickers = inversiones.map((i) => i.ticker);
   const cotizaciones = await fetchCotizaciones(tickers);

@@ -46,31 +46,133 @@ enum SessionStatus {
   COMPLETED    // todo finalizado
 }
 
+// ─── USUARIOS ────────────────────────────────────────────────────────────────
+
+model User {
+  id           String   @id @default(cuid())
+  username     String   @unique
+  passwordHash String
+  displayName  String?
+  createdAt    DateTime @default(now())
+
+  wallets            Wallet[]
+  foreignAccounts    ForeignAccount[]
+  investments        Investment[]
+  transactions       Transaction[]
+  clients            Client[]
+  budgets            Budget[]
+  recurringExpenses  RecurringExpense[]
+  savingsGoals       SavingsGoal[]
+  wealthSnapshots    WealthSnapshot[]
+}
+
+// Transacciones automáticas mensuales (gastos e ingresos recurrentes)
+model RecurringExpense {
+  id               String            @id @default(cuid())
+  userId           String
+  user             User              @relation(fields: [userId], references: [id])
+  transactionType  TransactionType   @default(EXPENSE)
+  description      String
+  amount           Float
+  currency         Currency          @default(ARS)
+  category         String
+  source           TransactionSource @default(PERSONAL)
+  dayOfMonth       Int               // día del mes en que se aplica (1-28)
+  isActive         Boolean           @default(true)
+  lastApplied      DateTime?         // último mes en que se creó la transacción
+  // cuenta opcional de la que se descuenta el saldo
+  walletId         String?
+  wallet           Wallet?         @relation(fields: [walletId], references: [id])
+  foreignAccountId String?
+  foreignAccount   ForeignAccount? @relation(fields: [foreignAccountId], references: [id])
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+}
+
+// Presupuesto mensual por categoría
+model Budget {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id])
+  category     String
+  monthlyLimit Float
+  currency     Currency @default(ARS)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([userId, category, currency])
+}
+
+// Metas de ahorro
+model SavingsGoal {
+  id               String          @id @default(cuid())
+  userId           String
+  user             User            @relation(fields: [userId], references: [id])
+  name             String
+  targetAmount     Float
+  currency         Currency        @default(USD)
+  notes            String?
+  targetDate       DateTime?
+  isAchieved       Boolean         @default(false)
+  walletId         String?
+  wallet           Wallet?         @relation(fields: [walletId], references: [id])
+  foreignAccountId String?
+  foreignAccount   ForeignAccount? @relation(fields: [foreignAccountId], references: [id])
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+}
+
+// Snapshot mensual de patrimonio
+model WealthSnapshot {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id])
+  date         DateTime // primer día del mes al que corresponde
+  walletsARS   Float
+  foreignUSD   Float
+  portfolioUSD Float
+  totalARS     Float    // suma de billeteras ARS
+  totalUSD     Float    // foreignUSD + portfolioUSD
+  createdAt    DateTime @default(now())
+
+  @@unique([userId, date])
+}
+
 // ─── FINANZAS ────────────────────────────────────────────────────────────────
 
 // Billeteras virtuales (Mercado Pago, Ualá, etc.)
 model Wallet {
-  id        String   @id @default(cuid())
-  name      String
-  currency  Currency
-  balance   Float    @default(0)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                String             @id @default(cuid())
+  userId            String
+  user              User               @relation(fields: [userId], references: [id])
+  name              String
+  currency          Currency
+  balance           Float              @default(0)
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  recurringExpenses RecurringExpense[]
+  savingsGoals      SavingsGoal[]
 }
 
 // Cuentas foráneas (Wise, Payoneer, etc.)
 model ForeignAccount {
-  id        String   @id @default(cuid())
-  name      String
-  currency  Currency
-  balance   Float    @default(0)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                String             @id @default(cuid())
+  userId            String
+  user              User               @relation(fields: [userId], references: [id])
+  name              String
+  currency          Currency
+  balance           Float              @default(0)
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  recurringExpenses RecurringExpense[]
+  savingsGoals      SavingsGoal[]
 }
 
 // Portfolio de inversiones (acciones y crypto)
 model Investment {
   id          String         @id @default(cuid())
+  userId      String
+  user        User           @relation(fields: [userId], references: [id])
   ticker      String
   name        String?
   type        InvestmentType
@@ -83,6 +185,8 @@ model Investment {
 // Movimientos: gastos, ingresos, compras de activos
 model Transaction {
   id          String            @id @default(cuid())
+  userId      String
+  user        User              @relation(fields: [userId], references: [id])
   type        TransactionType
   amount      Float
   currency    Currency
@@ -101,6 +205,8 @@ model Transaction {
 
 model Client {
   id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id])
   name      String
   instagram String?
   phone     String?

@@ -12,10 +12,6 @@ CREATE TABLE "User" (
 -- CreateIndex
 CREATE UNIQUE INDEX "User_username_key" ON "User"("username");
 
--- Insert the real user (tomas) — password will be updated by seed script
-INSERT INTO "User" ("id", "username", "passwordHash", "displayName", "createdAt")
-VALUES ('user_tomas', 'tomas', 'PLACEHOLDER', 'Tomas', NOW());
-
 -- AlterTable: add nullable userId first
 ALTER TABLE "Client" ADD COLUMN "userId" TEXT;
 ALTER TABLE "ForeignAccount" ADD COLUMN "userId" TEXT;

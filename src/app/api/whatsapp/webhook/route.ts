@@ -144,10 +144,20 @@ export async function POST(request: NextRequest) {
     return new Response("OK", { status: 200 });
   }
 
-  // Buscar billetera por moneda
-  const whatsappUserId = process.env.WHATSAPP_USER_ID;
+  // Buscar usuario por username configurado en env
+  const whatsappUsername = process.env.WHATSAPP_USERNAME;
+  let botUserId: string | undefined;
+  if (whatsappUsername) {
+    const botUser = await db.user.findUnique({ where: { username: whatsappUsername } });
+    if (!botUser) {
+      await sendWhatsAppMessage(from, `❌ Usuario "${whatsappUsername}" no encontrado. Registrate primero en la app.`);
+      return new Response("OK", { status: 200 });
+    }
+    botUserId = botUser.id;
+  }
+
   const wallet = await db.wallet.findFirst({
-    where: { currency: parsed.currency, ...(whatsappUserId && { userId: whatsappUserId }) },
+    where: { currency: parsed.currency, ...(botUserId && { userId: botUserId }) },
     orderBy: { createdAt: "asc" },
   });
   console.log(`[WhatsApp] Billetera encontrada:`, wallet?.name ?? "ninguna");

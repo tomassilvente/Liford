@@ -27,7 +27,7 @@ export default function WealthChart({ data }: { data: WealthDataPoint[] }) {
         <Tooltip
           contentStyle={{ backgroundColor: "#1a1a1a", border: "1px solid #333", borderRadius: 8, fontSize: 12 }}
           labelStyle={{ color: "#a3a3a3" }}
-          formatter={(value: number, name: string) =>
+          formatter={(value: unknown, name: string) =>
             name === "ARS" ? [fmtARS(value), "ARS"] : [fmtUSD(value), "USD"]
           }
         />

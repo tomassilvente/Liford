@@ -35,7 +35,7 @@ export default function Sidebar({ title, items, homeHref, switchHref, switchLabe
             <Link
               key={item.href}
               href={item.href}
-              className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors ${
+              className={`flex items-center gap-3 rounded-lg px-3 py-2 text-md transition-colors ${
                 active
                   ? "bg-neutral-700 text-white"
                   : "text-neutral-400 hover:bg-neutral-800 hover:text-white"
@@ -50,7 +50,7 @@ export default function Sidebar({ title, items, homeHref, switchHref, switchLabe
       <div className="mt-auto flex flex-col gap-1">
         <Link
           href={switchHref}
-          className="flex items-center gap-2 rounded-lg px-3 py-2 text-xs text-neutral-500 hover:text-neutral-300 transition-colors"
+          className="flex items-center gap-2 rounded-lg px-3 py-2 text-md text-neutral-500 hover:text-neutral-300 transition-colors"
         >
           {switchIcon}
           {switchLabel}

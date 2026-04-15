@@ -124,7 +124,7 @@ export default async function FinanzasDashboard() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-white">Dashboard</h1>
+        <h1 className="text-2xl font-bold text-white">Liford</h1>
         <p className="mt-1 text-neutral-400 capitalize">
           {now.toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
         </p>

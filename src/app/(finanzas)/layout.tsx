@@ -1,7 +1,9 @@
+import { Toaster } from "sonner";
 import Sidebar from "@/components/ui/Sidebar";
 import BottomNav from "@/components/ui/BottomNav";
 import LogoutButton from "@/components/ui/LogoutButton";
 import QuickAdd from "@/components/finanzas/QuickAdd";
+import { db } from "@/lib/db";
 import { requireSession } from "@/lib/auth";
 import { applyRecurringExpenses } from "@/lib/apply-recurring";
 import { saveWealthSnapshotIfNeeded } from "@/lib/save-wealth-snapshot";
@@ -36,7 +38,9 @@ export default async function FinanzasLayout({
   children: React.ReactNode;
 }) {
   const session = await requireSession();
-  await Promise.all([
+  const [wallets, foreignAccounts] = await Promise.all([
+    db.wallet.findMany({ where: { userId: session.userId }, orderBy: { name: "asc" } }),
+    db.foreignAccount.findMany({ where: { userId: session.userId }, orderBy: { name: "asc" } }),
     applyRecurringExpenses(session.userId),
     saveWealthSnapshotIfNeeded(session.userId),
   ]);
@@ -55,10 +59,11 @@ export default async function FinanzasLayout({
         />
       </div>
 
-      <main className="flex-1 overflow-y-auto p-6 pb-20 lg:pb-6">{children}</main>
+      <main className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden p-6 pb-20 lg:pb-6">{children}</main>
 
       <BottomNav items={navItems} />
-      <QuickAdd />
+      <QuickAdd wallets={wallets} foreignAccounts={foreignAccounts} />
+      <Toaster position="top-center" richColors theme="dark" />
     </div>
   );
 }

@@ -3,24 +3,45 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { LuPlus, LuX, LuCheck, LuLoader } from "react-icons/lu";
+import { toast } from "sonner";
 
-const CATEGORIAS = [
+const CATEGORIAS_GASTO = [
   "Alimentación", "Transporte", "Entretenimiento", "Salud",
   "Servicios", "Ropa", "Educación", "Suscripciones", "Otro",
+];
+const CATEGORIAS_INGRESO = [
+  "Sueldo", "Freelance", "Fotografía", "Venta", "Inversión",
+  "Transferencia recibida", "Reembolso", "Otro",
 ];
 
 const INPUT = "rounded-lg bg-neutral-800 px-3 py-2 text-sm text-white placeholder-neutral-600 outline-none ring-1 ring-neutral-700 focus:ring-blue-500 w-full";
 
-export default function QuickAdd() {
+interface Account {
+  id: string;
+  name: string;
+  currency: string;
+}
+
+interface QuickAddProps {
+  wallets: Account[];
+  foreignAccounts: Account[];
+}
+
+export default function QuickAdd({ wallets, foreignAccounts }: QuickAddProps) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [type, setType] = useState<"EXPENSE" | "INCOME">("EXPENSE");
   const [amount, setAmount] = useState("");
-  const [currency, setCurrency] = useState("ARS");
+  const [accountRaw, setAccountRaw] = useState("");
   const [category, setCategory] = useState("");
   const [description, setDescription] = useState("");
   const amountRef = useRef<HTMLInputElement>(null);
+
+  const categorias = type === "EXPENSE" ? CATEGORIAS_GASTO : CATEGORIAS_INGRESO;
+
+  // Reset category when type changes
+  useEffect(() => { setCategory(""); }, [type]);
 
   useEffect(() => {
     if (open) setTimeout(() => amountRef.current?.focus(), 50);
@@ -35,30 +56,40 @@ export default function QuickAdd() {
   }, []);
 
   function reset() {
-    setAmount(""); setCategory(""); setDescription("");
-    setType("EXPENSE"); setCurrency("ARS");
+    setAmount(""); setCategory(""); setDescription(""); setAccountRaw("");
+    setType("EXPENSE");
   }
 
   async function handleSubmit() {
-    if (!amount || !category) return;
+    if (!amount || !category || !accountRaw) return;
+
+    const [accountType, accountId] = accountRaw.split(":");
+    const endpoint = type === "EXPENSE" ? "/api/finanzas/gastos" : "/api/finanzas/ingresos";
+    const body = {
+      type,
+      amount: Number(amount),
+      category,
+      description,
+      date: new Date().toISOString(),
+      ...(accountType === "w" ? { walletId: accountId } : { foreignAccountId: accountId }),
+    };
+
     setSaving(true);
-    await fetch("/api/finanzas/transactions", {
+    const res = await fetch(endpoint, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        type,
-        amount: Number(amount),
-        currency,
-        category,
-        description,
-        source: "PERSONAL",
-        date: new Date().toISOString(),
-      }),
+      body: JSON.stringify(body),
     });
     setSaving(false);
-    setOpen(false);
-    reset();
-    router.refresh();
+
+    if (res.ok) {
+      toast.success(type === "EXPENSE" ? "Gasto registrado" : "Ingreso registrado");
+      setOpen(false);
+      reset();
+      router.refresh();
+    } else {
+      toast.error("No se pudo guardar. Intentá de nuevo.");
+    }
   }
 
   return (
@@ -66,9 +97,9 @@ export default function QuickAdd() {
       {/* Floating button */}
       <button
         onClick={() => setOpen(true)}
-        className="fixed bottom-20 right-5 z-40 flex h-13 w-13 items-center justify-center rounded-full bg-blue-600 shadow-lg hover:bg-blue-500 transition-colors lg:bottom-6"
-        title="Registrar transacción rápida"
+        className="fixed bottom-20 left-5 z-40 flex items-center justify-center rounded-full bg-blue-600 shadow-lg hover:bg-blue-500 transition-colors lg:left-auto lg:right-5 lg:bottom-6"
         style={{ width: 52, height: 52 }}
+        title="Registrar transacción rápida"
       >
         <LuPlus size={22} className="text-white" />
       </button>
@@ -108,30 +139,51 @@ export default function QuickAdd() {
           </div>
 
           <div className="space-y-2">
-            {/* Amount + currency */}
-            <div className="flex gap-2">
-              <input
-                ref={amountRef}
-                type="number"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                placeholder="Monto"
-                className={INPUT}
-                onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
-              />
-              <select value={currency} onChange={(e) => setCurrency(e.target.value)} className="rounded-lg bg-neutral-800 px-2 py-2 text-sm text-white outline-none ring-1 ring-neutral-700 focus:ring-blue-500">
-                <option value="ARS">ARS</option>
-                <option value="USD">USD</option>
-              </select>
-            </div>
+            {/* Monto */}
+            <input
+              ref={amountRef}
+              type="number"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              placeholder="Monto"
+              className={INPUT}
+              onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
+            />
 
-            {/* Category */}
-            <select value={category} onChange={(e) => setCategory(e.target.value)} className={INPUT}>
-              <option value="">Categoría</option>
-              {CATEGORIAS.map((c) => <option key={c} value={c}>{c}</option>)}
+            {/* Cuenta — wallets + foreign accounts agrupadas */}
+            <select
+              value={accountRaw}
+              onChange={(e) => setAccountRaw(e.target.value)}
+              className={INPUT}
+            >
+              <option value="">Cuenta</option>
+              {wallets.length > 0 && (
+                <optgroup label="Billeteras">
+                  {wallets.map((w) => (
+                    <option key={w.id} value={`w:${w.id}`}>
+                      {w.name} ({w.currency})
+                    </option>
+                  ))}
+                </optgroup>
+              )}
+              {foreignAccounts.length > 0 && (
+                <optgroup label="Cuentas foráneas">
+                  {foreignAccounts.map((a) => (
+                    <option key={a.id} value={`f:${a.id}`}>
+                      {a.name} ({a.currency})
+                    </option>
+                  ))}
+                </optgroup>
+              )}
             </select>
 
-            {/* Description */}
+            {/* Categoría */}
+            <select value={category} onChange={(e) => setCategory(e.target.value)} className={INPUT}>
+              <option value="">Categoría</option>
+              {categorias.map((c) => <option key={c} value={c}>{c}</option>)}
+            </select>
+
+            {/* Descripción */}
             <input
               value={description}
               onChange={(e) => setDescription(e.target.value)}
@@ -143,7 +195,7 @@ export default function QuickAdd() {
 
           <button
             onClick={handleSubmit}
-            disabled={saving || !amount || !category}
+            disabled={saving || !amount || !category || !accountRaw}
             className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 py-2.5 text-sm font-medium text-white hover:bg-blue-500 disabled:opacity-50 transition-colors"
           >
             {saving ? <LuLoader size={15} className="animate-spin" /> : <LuCheck size={15} />}

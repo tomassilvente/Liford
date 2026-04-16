@@ -156,16 +156,26 @@ export async function POST(request: NextRequest) {
     botUserId = botUser.id;
   }
 
+  // Buscar cuenta: primero wallet, luego cuenta foránea
   const wallet = await db.wallet.findFirst({
     where: { currency: parsed.currency, ...(botUserId && { userId: botUserId }) },
     orderBy: { createdAt: "asc" },
   });
-  console.log(`[WhatsApp] Billetera encontrada:`, wallet?.name ?? "ninguna");
+  const foreignAccount = !wallet
+    ? await db.foreignAccount.findFirst({
+        where: { currency: parsed.currency, ...(botUserId && { userId: botUserId }) },
+        orderBy: { createdAt: "asc" },
+      })
+    : null;
 
-  if (!wallet) {
+  const accountName = wallet?.name ?? foreignAccount?.name;
+  const accountUserId = wallet?.userId ?? foreignAccount?.userId;
+  console.log(`[WhatsApp] Cuenta encontrada:`, accountName ?? "ninguna");
+
+  if (!accountName || !accountUserId) {
     await sendWhatsAppMessage(
       from,
-      `❌ No tenés ninguna billetera en ${parsed.currency}. Creá una en la app primero.`
+      `❌ No tenés ninguna cuenta en ${parsed.currency}. Creá una billetera o cuenta foránea en la app primero.`
     );
     return new Response("OK", { status: 200 });
   }
@@ -174,7 +184,7 @@ export async function POST(request: NextRequest) {
   await db.$transaction([
     db.transaction.create({
       data: {
-        userId: wallet.userId,
+        userId: accountUserId,
         type: parsed.type === "EXPENSE" ? TransactionType.EXPENSE : TransactionType.INCOME,
         source: TransactionSource.PERSONAL,
         amount: parsed.amount,
@@ -184,15 +194,25 @@ export async function POST(request: NextRequest) {
         date: new Date(),
       },
     }),
-    db.wallet.update({
-      where: { id: wallet.id },
-      data: {
-        balance:
-          parsed.type === "EXPENSE"
-            ? { decrement: parsed.amount }
-            : { increment: parsed.amount },
-      },
-    }),
+    wallet
+      ? db.wallet.update({
+          where: { id: wallet.id },
+          data: {
+            balance:
+              parsed.type === "EXPENSE"
+                ? { decrement: parsed.amount }
+                : { increment: parsed.amount },
+          },
+        })
+      : db.foreignAccount.update({
+          where: { id: foreignAccount!.id },
+          data: {
+            balance:
+              parsed.type === "EXPENSE"
+                ? { decrement: parsed.amount }
+                : { increment: parsed.amount },
+          },
+        }),
   ]);
 
   const emoji = parsed.type === "EXPENSE" ? "📉" : "📈";
@@ -205,7 +225,7 @@ export async function POST(request: NextRequest) {
 
   await sendWhatsAppMessage(
     from,
-    `${emoji} *${verb} registrado*\n\n📝 ${parsed.description}\n💰 ${sign}${amountStr}\n🏷️ ${parsed.category}\n🏦 ${wallet.name}`
+    `${emoji} *${verb} registrado*\n\n📝 ${parsed.description}\n💰 ${sign}${amountStr}\n🏷️ ${parsed.category}\n🏦 ${accountName}`
   );
 
   return new Response("OK", { status: 200 });

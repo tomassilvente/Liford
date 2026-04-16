@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import type { WalletModel as Wallet } from "@/generated/prisma/models";
+import { toast } from "sonner";
+import type { WalletModel as Wallet, ForeignAccountModel as ForeignAccount } from "@/generated/prisma/models";
 
 const CATEGORIAS = [
   "Alimentación",
@@ -18,9 +19,10 @@ const CATEGORIAS = [
 
 interface GastoFormProps {
   wallets: Wallet[];
+  foreignAccounts: ForeignAccount[];
 }
 
-export default function GastoForm({ wallets }: GastoFormProps) {
+export default function GastoForm({ wallets, foreignAccounts }: GastoFormProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -33,11 +35,13 @@ export default function GastoForm({ wallets }: GastoFormProps) {
     setLoading(true);
 
     const form = e.currentTarget;
+    const accountRaw = (form.elements.namedItem("accountId") as HTMLSelectElement).value;
+    const [accountType, accountId] = accountRaw.split(":");
     const data = {
       description: (form.elements.namedItem("description") as HTMLInputElement).value,
       amount: (form.elements.namedItem("amount") as HTMLInputElement).value,
       category: (form.elements.namedItem("category") as HTMLSelectElement).value,
-      walletId: (form.elements.namedItem("walletId") as HTMLSelectElement).value,
+      ...(accountType === "w" ? { walletId: accountId } : { foreignAccountId: accountId }),
       date: (form.elements.namedItem("date") as HTMLInputElement).value,
     };
 
@@ -54,17 +58,19 @@ export default function GastoForm({ wallets }: GastoFormProps) {
       }
 
       form.reset();
-      // Resetear la fecha al día de hoy después del reset
       (form.elements.namedItem("date") as HTMLInputElement).value = today;
+      toast.success("Gasto registrado");
       router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error inesperado");
+      const msg = err instanceof Error ? err.message : "Error inesperado";
+      setError(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
   }
 
-  if (wallets.length === 0) {
+  if (wallets.length === 0 && foreignAccounts.length === 0) {
     return (
       <div className="rounded-xl border border-dashed border-neutral-700 p-8 text-center">
         <p className="text-neutral-400">Primero necesitás agregar una billetera para registrar gastos.</p>
@@ -111,7 +117,7 @@ export default function GastoForm({ wallets }: GastoFormProps) {
         </div>
 
         {/* Fecha */}
-        <div>
+        <div className="min-w-0">
           <label htmlFor="date" className="mb-1.5 block text-sm text-neutral-400">
             Fecha
           </label>
@@ -121,7 +127,7 @@ export default function GastoForm({ wallets }: GastoFormProps) {
             type="date"
             defaultValue={today}
             required
-            className="w-full rounded-lg bg-neutral-900 px-3 py-2 text-sm text-white outline-none ring-1 ring-neutral-700 focus:ring-blue-500"
+            className="w-full max-w-full rounded-lg bg-neutral-900 px-3 py-2 text-sm text-white outline-none ring-1 ring-neutral-700 focus:ring-blue-500 [color-scheme:dark]"
           />
         </div>
 
@@ -143,23 +149,36 @@ export default function GastoForm({ wallets }: GastoFormProps) {
           </select>
         </div>
 
-        {/* Billetera */}
+        {/* Cuenta */}
         <div>
-          <label htmlFor="walletId" className="mb-1.5 block text-sm text-neutral-400">
-            Billetera
+          <label htmlFor="accountId" className="mb-1.5 block text-sm text-neutral-400">
+            Cuenta
           </label>
           <select
-            id="walletId"
-            name="walletId"
+            id="accountId"
+            name="accountId"
             required
             className="w-full rounded-lg bg-neutral-900 px-3 py-2 text-sm text-white outline-none ring-1 ring-neutral-700 focus:ring-blue-500"
           >
-            <option value="" disabled>Seleccioná una billetera</option>
-            {wallets.map((w) => (
-              <option key={w.id} value={w.id}>
-                {w.name} ({w.currency})
-              </option>
-            ))}
+            <option value="" disabled>Seleccioná una cuenta</option>
+            {wallets.length > 0 && (
+              <optgroup label="Billeteras">
+                {wallets.map((w) => (
+                  <option key={w.id} value={`w:${w.id}`}>
+                    {w.name} ({w.currency})
+                  </option>
+                ))}
+              </optgroup>
+            )}
+            {foreignAccounts.length > 0 && (
+              <optgroup label="Cuentas foráneas">
+                {foreignAccounts.map((a) => (
+                  <option key={a.id} value={`f:${a.id}`}>
+                    {a.name} ({a.currency})
+                  </option>
+                ))}
+              </optgroup>
+            )}
           </select>
         </div>
       </div>

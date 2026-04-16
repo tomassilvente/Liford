@@ -39,8 +39,9 @@ export default async function IngresosPage({
   const from = new Date(year, month - 1, 1);
   const to = new Date(year, month, 1);
 
-  const [wallets, ingresos] = await Promise.all([
+  const [wallets, foreignAccounts, ingresos] = await Promise.all([
     db.wallet.findMany({ where: { userId }, orderBy: { name: "asc" } }),
+    db.foreignAccount.findMany({ where: { userId }, orderBy: { name: "asc" } }),
     db.transaction.findMany({
       where: {
         userId,
@@ -66,7 +67,7 @@ export default async function IngresosPage({
       <p className="mt-1 text-neutral-400">Registrá y revisá tus ingresos</p>
 
       <div className="mt-6">
-        <IngresoForm wallets={wallets} />
+        <IngresoForm wallets={wallets} foreignAccounts={foreignAccounts} />
       </div>
 
       <div className="mt-8 flex flex-wrap items-center justify-between gap-4">

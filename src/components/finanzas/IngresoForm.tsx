@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import type { WalletModel as Wallet } from "@/generated/prisma/models";
+import { toast } from "sonner";
+import type { WalletModel as Wallet, ForeignAccountModel as ForeignAccount } from "@/generated/prisma/models";
 
 const CATEGORIAS = [
   "Sueldo",
@@ -17,9 +18,10 @@ const CATEGORIAS = [
 
 interface IngresoFormProps {
   wallets: Wallet[];
+  foreignAccounts: ForeignAccount[];
 }
 
-export default function IngresoForm({ wallets }: IngresoFormProps) {
+export default function IngresoForm({ wallets, foreignAccounts }: IngresoFormProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -32,11 +34,13 @@ export default function IngresoForm({ wallets }: IngresoFormProps) {
     setLoading(true);
 
     const form = e.currentTarget;
+    const accountRaw = (form.elements.namedItem("accountId") as HTMLSelectElement).value;
+    const [accountType, accountId] = accountRaw.split(":");
     const data = {
       description: (form.elements.namedItem("description") as HTMLInputElement).value,
       amount: (form.elements.namedItem("amount") as HTMLInputElement).value,
       category: (form.elements.namedItem("category") as HTMLSelectElement).value,
-      walletId: (form.elements.namedItem("walletId") as HTMLSelectElement).value,
+      ...(accountType === "w" ? { walletId: accountId } : { foreignAccountId: accountId }),
       date: (form.elements.namedItem("date") as HTMLInputElement).value,
     };
 
@@ -54,15 +58,18 @@ export default function IngresoForm({ wallets }: IngresoFormProps) {
 
       form.reset();
       (form.elements.namedItem("date") as HTMLInputElement).value = today;
+      toast.success("Ingreso registrado");
       router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error inesperado");
+      const msg = err instanceof Error ? err.message : "Error inesperado";
+      setError(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
   }
 
-  if (wallets.length === 0) {
+  if (wallets.length === 0 && foreignAccounts.length === 0) {
     return (
       <div className="rounded-xl border border-dashed border-neutral-700 p-8 text-center">
         <p className="text-neutral-400">Primero necesitás agregar una billetera para registrar ingresos.</p>
@@ -106,7 +113,7 @@ export default function IngresoForm({ wallets }: IngresoFormProps) {
           />
         </div>
 
-        <div>
+        <div className="min-w-0">
           <label htmlFor="date" className="mb-1.5 block text-sm text-neutral-400">
             Fecha
           </label>
@@ -116,7 +123,7 @@ export default function IngresoForm({ wallets }: IngresoFormProps) {
             type="date"
             defaultValue={today}
             required
-            className="w-full rounded-lg bg-neutral-900 px-3 py-2 text-sm text-white outline-none ring-1 ring-neutral-700 focus:ring-blue-500"
+            className="w-full max-w-full rounded-lg bg-neutral-900 px-3 py-2 text-sm text-white outline-none ring-1 ring-neutral-700 focus:ring-blue-500 [color-scheme:dark]"
           />
         </div>
 
@@ -138,21 +145,34 @@ export default function IngresoForm({ wallets }: IngresoFormProps) {
         </div>
 
         <div>
-          <label htmlFor="walletId" className="mb-1.5 block text-sm text-neutral-400">
+          <label htmlFor="accountId" className="mb-1.5 block text-sm text-neutral-400">
             Acreditar en
           </label>
           <select
-            id="walletId"
-            name="walletId"
+            id="accountId"
+            name="accountId"
             required
             className="w-full rounded-lg bg-neutral-900 px-3 py-2 text-sm text-white outline-none ring-1 ring-neutral-700 focus:ring-blue-500"
           >
-            <option value="" disabled>Seleccioná una billetera</option>
-            {wallets.map((w) => (
-              <option key={w.id} value={w.id}>
-                {w.name} ({w.currency})
-              </option>
-            ))}
+            <option value="" disabled>Seleccioná una cuenta</option>
+            {wallets.length > 0 && (
+              <optgroup label="Billeteras">
+                {wallets.map((w) => (
+                  <option key={w.id} value={`w:${w.id}`}>
+                    {w.name} ({w.currency})
+                  </option>
+                ))}
+              </optgroup>
+            )}
+            {foreignAccounts.length > 0 && (
+              <optgroup label="Cuentas foráneas">
+                {foreignAccounts.map((a) => (
+                  <option key={a.id} value={`f:${a.id}`}>
+                    {a.name} ({a.currency})
+                  </option>
+                ))}
+              </optgroup>
+            )}
           </select>
         </div>
       </div>

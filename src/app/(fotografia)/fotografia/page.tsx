@@ -1,29 +1,17 @@
 export const dynamic = "force-dynamic";
 
+import { LuCamera, LuClock } from "react-icons/lu";
+
 export default function FotografiaDashboard() {
   return (
-    <div>
-      <h1 className="text-2xl font-bold text-white">Dashboard Fotografía</h1>
-      <p className="mt-1 text-neutral-400">Resumen de tu actividad fotográfica</p>
-
-      <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <div className="rounded-xl bg-neutral-800 p-6">
-          <p className="text-sm text-neutral-400">Sesiones este mes</p>
-          <p className="mt-2 text-2xl font-bold text-white">—</p>
-        </div>
-        <div className="rounded-xl bg-neutral-800 p-6">
-          <p className="text-sm text-neutral-400">Ingresos del rubro</p>
-          <p className="mt-2 text-2xl font-bold text-green-400">— USD</p>
-        </div>
-        <div className="rounded-xl bg-neutral-800 p-6">
-          <p className="text-sm text-neutral-400">Gastos del rubro</p>
-          <p className="mt-2 text-2xl font-bold text-red-400">— USD</p>
-        </div>
+    <div className="flex min-h-[60vh] flex-col items-center justify-center text-center">
+      <div className="rounded-full bg-neutral-800 p-5">
+        <LuCamera size={32} className="text-neutral-400" />
       </div>
-
-      <div className="mt-6 rounded-xl bg-neutral-800 p-6">
-        <p className="text-sm font-medium text-neutral-400">Próximas sesiones</p>
-        <p className="mt-4 text-center text-sm text-neutral-500">No hay sesiones programadas</p>
+      <h1 className="mt-5 text-2xl font-bold text-white">Fotografía</h1>
+      <div className="mt-3 flex items-center gap-1.5 text-neutral-500">
+        <LuClock size={14} />
+        <p className="text-sm">Estamos trabajando — programado para el próximo mes</p>
       </div>
     </div>
   );

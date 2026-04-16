@@ -39,8 +39,9 @@ export default async function GastosPage({
   const from = new Date(year, month - 1, 1);
   const to = new Date(year, month, 1);
 
-  const [wallets, gastos] = await Promise.all([
+  const [wallets, foreignAccounts, gastos] = await Promise.all([
     db.wallet.findMany({ where: { userId }, orderBy: { name: "asc" } }),
+    db.foreignAccount.findMany({ where: { userId }, orderBy: { name: "asc" } }),
     db.transaction.findMany({
       where: {
         userId,
@@ -66,7 +67,7 @@ export default async function GastosPage({
       <p className="mt-1 text-neutral-400">Registrá y revisá tus gastos</p>
 
       <div className="mt-6">
-        <GastoForm wallets={wallets} />
+        <GastoForm wallets={wallets} foreignAccounts={foreignAccounts} />
       </div>
 
       <div className="mt-8 flex flex-wrap items-center justify-between gap-4">

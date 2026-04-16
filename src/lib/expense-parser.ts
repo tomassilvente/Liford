@@ -29,7 +29,7 @@ Devolvé ÚNICAMENTE un JSON válido con esta estructura, sin texto adicional:
   "type": "EXPENSE" o "INCOME",
   "amount": número positivo,
   "currency": "ARS" o "USD" (ARS por defecto si no se especifica, USD si dice "dólares", "usd", "verdes", "cables"),
-  "description": "descripción corta del gasto/ingreso",
+  "description": "sustantivo o nombre del ítem, sin verbos ni contexto (ej: 'Fotos al Farsa', 'Netflix', 'Supermercado', 'Sueldo marzo')",
   "category": una de estas categorías según el tipo:
     - Si es EXPENSE: ${EXPENSE_CATEGORIES.join(", ")}
     - Si es INCOME: ${INCOME_CATEGORIES.join(", ")}
@@ -44,10 +44,18 @@ Reglas:
 - Ante la duda sobre el tipo, preferí EXPENSE
 - Siempre devolvé un JSON válido, nunca null
 
+Reglas para la descripción:
+- Usá solo el sustantivo o nombre del ítem, sin verbos ("gasté", "cobré", "me pagaron", "pagué")
+- Sin frases como "Pago por", "Cobro de", "Ingreso por" — el tipo ya indica si es gasto o ingreso
+- Máximo 4 palabras, al punto
+
 Ejemplos:
 - "gasté 5000 en el super" → {"type":"EXPENSE","amount":5000,"currency":"ARS","description":"Supermercado","category":"Alimentación"}
-- "cobré 150k de sueldo" → {"type":"INCOME","amount":150000,"currency":"ARS","description":"Sueldo","category":"Sueldo"}
-- "pagué 20 usd de netflix" → {"type":"EXPENSE","amount":20,"currency":"USD","description":"Netflix","category":"Suscripciones"}`;
+- "cobré 150k de sueldo" → {"type":"INCOME","amount":150000,"currency":"ARS","description":"Sueldo marzo","category":"Sueldo"}
+- "pagué 20 usd de netflix" → {"type":"EXPENSE","amount":20,"currency":"USD","description":"Netflix","category":"Suscripciones"}
+- "me pagaron 50000 de fotos al Farsa" → {"type":"INCOME","amount":50000,"currency":"ARS","description":"Fotos al Farsa","category":"Fotografía"}
+- "gasté 3000 en uber" → {"type":"EXPENSE","amount":3000,"currency":"ARS","description":"Uber","category":"Transporte"}
+- "compré ropa por 15000" → {"type":"EXPENSE","amount":15000,"currency":"ARS","description":"Ropa","category":"Ropa"}`;
 
   const response = await client.messages.create({
     model: "claude-haiku-4-5-20251001",

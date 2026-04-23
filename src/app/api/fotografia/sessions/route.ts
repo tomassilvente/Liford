@@ -1,6 +1,9 @@
 import { db } from "@/lib/db";
 import { NextRequest } from "next/server";
 import { getApiSession } from "@/lib/auth";
+import { createCalendarEvent } from "@/lib/google-calendar";
+
+const TYPE_LABELS: Record<string, string> = { SPORT: "Deporte", EVENT: "Evento", OTHER: "Otro" };
 
 export async function GET(request: NextRequest) {
   const authSession = await getApiSession();
@@ -26,7 +29,6 @@ export async function POST(request: NextRequest) {
 
   const body = await request.json();
 
-  // Verify client belongs to this user
   const client = await db.client.findUnique({
     where: { id: body.clientId, userId: authSession.userId },
   });
@@ -39,11 +41,34 @@ export async function POST(request: NextRequest) {
       eventName: body.eventName ?? null,
       date: new Date(body.date),
       durationMinutes: body.durationMinutes ?? null,
-      price: body.price,
+      price: Number(body.price),
       currency: body.currency,
       notes: body.notes ?? null,
     },
     include: { client: true },
   });
-  return Response.json(session, { status: 201 });
+
+  // Crear evento en Google Calendar (no bloquea si falla)
+  const typeLabel = TYPE_LABELS[body.type] ?? body.type;
+  const summary = body.eventName
+    ? `${body.eventName} (${typeLabel})`
+    : `${client.name} — ${typeLabel}`;
+  const description = [
+    body.notes,
+    `Precio: ${Number(body.price)} ${body.currency}`,
+    client.instagram ? `IG: @${client.instagram}` : null,
+  ].filter(Boolean).join("\n");
+
+  const googleCalendarId = await createCalendarEvent({
+    summary,
+    description,
+    startISO: new Date(body.date).toISOString(),
+    durationMinutes: body.durationMinutes ?? 120,
+  });
+
+  if (googleCalendarId) {
+    await db.session.update({ where: { id: session.id }, data: { googleCalendarId } });
+  }
+
+  return Response.json({ ...session, googleCalendarId }, { status: 201 });
 }

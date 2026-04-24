@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Liford — Documentación Técnica Completa</title>
+<style>
+  :root {
+    --bg: #0a0a0a; --surface: #141414; --surface2: #1e1e1e;
+    --border: #2a2a2a; --text: #e0e0e0; --muted: #777;
+    --blue: #4a9eff; --green: #4ade80; --yellow: #fbbf24;
+    --red: #f87171; --purple: #c084fc; --cyan: #22d3ee; --orange: #fb923c;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--bg); color:var(--text); font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; font-size:14px; line-height:1.7; }
+  .page { max-width:960px; margin:0 auto; padding:60px 40px; }
+
+  /* Cover */
+  .cover { text-align:center; padding:80px 0 60px; border-bottom:1px solid var(--border); margin-bottom:56px; }
+  .cover h1 { font-size:52px; font-weight:800; letter-spacing:-2px; color:#fff; }
+  .cover h1 em { color:var(--blue); font-style:normal; }
+  .cover p { margin-top:12px; color:var(--muted); font-size:16px; }
+  .badges { display:flex; justify-content:center; gap:10px; margin-top:24px; flex-wrap:wrap; }
+  .badge { background:var(--surface2); border:1px solid var(--border); border-radius:100px; padding:5px 14px; font-size:12px; color:var(--muted); }
+
+  /* TOC */
+  .toc { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:28px 36px; margin-bottom:60px; }
+  .toc-title { font-size:11px; font-weight:700; letter-spacing:3px; text-transform:uppercase; color:var(--muted); margin-bottom:18px; }
+  .toc-grid { display:grid; grid-template-columns:1fr 1fr; gap:0 40px; }
+  .toc-section { margin-bottom:16px; }
+  .toc-section > a { font-weight:600; color:var(--text); text-decoration:none; font-size:13px; }
+  .toc-section > a:hover { color:var(--blue); }
+  .toc-sub { list-style:none; margin-top:4px; padding-left:12px; }
+  .toc-sub li { margin:2px 0; }
+  .toc-sub a { color:var(--muted); text-decoration:none; font-size:12px; }
+  .toc-sub a:hover { color:var(--blue); }
+
+  /* Section headers */
+  h1.s { font-size:30px; font-weight:700; color:#fff; margin:64px 0 6px; padding-top:8px; border-top:2px solid var(--blue); display:inline-block; }
+  h2.s { font-size:18px; font-weight:600; color:#fff; margin:36px 0 10px; }
+  h3.s { font-size:15px; font-weight:600; color:var(--cyan); margin:20px 0 8px; }
+  .intro { color:var(--muted); font-size:14px; margin-bottom:20px; }
+
+  /* File card */
+  .fc { border:1px solid var(--border); border-radius:10px; margin:14px 0; overflow:hidden; }
+  .fc-head { background:var(--surface2); padding:11px 18px; display:flex; align-items:center; justify-content:space-between; }
+  .fc-path { font-family:'SF Mono','Fira Code',monospace; font-size:12px; color:var(--cyan); font-weight:600; }
+  .fc-body { padding:14px 18px; }
+  .fc-body > p { color:var(--muted); font-size:13px; margin-bottom:10px; }
+  .tag { font-size:10px; font-weight:700; letter-spacing:1px; text-transform:uppercase; border-radius:4px; padding:2px 8px; }
+  .t-server { background:rgba(74,222,128,.12); color:var(--green); }
+  .t-client { background:rgba(251,191,36,.12); color:var(--yellow); }
+  .t-api { background:rgba(74,158,255,.12); color:var(--blue); }
+  .t-lib { background:rgba(192,132,252,.12); color:var(--purple); }
+
+  /* Fn list */
+  .fl { list-style:none; }
+  .fl li { padding:9px 0; border-bottom:1px solid var(--border); }
+  .fl li:last-child { border-bottom:none; }
+  .fn { font-family:'SF Mono','Fira Code',monospace; font-size:12px; color:var(--yellow); font-weight:600; display:block; margin-bottom:3px; }
+  .fd { font-size:13px; color:var(--muted); }
+  .fi { font-size:12px; color:#555; font-style:italic; margin-top:2px; display:block; }
+
+  /* Schema */
+  .sm { border:1px solid var(--border); border-radius:10px; margin:14px 0; overflow:hidden; }
+  .sm-head { background:var(--surface2); padding:11px 18px; font-weight:700; color:#fff; }
+  .sm-head span { font-family:'SF Mono',monospace; font-size:12px; color:var(--purple); font-weight:400; margin-left:8px; }
+  .sf { display:flex; align-items:flex-start; padding:8px 18px; border-top:1px solid var(--border); gap:10px; }
+  .sf-name { font-family:'SF Mono',monospace; font-size:12px; color:var(--cyan); width:160px; flex-shrink:0; padding-top:1px; }
+  .sf-type { font-family:'SF Mono',monospace; font-size:11px; color:var(--yellow); width:90px; flex-shrink:0; padding-top:2px; }
+  .sf-desc { font-size:12px; color:var(--muted); flex:1; }
+  .pk { font-size:10px; background:rgba(74,158,255,.15); color:var(--blue); border-radius:3px; padding:1px 5px; margin-left:4px; }
+  .fk { font-size:10px; background:rgba(251,191,36,.15); color:var(--yellow); border-radius:3px; padding:1px 5px; margin-left:4px; }
+  .opt { font-size:10px; background:rgba(120,120,120,.15); color:#888; border-radius:3px; padding:1px 5px; margin-left:4px; }
+
+  /* Route table */
+  .rt { width:100%; border-collapse:collapse; margin:12px 0; font-size:12px; }
+  .rt th { background:var(--surface2); color:var(--muted); font-size:10px; font-weight:700; letter-spacing:1px; text-transform:uppercase; padding:9px 14px; text-align:left; }
+  .rt td { padding:9px 14px; border-top:1px solid var(--border); color:var(--muted); vertical-align:top; }
+  .rt tr:hover td { background:var(--surface); }
+  .method { font-family:'SF Mono',monospace; font-weight:700; font-size:11px; border-radius:4px; padding:2px 7px; }
+  .GET { background:rgba(74,222,128,.12); color:var(--green); }
+  .POST { background:rgba(74,158,255,.12); color:var(--blue); }
+  .PATCH { background:rgba(251,191,36,.12); color:var(--yellow); }
+  .DELETE { background:rgba(248,113,113,.12); color:var(--red); }
+  .rpath { font-family:'SF Mono',monospace; color:var(--cyan); font-size:11px; }
+
+  /* Flow */
+  .flow { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:22px; margin:14px 0; }
+  .flow-title { font-size:11px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:var(--muted); margin-bottom:18px; }
+  .fs { display:flex; gap:14px; margin:10px 0; }
+  .fn2 { width:26px; height:26px; border-radius:50%; background:var(--blue); color:#000; font-weight:800; font-size:11px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .fn2.g { background:var(--green); }
+  .fn2.y { background:var(--yellow); }
+  .fn2.p { background:var(--purple); }
+  .fn2.r { background:var(--red); }
+  .fl2 { font-weight:600; color:#fff; font-size:13px; }
+  .fs2 { font-size:12px; color:var(--muted); margin-top:2px; }
+  .fa { text-align:center; color:var(--border); margin:2px 0 2px 12px; font-size:18px; }
+
+  /* Note */
+  .note { background:rgba(74,158,255,.07); border:1px solid rgba(74,158,255,.2); border-radius:8px; padding:11px 15px; margin:10px 0; font-size:13px; color:var(--muted); }
+  .note strong { color:var(--blue); }
+  .warn { background:rgba(251,191,36,.07); border:1px solid rgba(251,191,36,.2); border-radius:8px; padding:11px 15px; margin:10px 0; font-size:13px; color:var(--muted); }
+  .warn strong { color:var(--yellow); }
+  .tip { background:rgba(74,222,128,.07); border:1px solid rgba(74,222,128,.2); border-radius:8px; padding:11px 15px; margin:10px 0; font-size:13px; color:var(--muted); }
+  .tip strong { color:var(--green); }
+
+  /* Stat cards */
+  .cards { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin:14px 0; }
+  .card { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:16px 20px; }
+  .card-title { font-weight:600; color:#fff; font-size:14px; margin-bottom:5px; }
+  .card p { font-size:13px; color:var(--muted); }
+
+  /* Status row */
+  .statuses { display:flex; align-items:center; gap:4px; flex-wrap:wrap; margin:12px 0; }
+  .sb { font-size:11px; font-weight:600; border-radius:100px; padding:3px 10px; }
+  .sa { color:var(--border); font-size:14px; }
+
+  /* Env table */
+  .et { width:100%; border-collapse:collapse; margin:12px 0; font-size:13px; }
+  .et th { background:var(--surface2); color:var(--muted); font-size:10px; font-weight:700; letter-spacing:1px; text-transform:uppercase; padding:9px 14px; text-align:left; }
+  .et td { padding:9px 14px; border-top:1px solid var(--border); color:var(--muted); vertical-align:top; }
+  .ekey { font-family:'SF Mono',monospace; color:var(--cyan); font-size:12px; }
+  .req { font-size:10px; background:rgba(248,113,113,.15); color:var(--red); border-radius:3px; padding:1px 5px; }
+  .ereq { font-size:10px; background:rgba(251,191,36,.15); color:var(--yellow); border-radius:3px; padding:1px 5px; }
+  .eopt { font-size:10px; background:rgba(120,120,120,.15); color:#888; border-radius:3px; padding:1px 5px; }
+
+  /* Divider */
+  .divider { border:none; border-top:1px solid var(--border); margin:48px 0; }
+
+  /* Print */
+  @media print {
+    body { background:#fff; color:#111; font-size:12px; }
+    :root { --bg:#fff;--surface:#f5f5f5;--surface2:#ebebeb;--border:#ddd;--text:#111;--muted:#555;--blue:#1a56db;--green:#057a55;--yellow:#92400e;--red:#9b1c1c;--purple:#6b21a8;--cyan:#0e7490;--orange:#c2410c; }
+    .page { max-width:100%; padding:20px; }
+    h1.s { margin-top:40px; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+<!-- PORTADA -->
+<div class="cover">
+  <h1><em>Liford</em> — Documentación Técnica</h1>
+  <p>Finanzas personales · Fotografía profesional · Integraciones Google · Editor IA</p>
+  <div class="badges">
+    <span class="badge">Next.js 16 · App Router</span>
+    <span class="badge">Prisma · PostgreSQL</span>
+    <span class="badge">TypeScript</span>
+    <span class="badge">Anthropic Claude</span>
+    <span class="badge">Google Calendar + Drive</span>
+    <span class="badge">Abril 2026</span>
+  </div>
+</div>
+
+<!-- ÍNDICE -->
+<div class="toc">
+  <div class="toc-title">Índice de contenidos</div>
+  <div class="toc-grid">
+    <div>
+      <div class="toc-section"><a href="#stack">1. Stack tecnológico</a></div>
+      <div class="toc-section"><a href="#estructura">2. Estructura del proyecto</a></div>
+      <div class="toc-section"><a href="#auth">3. Autenticación</a></div>
+      <div class="toc-section"><a href="#schema">4. Base de datos completa</a>
+        <ul class="toc-sub">
+          <li><a href="#schema-finanzas">Modelos de finanzas</a></li>
+          <li><a href="#schema-foto">Modelos de fotografía</a></li>
+          <li><a href="#schema-rel">Relaciones entre módulos</a></li>
+        </ul>
+      </div>
+      <div class="toc-section"><a href="#finanzas">5. Módulo Finanzas</a>
+        <ul class="toc-sub">
+          <li><a href="#fin-layout">Layout y navegación</a></li>
+          <li><a href="#fin-dashboard">Dashboard</a></li>
+          <li><a href="#fin-gastos">Gastos e Ingresos</a></li>
+          <li><a href="#fin-billeteras">Billeteras y cuentas</a></li>
+          <li><a href="#fin-inversiones">Inversiones</a></li>
+          <li><a href="#fin-presupuesto">Presupuesto y metas</a></li>
+          <li><a href="#fin-recurrentes">Gastos recurrentes</a></li>
+          <li><a href="#fin-importar">Importar / Exportar</a></li>
+          <li><a href="#fin-quickadd">QuickAdd con IA</a></li>
+          <li><a href="#fin-api">API Routes finanzas</a></li>
+        </ul>
+      </div>
+    </div>
+    <div>
+      <div class="toc-section"><a href="#libs">6. Librerías de servidor</a>
+        <ul class="toc-sub">
+          <li><a href="#lib-cotizaciones">cotizaciones.ts (Yahoo Finance)</a></li>
+          <li><a href="#lib-recurring">apply-recurring.ts</a></li>
+          <li><a href="#lib-snapshot">save-wealth-snapshot.ts</a></li>
+          <li><a href="#lib-import">import-parser.ts</a></li>
+          <li><a href="#lib-expense">expense-parser.ts (Claude)</a></li>
+          <li><a href="#lib-calendar">google-calendar.ts</a></li>
+          <li><a href="#lib-drive">google-drive.ts</a></li>
+        </ul>
+      </div>
+      <div class="toc-section"><a href="#fotografia">7. Módulo Fotografía</a>
+        <ul class="toc-sub">
+          <li><a href="#foto-dashboard">Dashboard</a></li>
+          <li><a href="#foto-sesiones">Sesiones</a></li>
+          <li><a href="#foto-clientes">Clientes</a></li>
+          <li><a href="#foto-servicios">Servicios</a></li>
+          <li><a href="#foto-editor">Editor de Stories (Claude)</a></li>
+          <li><a href="#foto-api">API Routes fotografía</a></li>
+        </ul>
+      </div>
+      <div class="toc-section"><a href="#flows">8. Flujos de datos clave</a></div>
+      <div class="toc-section"><a href="#env">9. Variables de entorno</a></div>
+      <div class="toc-section"><a href="#setup">10. Setup inicial</a></div>
+    </div>
+  </div>
+</div>
+
+<!-- 1. STACK -->
+<h1 class="s" id="stack">1. Stack tecnológico</h1>
+<p class="intro">Qué tecnología usa la app y para qué sirve cada una.</p>
+<div class="cards">
+  <div class="card"><div class="card-title">Next.js 16 — App Router</div><p>Framework principal. Cada carpeta dentro de <code>src/app/</code> es una ruta URL. Los componentes pueden ser de servidor (se ejecutan en el backend, tienen acceso a DB) o de cliente (se ejecutan en el browser, manejan interactividad).</p></div>
+  <div class="card"><div class="card-title">Prisma ORM</div><p>Capa de acceso a la base de datos. Permite hacer queries tipadas sin escribir SQL. El schema define todos los modelos. Se ejecuta siempre en el servidor, nunca en el browser.</p></div>
+  <div class="card"><div class="card-title">PostgreSQL</div><p>Base de datos relacional. Guarda todo: usuarios, wallets, transacciones, inversiones, clientes, sesiones fotográficas, snapshots de patrimonio, etc.</p></div>
+  <div class="card"><div class="card-title">TypeScript</div><p>JavaScript con tipos. Permite que el editor detecte errores antes de ejecutar el código. Prisma genera automáticamente los tipos de todos los modelos.</p></div>
+  <div class="card"><div class="card-title">Tailwind CSS</div><p>Estilos via clases en el HTML. En lugar de archivos CSS separados, las clases (<code>bg-neutral-800</code>, <code>text-white</code>, <code>rounded-xl</code>) aplican estilos directamente.</p></div>
+  <div class="card"><div class="card-title">Sonner</div><p>Librería de toasts (notificaciones). Cuando guardás algo o hay un error, el mensaje flotante que aparece arriba viene de acá. Requiere el componente <code>&lt;Toaster&gt;</code> en el layout.</p></div>
+  <div class="card"><div class="card-title">Recharts</div><p>Librería de gráficos para React. Los gráficos del dashboard de finanzas (barras, líneas, donut) están hechos con Recharts.</p></div>
+  <div class="card"><div class="card-title">googleapis</div><p>SDK oficial de Google. Usado para Google Calendar (crear/actualizar/borrar eventos) y Google Drive (crear carpetas, listar y descargar fotos).</p></div>
+  <div class="card"><div class="card-title">@anthropic-ai/sdk</div><p>SDK de Anthropic. Usado en dos lugares: el QuickAdd de finanzas (parsea mensajes en lenguaje natural con Claude Haiku) y el Editor de Stories (genera HTML con Claude Sonnet).</p></div>
+  <div class="card"><div class="card-title">jose</div><p>Librería para JWT (JSON Web Tokens). Crea y verifica los tokens de sesión de usuario firmados con <code>SESSION_SECRET</code>.</p></div>
+  <div class="card"><div class="card-title">bcryptjs</div><p>Hashea contraseñas. Las contraseñas se guardan hasheadas en la DB, nunca en texto plano.</p></div>
+  <div class="card"><div class="card-title">xlsx + adm-zip + better-sqlite3</div><p>Usadas en el importador. xlsx lee archivos Excel, adm-zip descomprime .mmbackup, better-sqlite3 lee la DB SQLite interna del archivo de Money Manager.</p></div>
+</div>
+
+<!-- 2. ESTRUCTURA -->
+<h1 class="s" id="estructura">2. Estructura del proyecto</h1>
+<div class="fc">
+  <div class="fc-head"><span class="fc-path">liford/ (raíz)</span></div>
+  <div class="fc-body">
+    <ul class="fl">
+      <li><span class="fn">src/app/(finanzas)/</span><span class="fd">Route Group de finanzas. El paréntesis hace que "(finanzas)" no aparezca en la URL. Tiene su propio layout con sidebar diferente al de fotografía.</span></li>
+      <li><span class="fn">src/app/(fotografia)/</span><span class="fd">Route Group de fotografía. Mismo concepto. Las URLs son /fotografia/sesiones, /fotografia/clientes, etc.</span></li>
+      <li><span class="fn">src/app/api/finanzas/</span><span class="fd">Todas las API routes del módulo financiero. Son funciones de servidor que responden peticiones HTTP desde el browser.</span></li>
+      <li><span class="fn">src/app/api/fotografia/</span><span class="fd">API routes del módulo fotográfico: sesiones, clientes, Drive, editor con Claude.</span></li>
+      <li><span class="fn">src/app/api/auth/</span><span class="fd">API routes de autenticación: login, logout, registro, cambio de contraseña, /me.</span></li>
+      <li><span class="fn">src/components/finanzas/</span><span class="fd">Componentes React reutilizables de finanzas (formularios, filas, gráficos, QuickAdd).</span></li>
+      <li><span class="fn">src/components/fotografia/</span><span class="fd">Componentes React de fotografía (SessionForm, ClientRow, PhotoBrowser, DesignEditor).</span></li>
+      <li><span class="fn">src/components/ui/</span><span class="fd">Componentes de UI compartidos entre ambos módulos: Sidebar, BottomNav, LogoutButton.</span></li>
+      <li><span class="fn">src/lib/</span><span class="fd">Funciones de servidor: auth, DB, parsers, Google Calendar, Google Drive, cotizaciones, etc.</span></li>
+      <li><span class="fn">src/generated/prisma/</span><span class="fd">Tipos TypeScript auto-generados por Prisma. NO se edita manualmente. Se regenera con <code>npx prisma generate</code>.</span></li>
+      <li><span class="fn">prisma/schema.prisma</span><span class="fd">Fuente de verdad de la estructura de la DB. Define todos los modelos, campos, tipos y relaciones.</span></li>
+      <li><span class="fn">public/</span><span class="fd">Archivos estáticos. <code>logo-stomas.png</code> se usa en el editor de stories como branding en los diseños generados.</span></li>
+      <li><span class="fn">scripts/google-auth.mjs</span><span class="fd">Script que se corre una única vez para obtener el refresh_token de Google OAuth. No forma parte del servidor.</span></li>
+    </ul>
+  </div>
+</div>
+
+<!-- 3. AUTH -->
+<h1 class="s" id="auth">3. Autenticación</h1>
+<p class="intro">Cómo funciona el login y cómo sabe la app quién sos en cada request.</p>
+<div class="flow">
+  <div class="flow-title">Flujo completo de autenticación</div>
+  <div class="fs"><div class="fn2">1</div><div><div class="fl2">Usuario envía usuario + contraseña</div><div class="fs2">POST /api/auth/login con { username, password }.</div></div></div>
+  <div class="fa">↓</div>
+  <div class="fs"><div class="fn2">2</div><div><div class="fl2">Verificación de contraseña</div><div class="fs2">Se busca el usuario en la DB. bcryptjs.compare() verifica que el hash guardado coincida con la contraseña ingresada.</div></div></div>
+  <div class="fa">↓</div>
+  <div class="fs"><div class="fn2 y">3</div><div><div class="fl2">Creación del JWT</div><div class="fs2">jose crea un token firmado con SESSION_SECRET. El payload contiene { userId, username, displayName }. Expira en 30 días.</div></div></div>
+  <div class="fa">↓</div>
+  <div class="fs"><div class="fn2">4</div><div><div class="fl2">Cookie httpOnly</div><div class="fs2">El token se guarda en la cookie "liford_session" (httpOnly: true = JavaScript del browser no puede leerla, solo el servidor).</div></div></div>
+  <div class="fa">↓</div>
+  <div class="fs"><div class="fn2 g">5</div><div><div class="fl2">Cada request verificada</div><div class="fs2">requireSession() (para páginas) o getApiSession() (para APIs) leen la cookie, verifican el JWT y devuelven el payload. Sin cookie válida → redirect a /login o 401.</div></div></div>
+</div>
+<div class="cards" style="margin-top:14px;">
+  <div class="card"><div class="card-title">src/lib/jwt.ts</div><p>encryptToken() crea el JWT. decryptToken() lo verifica. Define la interface SessionPayload { userId, username, displayName }.</p></div>
+  <div class="card"><div class="card-title">src/lib/session.ts</div><p>createSession() guarda la cookie. getSession() la lee y devuelve el payload. deleteSession() la borra al hacer logout.</p></div>
+  <div class="card"><div class="card-title">src/lib/auth.ts</div><p>requireSession() para Server Components (redirige si no autenticado). getApiSession() para API routes (devuelve null si no autenticado).</p></div>
+  <div class="card"><div class="card-title">src/lib/db.ts</div><p>Singleton de Prisma Client. Reutiliza la conexión a DB en desarrollo para no saturar el pool de conexiones con los hot-reloads.</p></div>
+</div>
+
+<!-- 4. BASE DE DATOS -->
+<h1 class="s" id="schema">4. Base de datos completa</h1>
+
+<h2 class="s" id="schema-finanzas">Modelos de Finanzas</h2>
+
+<h3 class="s">User</h3>
+<div class="sm">
+  <div class="sm-head">User <span>— Un usuario de la app. Todo está asociado a un userId.</span></div>
+  <div class="sf"><span class="sf-name">id</span><span class="sf-type">String</span><span class="sf-desc">CUID único.<span class="pk">PK</span></span></div>
+  <div class="sf"><span class="sf-name">username</span><span class="sf-type">String</span><span class="sf-desc">Nombre de usuario para login. Único en la DB.</span></div>
+  <div class="sf"><span class="sf-name">displayName</span><span class="sf-type">String?</span><span class="sf-desc">Nombre para mostrar en el sidebar.<span class="opt">opcional</span></span></div>
+  <div class="sf"><span class="sf-name">passwordHash</span><span class="sf-type">String</span><span class="sf-desc">Contraseña hasheada con bcrypt. Nunca texto plano.</span></div>
+</div>
+
+<h3 class="s">Wallet (Billetera)</h3>
+<div class="sm">
+  <div class="sm-head">Wallet <span>— Billetera en ARS o USD. Su balance se actualiza con cada transacción.</span></div>
+  <div class="sf"><span class="sf-name">id</span><span class="sf-type">String</span><span class="sf-desc">CUID.<span class="pk">PK</span></span></div>
+  <div class="sf"><span class="sf-name">userId</span><span class="sf-type">String</span><span class="sf-desc">Propietario.<span class="fk">FK → User</span></span></div>
+  <div class="sf"><span class="sf-name">name</span><span class="sf-type">String</span><span class="sf-desc">Nombre descriptivo (ej: "Mercado Pago", "Santander").</span></div>
+  <div class="sf"><span class="sf-name">currency</span><span class="sf-type">Currency</span><span class="sf-desc">ARS o USD.</span></div>
+  <div class="sf"><span class="sf-name">balance</span><span class="sf-type">Float</span><span class="sf-desc">Saldo actual. Se incrementa/decrementa atómicamente junto con cada transacción.</span></div>
+</div>
+
+<h3 class="s">ForeignAccount (Cuenta Foránea)</h3>
+<div class="sm">
+  <div class="sm-head">ForeignAccount <span>— Cuentas en el exterior: Wise, Payoneer, broker, etc.</span></div>
+  <div class="sf"><span class="sf-name">id / userId / name</span><span class="sf-type">String</span><span class="sf-desc">Igual que Wallet.</span></div>
+  <div class="sf"><span class="sf-name">currency</span><span class="sf-type">String</span><span class="sf-desc">Cualquier moneda (no limitado al enum Currency).</span></div>
+  <div class="sf"><span class="sf-name">balance</span><span class="sf-type">Float</span><span class="sf-desc">Saldo en la moneda de la cuenta.</span></div>
+  <div class="sf"><span class="sf-name">notes</span><span class="sf-type">String?</span><span class="sf-desc">Notas adicionales.<span class="opt">opcional</span></span></div>
+</div>
+
+<h3 class="s">Transaction (Transacción)</h3>
+<div class="sm">
+  <div class="sm-head">Transaction <span>— Central de finanzas. Registra gastos, ingresos, compras de activos Y cobros de fotografía.</span></div>
+  <div class="sf"><span class="sf-name">id</span><span class="sf-type">String</span><span class="sf-desc">CUID.<span class="pk">PK</span></span></div>
+  <div class="sf"><span class="sf-name">userId</span><span class="sf-type">String</span><span class="sf-desc">Propietario.<span class="fk">FK → User</span></span></div>
+  <div class="sf"><span class="sf-name">type</span><span class="sf-type">TransactionType</span><span class="sf-desc">EXPENSE, INCOME, STOCK_PURCHASE, CRYPTO_PURCHASE.</span></div>
+  <div class="sf"><span class="sf-name">source</span><span class="sf-type">TransactionSource</span><span class="sf-desc">PERSONAL (finanzas personales) o PHOTOGRAPHY (cobro de sesión fotográfica).</span></div>
+  <div class="sf"><span class="sf-name">amount</span><span class="sf-type">Float</span><span class="sf-desc">Monto positivo.</span></div>
+  <div class="sf"><span class="sf-name">currency</span><span class="sf-type">Currency</span><span class="sf-desc">ARS o USD.</span></div>
+  <div class="sf"><span class="sf-name">category</span><span class="sf-type">String</span><span class="sf-desc">Categoría libre (ej: "Alimentación", "Sueldo", "Fotografía").</span></div>
+  <div class="sf"><span class="sf-name">description</span><span class="sf-type">String?</span><span class="sf-desc">Descripción del gasto o ingreso.<span class="opt">opcional</span></span></div>
+  <div class="sf"><span class="sf-name">date</span><span class="sf-type">DateTime</span><span class="sf-desc">Fecha de la transacción.</span></div>
+  <div class="sf"><span class="sf-name">sessionId</span><span class="sf-type">String?</span><span class="sf-desc">Si source=PHOTOGRAPHY, vincula al Session que originó el ingreso.<span class="opt">opcional</span><span class="fk">FK → Session</span></span></div>
+</div>
+
+<h3 class="s">Investment (Inversión)</h3>
+<div class="sm">
+  <div class="sm-head">Investment <span>— Posición en acciones o cripto. El precio actual se consulta en Yahoo Finance en tiempo real.</span></div>
+  <div class="sf"><span class="sf-name">userId</span><span class="sf-type">String</span><span class="sf-desc">Propietario.<span class="fk">FK → User</span></span></div>
+  <div class="sf"><span class="sf-name">type</span><span class="sf-type">InvestmentType</span><span class="sf-desc">STOCK (acción) o CRYPTO (criptomoneda).</span></div>
+  <div class="sf"><span class="sf-name">ticker</span><span class="sf-type">String</span><span class="sf-desc">Símbolo del activo. Ej: "GGAL", "BTC-USD", "AAPL".</span></div>
+  <div class="sf"><span class="sf-name">quantity</span><span class="sf-type">Float</span><span class="sf-desc">Cantidad de unidades en cartera.</span></div>
+  <div class="sf"><span class="sf-name">avgBuyPrice</span><span class="sf-type">Float</span><span class="sf-desc">Precio promedio de compra en USD. Se recalcula con cada compra adicional.</span></div>
+</div>
+
+<h3 class="s">RecurringExpense (Gasto recurrente)</h3>
+<div class="sm">
+  <div class="sm-head">RecurringExpense <span>— Gastos o ingresos que se aplican automáticamente cada mes.</span></div>
+  <div class="sf"><span class="sf-name">description / amount / currency / category</span><span class="sf-type">—</span><span class="sf-desc">Igual que una transacción.</span></div>
+  <div class="sf"><span class="sf-name">dayOfMonth</span><span class="sf-type">Int</span><span class="sf-desc">Día del mes en que se aplica (ej: 5 = el día 5 de cada mes).</span></div>
+  <div class="sf"><span class="sf-name">isActive</span><span class="sf-type">Boolean</span><span class="sf-desc">Si está activo. Los inactivos no se aplican.</span></div>
+  <div class="sf"><span class="sf-name">lastApplied</span><span class="sf-type">DateTime?</span><span class="sf-desc">Cuándo fue la última vez que se aplicó. Evita duplicados.<span class="opt">opcional</span></span></div>
+  <div class="sf"><span class="sf-name">walletId / foreignAccountId</span><span class="sf-type">String?</span><span class="sf-desc">Cuenta a debitar/acreditar al aplicar.<span class="opt">opcional</span></span></div>
+</div>
+
+<h3 class="s">Budget (Presupuesto) · SavingsGoal (Meta) · WealthSnapshot</h3>
+<div class="cards">
+  <div class="card"><div class="card-title">Budget</div><p>Presupuesto mensual por categoría. Tiene <code>category</code>, <code>limit</code> (monto máximo) y <code>month</code> (YYYY-MM). La página de presupuesto compara los gastos reales del mes contra cada límite.</p></div>
+  <div class="card"><div class="card-title">SavingsGoal</div><p>Metas de ahorro. Tiene <code>name</code>, <code>targetAmount</code>, <code>currentAmount</code> y <code>currency</code>. Se actualiza manualmente al ir aportando.</p></div>
+  <div class="card"><div class="card-title">WealthSnapshot</div><p>Snapshot mensual del patrimonio. Se crea automáticamente una vez por mes al abrir finanzas. Guarda <code>walletsARS</code>, <code>foreignUSD</code>, <code>portfolioUSD</code>, <code>totalARS</code>, <code>totalUSD</code>. Alimenta el gráfico de evolución de patrimonio.</p></div>
+</div>
+
+<h2 class="s" id="schema-foto">Modelos de Fotografía</h2>
+
+<h3 class="s">Client</h3>
+<div class="sm">
+  <div class="sm-head">Client <span>— Cliente del fotógrafo (equipo, persona, empresa).</span></div>
+  <div class="sf"><span class="sf-name">id / userId</span><span class="sf-type">String</span><span class="sf-desc">Identificador y propietario.<span class="pk">PK</span> <span class="fk">FK → User</span></span></div>
+  <div class="sf"><span class="sf-name">name</span><span class="sf-type">String</span><span class="sf-desc">Nombre del cliente o equipo.</span></div>
+  <div class="sf"><span class="sf-name">instagram</span><span class="sf-type">String?</span><span class="sf-desc">Usuario de Instagram (sin @).<span class="opt">opcional</span></span></div>
+  <div class="sf"><span class="sf-name">phone</span><span class="sf-type">String?</span><span class="sf-desc">Teléfono de contacto.<span class="opt">opcional</span></span></div>
+  <div class="sf"><span class="sf-name">notes</span><span class="sf-type">String?</span><span class="sf-desc">Notas libres sobre el cliente.<span class="opt">opcional</span></span></div>
+  <div class="sf"><span class="sf-name">sessions</span><span class="sf-type">Session[]</span><span class="sf-desc">Todas las sesiones de este cliente.</span></div>
+</div>
+
+<h3 class="s">Session</h3>
+<div class="sm">
+  <div class="sm-head">Session <span>— Sesión fotográfica. Modelo central del módulo.</span></div>
+  <div class="sf"><span class="sf-name">id</span><span class="sf-type">String</span><span class="sf-desc">CUID.<span class="pk">PK</span></span></div>
+  <div class="sf"><span class="sf-name">clientId</span><span class="sf-type">String</span><span class="sf-desc">Cliente al que pertenece.<span class="fk">FK → Client</span></span></div>
+  <div class="sf"><span class="sf-name">type</span><span class="sf-type">SessionType</span><span class="sf-desc">SPORT, EVENT u OTHER.</span></div>
+  <div class="sf"><span class="sf-name">eventName</span><span class="sf-type">String?</span><span class="sf-desc">Nombre del evento (solo para tipo EVENT).<span class="opt">opcional</span></span></div>
+  <div class="sf"><span class="sf-name">date</span><span class="sf-type">DateTime</span><span class="sf-desc">Fecha y hora. Guardada en UTC. El frontend maneja el timezone Argentina (-03:00).</span></div>
+  <div class="sf"><span class="sf-name">durationMinutes</span><span class="sf-type">Int?</span><span class="sf-desc">Duración. Usado para calcular el fin del evento en Calendar.<span class="opt">opcional</span></span></div>
+  <div class="sf"><span class="sf-name">price</span><span class="sf-type">Float</span><span class="sf-desc">Precio pactado con el cliente.</span></div>
+  <div class="sf"><span class="sf-name">currency</span><span class="sf-type">Currency</span><span class="sf-desc">ARS o USD.</span></div>
+  <div class="sf"><span class="sf-name">status</span><span class="sf-type">SessionStatus</span><span class="sf-desc">Estado actual en el workflow. Default: PENDING.</span></div>
+  <div class="sf"><span class="sf-name">photosDelivered</span><span class="sf-type">Int?</span><span class="sf-desc">Cantidad de fotos entregadas al finalizar.<span class="opt">opcional</span></span></div>
+  <div class="sf"><span class="sf-name">googleCalendarId</span><span class="sf-type">String?</span><span class="sf-desc">ID del evento en Google Calendar para actualizarlo o borrarlo.<span class="opt">opcional</span></span></div>
+  <div class="sf"><span class="sf-name">driveUrl</span><span class="sf-type">String?</span><span class="sf-desc">URL de la carpeta en Google Drive con las fotos entregadas.<span class="opt">opcional</span></span></div>
+  <div class="sf"><span class="sf-name">notes</span><span class="sf-type">String?</span><span class="sf-desc">Notas internas sobre la sesión.<span class="opt">opcional</span></span></div>
+  <div class="sf"><span class="sf-name">transactions</span><span class="sf-type">Transaction[]</span><span class="sf-desc">Ingresos de finanzas vinculados (se crea uno al marcar PAID).</span></div>
+</div>
+
+<h3 class="s">Estados de una sesión</h3>
+<div class="statuses">
+  <span class="sb" style="background:rgba(251,191,36,.12);color:#fbbf24;">PENDING</span><span class="sa">→</span>
+  <span class="sb" style="background:rgba(74,158,255,.12);color:#4a9eff;">CONFIRMED</span><span class="sa">→</span>
+  <span class="sb" style="background:rgba(192,132,252,.12);color:#c084fc;">SHOT</span><span class="sa">→</span>
+  <span class="sb" style="background:rgba(34,211,238,.12);color:#22d3ee;">DELIVERED</span><span class="sa">→</span>
+  <span class="sb" style="background:rgba(74,222,128,.12);color:#4ade80;">PAID</span><span class="sa">→</span>
+  <span class="sb" style="background:rgba(120,120,120,.12);color:#888;">COMPLETED</span>
+</div>
+<div class="note"><strong>Al pasar a PAID:</strong> se crea automáticamente una Transaction con source=PHOTOGRAPHY en Finanzas, vinculada a la sesión via sessionId. Aparece en /finanzas/ingresos con badge azul "Fotografía".</div>
+
+<h2 class="s" id="schema-rel">Conexión entre módulos</h2>
+<div class="flow">
+  <div class="flow-title">Cómo se conectan finanzas y fotografía</div>
+  <div class="fs"><div class="fn2 y">A</div><div><div class="fl2">Sesión marcada como PAID en Fotografía</div><div class="fs2">El PATCH de sessions/[id] detecta el cambio de estado.</div></div></div>
+  <div class="fa">↓</div>
+  <div class="fs"><div class="fn2">B</div><div><div class="fl2">Se crea una Transaction en Finanzas</div><div class="fs2">db.transaction.create() con type=INCOME, source=PHOTOGRAPHY, amount=session.price, currency=session.currency, category="Fotografía", sessionId=session.id.</div></div></div>
+  <div class="fa">↓</div>
+  <div class="fs"><div class="fn2 g">C</div><div><div class="fl2">El ingreso aparece en /finanzas/ingresos</div><div class="fs2">La query de ingresos incluye source IN [PERSONAL, PHOTOGRAPHY]. Los de fotografía muestran badge azul y no tienen botón de editar/borrar (solo se gestionan desde fotografía).</div></div></div>
+  <div class="fa">↓</div>
+  <div class="fs"><div class="fn2 g">D</div><div><div class="fl2">El dashboard de finanzas lo cuenta</div><div class="fs2">Los ingresos PHOTOGRAPHY suman al total mensual de ingresos y aparecen en el gráfico de Ingresos vs Gastos.</div></div></div>
+</div>
+
+<!-- 5. MÓDULO FINANZAS -->
+<h1 class="s" id="finanzas">5. Módulo Finanzas</h1>
+
+<h2 class="s" id="fin-layout">Layout</h2>
+<div class="fc">
+  <div class="fc-head"><span class="fc-path">src/app/(finanzas)/layout.tsx</span><span class="tag t-server">Server Component async</span></div>
+  <div class="fc-body">
+    <p>Envoltorio de todas las páginas de finanzas. Al cargarse, ejecuta en paralelo 4 cosas:</p>
+    <ul class="fl">
+      <li><span class="fn">requireSession()</span><span class="fd">Verifica auth. Si no hay sesión → redirect /login.</span></li>
+      <li><span class="fn">applyRecurringExpenses(userId)</span><span class="fd">Aplica los gastos recurrentes del mes que aún no fueron aplicados. Se ejecuta silenciosamente en cada carga.</span></li>
+      <li><span class="fn">saveWealthSnapshotIfNeeded(userId)</span><span class="fd">Guarda el snapshot mensual de patrimonio si aún no existe para el mes actual.</span></li>
+      <li><span class="fn">db.wallet.findMany() + db.foreignAccount.findMany()</span><span class="fd">Carga las billeteras y cuentas para pasarlas al componente QuickAdd.</span></li>
+    </ul>
+    <p style="margin-top:10px;">Renderiza: Sidebar (oculto en mobile), main, BottomNav (visible en mobile), QuickAdd (botón flotante +), Toaster.</p>
+  </div>
+</div>
+
+<h2 class="s" id="fin-dashboard">Dashboard — /finanzas</h2>
+<div class="fc">
+  <div class="fc-head"><span class="fc-path">src/app/(finanzas)/finanzas/page.tsx</span><span class="tag t-server">Server Component</span></div>
+  <div class="fc-body">
+    <p>La página más completa de la app. Hace 6 queries en paralelo con Promise.all() y calcula todo el estado financiero.</p>
+    <ul class="fl">
+      <li><span class="fn">Patrimonio total</span><span class="fd">Suma billeteras ARS, cuentas foráneas USD, y portfolio (precio actual × cantidad de cada activo desde Yahoo Finance).</span></li>
+      <li><span class="fn">Variación diaria del portfolio</span><span class="fd">Suma el changeAmount de cada activo × cantidad para mostrar cuánto cambió el portfolio en el día.</span></li>
+      <li><span class="fn">Balance del mes</span><span class="fd">Filtra transacciones del mes actual. Calcula ingresos, gastos, balance (ingresos - gastos) y tasa de ahorro ((ingresos - gastos) / ingresos × 100).</span></li>
+      <li><span class="fn">Comparación vs mes anterior</span><span class="fd">Calcula el % de variación de ingresos y gastos respecto al mes anterior.</span></li>
+      <li><span class="fn">Gastos por categoría</span><span class="fd">Agrupa gastos del mes por categoría, toma las 8 más grandes. Alimenta el CategoryChart (donut).</span></li>
+      <li><span class="fn">Gráfico mensual</span><span class="fd">Agrupa ingresos y gastos de los últimos 6 meses. Alimenta el MonthlyChart (barras).</span></li>
+      <li><span class="fn">Evolución del patrimonio</span><span class="fd">Lee los últimos 12 WealthSnapshots. Alimenta el WealthChart (líneas).</span></li>
+      <li><span class="fn">Últimas 8 transacciones</span><span class="fd">Las más recientes para el widget de historial rápido.</span></li>
+    </ul>
+  </div>
+</div>
+
+<h2 class="s" id="fin-gastos">Gastos e Ingresos</h2>
+<div class="cards">
+  <div class="card">
+    <div class="card-title">/finanzas/gastos</div>
+    <p>Formulario (GastoForm) + filtro de mes (MonthFilter) + lista de transacciones (TransactionRow). Filtra por mes via searchParam <code>?mes=YYYY-MM</code>. Muestra el total por moneda. TransactionRow permite editar descripción, categoría, monto inline y eliminar con confirmación de dos pasos.</p>
+  </div>
+  <div class="card">
+    <div class="card-title">/finanzas/ingresos</div>
+    <p>Idéntico a gastos pero para ingresos. Query incluye source IN [PERSONAL, PHOTOGRAPHY] para mostrar también los cobros de sesiones fotográficas. Los de PHOTOGRAPHY tienen badge azul y son de solo lectura (sin editar/borrar).</p>
+  </div>
+</div>
+
+<h2 class="s" id="fin-billeteras">Billeteras y Cuentas Foráneas</h2>
+<div class="fc">
+  <div class="fc-head"><span class="fc-path">src/app/(finanzas)/finanzas/billeteras/page.tsx</span><span class="tag t-server">Server Component</span></div>
+  <div class="fc-body">
+    <p>Muestra WalletCard y ForeignAccountCard para cada cuenta. Las wallets muestran nombre, moneda y balance. Las cuentas foráneas permiten editar el balance manualmente (ya que son cuentas externas que no se actualizan automáticamente).</p>
+    <ul class="fl">
+      <li><span class="fn">WalletCard / WalletForm</span><span class="fd">Card de billetera con botón para editar nombre y eliminar. WalletForm crea nuevas billeteras. El balance de las wallets se actualiza automáticamente con cada transacción que las referencia.</span></li>
+      <li><span class="fn">ForeignAccountCard / ForeignAccountForm</span><span class="fd">Similar pero para cuentas foráneas. Tiene un campo extra para actualizar el balance manualmente (útil para sincronizar con Wise, Payoneer, etc.).</span></li>
+    </ul>
+  </div>
+</div>
+
+<h2 class="s" id="fin-inversiones">Inversiones</h2>
+<div class="fc">
+  <div class="fc-head"><span class="fc-path">src/app/(finanzas)/finanzas/inversiones/page.tsx</span><span class="tag t-server">Server Component</span></div>
+  <div class="fc-body">
+    <ul class="fl">
+      <li><span class="fn">fetchCotizaciones(tickers)</span><span class="fd">Al cargar la página, llama a Yahoo Finance para obtener el precio actual de cada ticker en cartera. Cache de 5 minutos (next: { revalidate: 300 }).</span></li>
+      <li><span class="fn">PnL total</span><span class="fd">Calcula el resultado global: (precio actual × cantidad) - (precio promedio compra × cantidad) para cada activo. Muestra total invertido, valor actual y ganancia/pérdida en $ y %.</span></li>
+      <li><span class="fn">InversionCard</span><span class="fd">Card por activo mostrando ticker, tipo (stock/cripto), cantidad, precio promedio, precio actual, variación del día. Tiene gráfico de historial de precios (PriceHistoryChart, llama a /api/finanzas/cotizaciones/[ticker]).</span></li>
+      <li><span class="fn">PortfolioAllocationChart</span><span class="fd">Gráfico de dona que muestra la distribución del portfolio por activo.</span></li>
+      <li><span class="fn">InversionForm</span><span class="fd">Para agregar un activo. Si ya existe el ticker en cartera, recalcula el precio promedio ponderado.</span></li>
+    </ul>
+  </div>
+</div>
+
+<h2 class="s" id="fin-presupuesto">Presupuesto</h2>
+<div class="fc">
+  <div class="fc-head"><span class="fc-path">src/app/(finanzas)/finanzas/presupuesto/</span><span class="tag t-server">Server + Client</span></div>
+  <div class="fc-body">
+    <p>Permite definir un límite mensual por categoría y ver cuánto se lleva gastado. BudgetManager (componente cliente) muestra una barra de progreso por categoría: verde si está bajo el límite, amarillo cerca, rojo si lo superó. Permite crear, editar y eliminar límites.</p>
+  </div>
+</div>
+
+<h2 class="s" id="fin-metas">Metas de ahorro</h2>
+<div class="fc">
+  <div class="fc-head"><span class="fc-path">src/app/(finanzas)/finanzas/metas/</span><span class="tag t-server">Server + Client</span></div>
+  <div class="fc-body">
+    <p>GoalsManager (componente cliente) gestiona metas de ahorro. Cada meta tiene nombre, monto objetivo, monto actual y moneda. Se puede aportar dinero manualmente incrementando el currentAmount. Muestra % de progreso.</p>
+  </div>
+</div>
+
+<h2 class="s" id="fin-recurrentes">Gastos Recurrentes</h2>
+<div class="fc">
+  <div class="fc-head"><span class="fc-path">src/app/(finanzas)/finanzas/recurrentes/</span><span class="tag t-server">Server + Client</span></div>
+  <div class="fc-body">
+    <p>RecurringManager lista y gestiona los gastos e ingresos recurrentes. Cada uno tiene: descripción, monto, moneda, categoría, día del mes, cuenta a debitar/acreditar, y si está activo. La lógica de aplicación está en <code>apply-recurring.ts</code> y se ejecuta automáticamente al abrir finanzas.</p>
+  </div>
+</div>
+
+<h2 class="s" id="fin-importar">Importar / Exportar</h2>
+<div class="fc">
+  <div class="fc-head"><span class="fc-path">src/app/(finanzas)/finanzas/importar/</span><span class="tag t-server">Server + Client</span></div>
+  <div class="fc-body">
+    <ul class="fl">
+      <li><span class="fn">ImportForm</span><span class="fd">Acepta 3 formatos de archivo: Excel (.xlsx), JSON, y .mmbackup (exportación de la app Money Manager). El archivo se sube a POST /api/finanzas/import que lo parsea y devuelve una preview de las transacciones detectadas.</span></li>
+      <li><span class="fn">Preview + Confirmación</span><span class="fd">El usuario ve las transacciones que se van a importar antes de confirmar. POST /api/finanzas/import/confirm las inserta en la DB en una Prisma transaction atómica.</span></li>
+      <li><span class="fn">ExportButton</span><span class="fd">Descarga todas las transacciones en formato Excel via GET /api/finanzas/export. Usa la librería xlsx para generar el archivo.</span></li>
+      <li><span class="fn">import-parser.ts</span><span class="fd">Lógica de parseo de los 3 formatos (ver sección 6).</span></li>
+    </ul>
+  </div>
+</div>
+
+<h2 class="s" id="fin-quickadd">QuickAdd con IA</h2>
+<div class="fc">
+  <div class="fc-head"><span class="fc-path">src/components/finanzas/QuickAdd.tsx</span><span class="tag t-client">Client Component</span></div>
+  <div class="fc-body">
+    <p>El botón "+" flotante en la esquina inferior derecha. La funcionalidad más interactiva del módulo.</p>
+    <ul class="fl">
+      <li><span class="fn">Modo manual</span><span class="fd">Formulario con campos: tipo (gasto/ingreso), monto, cuenta, categoría, descripción. Llama a /api/finanzas/gastos o /api/finanzas/ingresos según el tipo.</span></li>
+      <li><span class="fn">Modo IA (texto libre)</span><span class="fd">El usuario escribe en lenguaje natural: "gasté 5000 en el super". Se llama a /api/finanzas/transactions con el texto. El servidor usa Claude Haiku para parsear el mensaje y extraer: tipo, monto, moneda, descripción y categoría. El resultado pre-completa el formulario para que el usuario confirme.</span></li>
+      <li><span class="fn">Atajos de teclado</span><span class="fd">Tecla Escape cierra el QuickAdd. El campo de monto recibe foco automáticamente al abrir.</span></li>
+    </ul>
+    <div class="note"><strong>Claude Haiku:</strong> se usa claude-haiku-4-5-20251001 para el parseo de transacciones porque es más rápido y económico que Sonnet para esta tarea simple y estructurada.</div>
+  </div>
+</div>
+
+<h2 class="s" id="fin-api">API Routes — Finanzas</h2>
+<table class="rt">
+  <tr><th>Método</th><th>Ruta</th><th>Descripción</th></tr>
+  <tr><td><span class="method GET">GET</span></td><td><span class="rpath">/api/finanzas/wallets</span></td><td>Lista todas las billeteras del usuario.</td></tr>
+  <tr><td><span class="method POST">POST</span></td><td><span class="rpath">/api/finanzas/wallets</span></td><td>Crea una billetera con saldo inicial 0.</td></tr>
+  <tr><td><span class="method PATCH">PATCH</span></td><td><span class="rpath">/api/finanzas/wallets/[id]</span></td><td>Actualiza nombre. No permite cambiar el saldo directamente.</td></tr>
+  <tr><td><span class="method DELETE">DELETE</span></td><td><span class="rpath">/api/finanzas/wallets/[id]</span></td><td>Elimina la billetera.</td></tr>
+  <tr><td><span class="method GET">GET</span></td><td><span class="rpath">/api/finanzas/foreign-accounts</span></td><td>Lista cuentas foráneas.</td></tr>
+  <tr><td><span class="method POST">POST</span></td><td><span class="rpath">/api/finanzas/foreign-accounts</span></td><td>Crea cuenta foránea.</td></tr>
+  <tr><td><span class="method PATCH">PATCH</span></td><td><span class="rpath">/api/finanzas/foreign-accounts/[id]</span></td><td>Actualiza nombre o balance.</td></tr>
+  <tr><td><span class="method DELETE">DELETE</span></td><td><span class="rpath">/api/finanzas/foreign-accounts/[id]</span></td><td>Elimina cuenta foránea.</td></tr>
+  <tr><td><span class="method POST">POST</span></td><td><span class="rpath">/api/finanzas/gastos</span></td><td>Registra un gasto. Atómicamente: crea Transaction + decrementa balance de la wallet referenciada.</td></tr>
+  <tr><td><span class="method POST">POST</span></td><td><span class="rpath">/api/finanzas/ingresos</span></td><td>Registra un ingreso. Atómicamente: crea Transaction + incrementa balance.</td></tr>
+  <tr><td><span class="method PATCH">PATCH</span></td><td><span class="rpath">/api/finanzas/transactions/[id]</span></td><td>Edita descripción, categoría y monto de una transacción.</td></tr>
+  <tr><td><span class="method DELETE">DELETE</span></td><td><span class="rpath">/api/finanzas/transactions/[id]</span></td><td>Elimina una transacción.</td></tr>
+  <tr><td><span class="method POST">POST</span></td><td><span class="rpath">/api/finanzas/transactions</span></td><td>Parseo con IA: recibe texto libre, llama a Claude, devuelve la transacción parseada (sin guardar todavía).</td></tr>
+  <tr><td><span class="method GET">GET</span></td><td><span class="rpath">/api/finanzas/inversiones</span></td><td>Lista inversiones del usuario.</td></tr>
+  <tr><td><span class="method POST">POST</span></td><td><span class="rpath">/api/finanzas/inversiones</span></td><td>Agrega activo. Si ya existe el ticker, recalcula el precio promedio y suma la cantidad.</td></tr>
+  <tr><td><span class="method PATCH">PATCH</span></td><td><span class="rpath">/api/finanzas/inversiones/[id]</span></td><td>Actualiza cantidad o precio promedio de una inversión.</td></tr>
+  <tr><td><span class="method DELETE">DELETE</span></td><td><span class="rpath">/api/finanzas/inversiones/[id]</span></td><td>Elimina una posición.</td></tr>
+  <tr><td><span class="method GET">GET</span></td><td><span class="rpath">/api/finanzas/cotizaciones/[ticker]</span></td><td>Proxy de Yahoo Finance. Devuelve historial de precios de un ticker con cache de 5 minutos. Acepta range: 1w, 1mo, 3mo, 6mo, 1y.</td></tr>
+  <tr><td><span class="method GET">GET</span></td><td><span class="rpath">/api/finanzas/presupuesto</span></td><td>Lista presupuestos del usuario.</td></tr>
+  <tr><td><span class="method POST">POST</span></td><td><span class="rpath">/api/finanzas/presupuesto</span></td><td>Crea un presupuesto para una categoría y mes.</td></tr>
+  <tr><td><span class="method GET">GET</span></td><td><span class="rpath">/api/finanzas/metas</span></td><td>Lista metas de ahorro.</td></tr>
+  <tr><td><span class="method POST">POST</span></td><td><span class="rpath">/api/finanzas/metas</span></td><td>Crea una meta.</td></tr>
+  <tr><td><span class="method PATCH">PATCH</span></td><td><span class="rpath">/api/finanzas/metas/[id]</span></td><td>Actualiza el monto actual de una meta (aportes).</td></tr>
+  <tr><td><span class="method DELETE">DELETE</span></td><td><span class="rpath">/api/finanzas/metas/[id]</span></td><td>Elimina una meta.</td></tr>
+  <tr><td><span class="method GET">GET</span></td><td><span class="rpath">/api/finanzas/recurrentes</span></td><td>Lista gastos/ingresos recurrentes.</td></tr>
+  <tr><td><span class="method POST">POST</span></td><td><span class="rpath">/api/finanzas/recurrentes</span></td><td>Crea un recurrente.</td></tr>
+  <tr><td><span class="method PATCH">PATCH</span></td><td><span class="rpath">/api/finanzas/recurrentes/[id]</span></td><td>Activa/desactiva o edita un recurrente.</td></tr>
+  <tr><td><span class="method DELETE">DELETE</span></td><td><span class="rpath">/api/finanzas/recurrentes/[id]</span></td><td>Elimina un recurrente.</td></tr>
+  <tr><td><span class="method POST">POST</span></td><td><span class="rpath">/api/finanzas/import</span></td><td>Recibe el archivo (multipart/form-data), lo parsea y devuelve preview de transacciones sin guardar.</td></tr>
+  <tr><td><span class="method POST">POST</span></td><td><span class="rpath">/api/finanzas/import/confirm</span></td><td>Confirma la importación. Inserta todas las transacciones en un batch atómico de Prisma.</td></tr>
+  <tr><td><span class="method GET">GET</span></td><td><span class="rpath">/api/finanzas/export</span></td><td>Genera y descarga un Excel con todas las transacciones del usuario.</td></tr>
+</table>
+
+<!-- 6. LIBRERÍAS DE SERVIDOR -->
+<h1 class="s" id="libs">6. Librerías de servidor</h1>
+<p class="intro">Funciones reutilizables que viven en <code>src/lib/</code> y pueden ser importadas desde cualquier Server Component o API route.</p>
+
+<h2 class="s" id="lib-cotizaciones">cotizaciones.ts — Precios de activos</h2>
+<div class="fc">
+  <div class="fc-head"><span class="fc-path">src/lib/cotizaciones.ts</span><span class="tag t-lib">Server Library</span></div>
+  <div class="fc-body">
+    <ul class="fl">
+      <li><span class="fn">fetchCotizaciones(tickers: string[]): Promise&lt;Record&lt;string, Cotizacion&gt;&gt;</span><span class="fd">Llama a Yahoo Finance en paralelo para cada ticker. Devuelve un mapa ticker → datos. Cache de 5 minutos con next: { revalidate: 300 }. Si un ticker falla, igual devuelve el resto con el campo error.</span><span class="fi">Datos devueltos: precio actual, variación del día ($, %), rango del día (high/low), cierre anterior, rango de 52 semanas, estado del mercado (REGULAR, PRE, POST, CLOSED).</span></li>
+    </ul>
+  </div>
+</div>
+
+<h2 class="s" id="lib-recurring">apply-recurring.ts — Gastos automáticos</h2>
+<div class="fc">
+  <div class="fc-head"><span class="fc-path">src/lib/apply-recurring.ts</span><span class="tag t-lib">Server Library</span></div>
+  <div class="fc-body">
+    <ul class="fl">
+      <li><span class="fn">applyRecurringExpenses(userId: string)</span><span class="fd">Busca RecurringExpenses que: están activos, su dayOfMonth es menor o igual al día de hoy, y no fueron aplicados este mes (lastApplied &lt; inicio del mes actual). Los aplica todos en una sola transacción de Prisma ($transaction): crea las transacciones, actualiza los saldos de las wallets/cuentas, y actualiza lastApplied. Se llama en el layout de finanzas en cada visita.</span></li>
+    </ul>
+    <div class="note"><strong>Idempotente:</strong> si se llama varias veces el mismo mes, el filtro <code>lastApplied &lt; thisMonthStart</code> evita duplicados.</div>
+  </div>
+</div>
+
+<h2 class="s" id="lib-snapshot">save-wealth-snapshot.ts — Snapshot de patrimonio</h2>
+<div class="fc">
+  <div class="fc-head"><span class="fc-path">src/lib/save-wealth-snapshot.ts</span><span class="tag t-lib">Server Library</span></div>
+  <div class="fc-body">
+    <ul class="fl">
+      <li><span class="fn">saveWealthSnapshotIfNeeded(userId: string)</span><span class="fd">Verifica si ya existe un WealthSnapshot para el mes actual. Si no existe, calcula el patrimonio completo (billeteras ARS, cuentas foráneas USD, portfolio al precio actual de Yahoo Finance) y lo guarda. Esto alimenta el gráfico de evolución de patrimonio en el dashboard.</span><span class="fi">Solo crea un snapshot por mes. Si el usuario abre la app el día 1 y el 15, solo hay un snapshot del mes (el del día 1).</span></li>
+    </ul>
+  </div>
+</div>
+
+<h2 class="s" id="lib-import">import-parser.ts — Importador de datos</h2>
+<div class="fc">
+  <div class="fc-head"><span class="fc-path">src/lib/import-parser.ts</span><span class="tag t-lib">Server Library</span></div>
+  <div class="fc-body">
+    <p>Parsea 3 formatos de archivo diferentes y los convierte al mismo formato interno <code>ImportedTransaction[]</code>.</p>
+    <ul class="fl">
+      <li><span class="fn">parseExcel(buffer)</span><span class="fd">Lee un .xlsx con SheetJS. Detecta columnas automáticamente por nombre (acepta: "fecha", "date", "monto", "amount", "tipo", "type", "categoría", etc.). Maneja fechas en múltiples formatos (DD/MM/YYYY, YYYY-MM-DD, objetos Date).</span></li>
+      <li><span class="fn">parseJSON(text)</span><span class="fd">Parsea un JSON. Acepta array directo o { transactions: [...] } o { data: [...] }. Reutiliza la misma lógica de detección de columnas que Excel.</span></li>
+      <li><span class="fn">parseMmbackup(buffer)</span><span class="fd">El más complejo. Un .mmbackup es un ZIP con 8 bytes de prefijo propietario. Lo descomprime, extrae MyFinance.db (SQLite), lee las tablas 'transaction', 'category' y 'sync_link', resuelve el nombre de categoría de cada transacción y convierte los montos de centavos a pesos. Maneja cuentas ARS y USD. Ignora transacciones de cripto nativas de la app.</span></li>
+    </ul>
+  </div>
+</div>
+
+<h2 class="s" id="lib-expense">expense-parser.ts — Parseo con IA</h2>
+<div class="fc">
+  <div class="fc-head"><span class="fc-path">src/lib/expense-parser.ts</span><span class="tag t-lib">Server Library</span></div>
+  <div class="fc-body">
+    <ul class="fl">
+      <li><span class="fn">parseTransaction(text: string): Promise&lt;ParsedTransaction | null&gt;</span><span class="fd">Llama a Claude Haiku con el texto libre del usuario. El prompt le pide que devuelva JSON con: type, amount, currency, description, category. Detecta "k" para multiplicar por 1000, interpreta "verdes" / "cables" como USD, infiere si es gasto o ingreso por el verbo. Extrae el JSON incluso si Claude lo envuelve en bloques de código markdown.</span></li>
+    </ul>
+    <div class="note"><strong>Ejemplo:</strong> "me pagaron 50k de fotos al Farsa" → { type: "INCOME", amount: 50000, currency: "ARS", description: "Fotos al Farsa", category: "Fotografía" }</div>
+  </div>
+</div>
+
+<h2 class="s" id="lib-calendar">google-calendar.ts</h2>
+<div class="fc">
+  <div class="fc-head"><span class="fc-path">src/lib/google-calendar.ts</span><span class="tag t-lib">Server Library</span></div>
+  <div class="fc-body">
+    <ul class="fl">
+      <li><span class="fn">createCalendarEvent({ summary, description, startISO, durationMinutes })</span><span class="fd">Crea un evento. El timezone es siempre America/Argentina/Buenos_Aires. Devuelve el ID del evento para guardarlo en Session.googleCalendarId. Si las credenciales no están configuradas, devuelve null sin romper.</span></li>
+      <li><span class="fn">updateCalendarEvent(eventId, { startISO, durationMinutes })</span><span class="fd">Actualiza fecha/hora de un evento. Llamado cuando se edita la fecha de una sesión.</span></li>
+      <li><span class="fn">deleteCalendarEvent(eventId)</span><span class="fd">Elimina el evento. Llamado cuando se borra una sesión.</span></li>
+    </ul>
+    <div class="note"><strong>Tolerancia a fallos:</strong> todas las funciones tienen try/catch. Si falla Google, la operación en DB sigue adelante. Los errores se loguean en consola del servidor.</div>
+  </div>
+</div>
+
+<h2 class="s" id="lib-drive">google-drive.ts</h2>
+<div class="fc">
+  <div class="fc-head"><span class="fc-path">src/lib/google-drive.ts</span><span class="tag t-lib">Server Library</span></div>
+  <div class="fc-body">
+    <ul class="fl">
+      <li><span class="fn">findOrCreateFolder(name, parentId?)</span><span class="fd">Función interna. Busca si existe una carpeta con ese nombre en el padre. Si existe, devuelve su ID. Si no, la crea. Evita duplicados cuando se fotografía al mismo equipo en distintas fechas.</span></li>
+      <li><span class="fn">createSessionFolder({ clientName, date })</span><span class="fd">Crea la estructura: [Nombre Equipo] / [DD-MM-YYYY]. Nivel 1: carpeta del equipo (reutilizada si existe). Nivel 2: subcarpeta con la fecha. Devuelve { id, url } de la carpeta de fecha.</span></li>
+      <li><span class="fn">listPhotosInFolder(folderId)</span><span class="fd">Lista solo imágenes (mimeType contains 'image/') en una carpeta. Hasta 200 fotos, ordenadas por nombre.</span></li>
+      <li><span class="fn">listDriveFolder(folderId)</span><span class="fd">Lista carpetas E imágenes. "root" muestra el Drive raíz (Mi unidad). Carpetas primero, luego imágenes. Usado por el browser de Drive en el editor.</span></li>
+      <li><span class="fn">getThumbnailStream(fileId)</span><span class="fd">Obtiene el thumbnail de Drive. Los thumbnails de Drive requieren autenticación, por lo que esta función los descarga server-side con el access token y devuelve el stream para proxearlo. También aumenta el tamaño a s600 para mejor calidad.</span></li>
+      <li><span class="fn">extractFolderId(driveUrl)</span><span class="fd">Extrae el ID de una URL de Drive: /folders/([a-zA-Z0-9_-]+)</span></li>
+    </ul>
+  </div>
+</div>
+
+<!-- 7. MÓDULO FOTOGRAFÍA -->
+<h1 class="s" id="fotografia">7. Módulo Fotografía</h1>
+
+<h2 class="s" id="foto-dashboard">Dashboard — /fotografia</h2>
+<div class="fc">
+  <div class="fc-head"><span class="fc-path">src/app/(fotografia)/fotografia/page.tsx</span><span class="tag t-server">Server Component</span></div>
+  <div class="fc-body">
+    <ul class="fl">
+      <li><span class="fn">Próximas sesiones (protagonista)</span><span class="fd">Sesiones con estado PENDING o CONFIRMED y fecha futura. Cada una muestra un chip de fecha (día/semana/mes + hora) con overlay azul si es hoy. Máximo 5 sesiones.</span></li>
+      <li><span class="fn">Stats del mes</span><span class="fd">Sesiones del mes, revenue ARS, revenue USD, total clientes. Filtro: date >= startOfMonth && date < endOfMonth.</span></li>
+      <li><span class="fn">Por estado</span><span class="fd">Conteo de todas las sesiones agrupadas por status con badge de color.</span></li>
+      <li><span class="fn">Historial reciente</span><span class="fd">Las 4 sesiones más recientes ya pasadas o no-pendientes.</span></li>
+    </ul>
+    <div class="note"><strong>Timezone:</strong> todas las funciones de fecha usan timeZone: "America/Argentina/Buenos_Aires". La función isToday() compara la fecha en timezone AR, no UTC.</div>
+  </div>
+</div>
+
+<h2 class="s" id="foto-sesiones">Sesiones</h2>
+<div class="cards">
+  <div class="card"><div class="card-title">/fotografia/sesiones (lista)</div><p>Tabs de filtro con scroll horizontal. SessionForm arriba. Lista de SessionRow. El tab activo viene del searchParam ?status=. Tabs: Todas, Pendientes, Confirmadas, Disparadas, Entregadas, Pagadas, Completadas.</p></div>
+  <div class="card"><div class="card-title">/fotografia/sesiones/[id] (detalle)</div><p>Info completa de la sesión + grilla de fotos de Drive. Verifica ownership antes de mostrar. Carga fotos server-side con listPhotosInFolder(). Pasa las fotos al PhotoBrowser como props.</p></div>
+</div>
+<div class="fc" style="margin-top:14px;">
+  <div class="fc-head"><span class="fc-path">SessionForm.tsx — Crear sesión</span><span class="tag t-client">Client Component</span></div>
+  <div class="fc-body">
+    <ul class="fl">
+      <li><span class="fn">Combinación fecha + hora</span><span class="fd">Los campos date y time se combinan antes de enviar: `${dateVal}T${timeVal}:00-03:00`. El offset -03:00 garantiza que se guarde correctamente en UTC sin importar el timezone del servidor.</span></li>
+      <li><span class="fn">Campo eventName condicional</span><span class="fd">Solo aparece cuando type === "EVENT". Si el select cambia a otro tipo, el campo desaparece.</span></li>
+      <li><span class="fn">router.refresh()</span><span class="fd">Después de crear, fuerza a Next.js a re-ejecutar el Server Component de la página para actualizar la lista.</span></li>
+    </ul>
+  </div>
+</div>
+<div class="fc" style="margin-top:14px;">
+  <div class="fc-head"><span class="fc-path">SessionRow.tsx — Fila de sesión</span><span class="tag t-client">Client Component</span></div>
+  <div class="fc-body">
+    <ul class="fl">
+      <li><span class="fn">toLocalDate(iso) / toLocalTime(iso)</span><span class="fd">Convierte el datetime UTC de la DB a fecha y hora en Argentina para pre-poblar los inputs de edición correctamente.</span></li>
+      <li><span class="fn">Modo edición inline</span><span class="fd">Permite cambiar: estado, fecha, hora, precio, moneda, duración, fotos entregadas, link de Drive, notas. Todo en el mismo componente sin navegar a otra página.</span></li>
+      <li><span class="fn">Nombre como Link</span><span class="fd">El nombre clickea a /fotografia/sesiones/[id] para ver el detalle con las fotos.</span></li>
+      <li><span class="fn">Menú ⋯ con confirmación</span><span class="fd">El botón de eliminar requiere confirmación en dos pasos para evitar borrados accidentales.</span></li>
+    </ul>
+  </div>
+</div>
+
+<h2 class="s" id="foto-clientes">Clientes</h2>
+<div class="fc">
+  <div class="fc-head"><span class="fc-path">ClientForm.tsx + ClientRow.tsx</span><span class="tag t-client">Client Components</span></div>
+  <div class="fc-body">
+    <p>Misma estructura que SessionForm/SessionRow. ClientForm crea clientes con nombre, instagram (con @ automático en el placeholder), teléfono y notas. ClientRow muestra el conteo de sesiones y permite editar/eliminar inline.</p>
+  </div>
+</div>
+
+<h2 class="s" id="foto-servicios">Servicios</h2>
+<div class="fc">
+  <div class="fc-head"><span class="fc-path">src/app/(fotografia)/fotografia/servicios/page.tsx</span><span class="tag t-server">Server Component (estático)</span></div>
+  <div class="fc-body">
+    <p>Página sin queries a DB. Los datos están hardcodeados en el archivo.</p>
+    <ul class="fl">
+      <li><span class="fn">Tabla de deportes</span><span class="fd">Fútbol (3 variantes), Básquet (2), Hockey, Media Day. Con precio normal y precio promo (cuando ambos equipos coordinan).</span></li>
+      <li><span class="fn">Producto</span><span class="fd">2 variantes: solo ($35.000/h) y con ambiente ($40.000/h).</span></li>
+      <li><span class="fn">Mensajes predefinidos con CopyButton</span><span class="fd">8 mensajes para copiar y pegar en Instagram/WhatsApp. Con los emojis del original. CopyButton usa navigator.clipboard.writeText() y muestra un check verde por 2 segundos.</span></li>
+    </ul>
+  </div>
+</div>
+
+<h2 class="s" id="foto-editor">Editor de Stories — IA</h2>
+<div class="fc">
+  <div class="fc-head"><span class="fc-path">DesignEditor.tsx + /api/fotografia/editor</span><span class="tag t-client">Client + API</span></div>
+  <div class="fc-body">
+    <ul class="fl">
+      <li><span class="fn">generate(prompt, keepPrevious)</span><span class="fd">POST a /api/fotografia/editor con el prompt, la URL de la foto seleccionada y el HTML anterior (si keepPrevious=true para "Ajustar diseño"). Recibe { html } en JSON.</span></li>
+      <li><span class="fn">Drive browser</span><span class="fd">browseDrive(folderId) llama a /api/fotografia/drive/browse/[folderId]. Navega carpetas mostrando un breadcrumb. "root" muestra Mi unidad completa.</span></li>
+      <li><span class="fn">Preview iframe</span><span class="fd">El HTML se pasa como srcDoc. El iframe renderiza a 1080×1920 y se escala con transform: scale(0.333) para mostrar en un preview de 360×640 manteniendo el ratio 9:16.</span></li>
+      <li><span class="fn">openFullscreen()</span><span class="fd">Crea un Blob URL del HTML y lo abre en nueva pestaña a tamaño real para screenshotear.</span></li>
+    </ul>
+    <div class="note"><strong>Claude Sonnet 4.6:</strong> el editor usa claude-sonnet-4-6. El system prompt define la identidad visual de @stomas.ph: Bebas Neue, colores contextuales por deporte (rojo=fútbol, azul=básquet), overlay dual en fotos, logo al pie.</div>
+  </div>
+</div>
+
+<h2 class="s" id="foto-api">API Routes — Fotografía</h2>
+<table class="rt">
+  <tr><th>Método</th><th>Ruta</th><th>Descripción</th></tr>
+  <tr><td><span class="method GET">GET</span></td><td><span class="rpath">/api/fotografia/clients</span></td><td>Lista clientes del usuario ordenados por nombre, con conteo de sesiones.</td></tr>
+  <tr><td><span class="method POST">POST</span></td><td><span class="rpath">/api/fotografia/clients</span></td><td>Crea cliente con name, instagram, phone, notes.</td></tr>
+  <tr><td><span class="method PATCH">PATCH</span></td><td><span class="rpath">/api/fotografia/clients/[id]</span></td><td>Actualiza datos. Verifica que el cliente pertenezca al usuario.</td></tr>
+  <tr><td><span class="method DELETE">DELETE</span></td><td><span class="rpath">/api/fotografia/clients/[id]</span></td><td>Elimina cliente. Verifica ownership.</td></tr>
+  <tr><td><span class="method GET">GET</span></td><td><span class="rpath">/api/fotografia/sessions</span></td><td>Lista sesiones. Filtra por ?status=PENDING|CONFIRMED|etc.</td></tr>
+  <tr><td><span class="method POST">POST</span></td><td><span class="rpath">/api/fotografia/sessions</span></td><td>Crea sesión. En paralelo: crea carpeta en Drive + evento en Calendar. Guarda driveUrl y googleCalendarId.</td></tr>
+  <tr><td><span class="method PATCH">PATCH</span></td><td><span class="rpath">/api/fotografia/sessions/[id]</span></td><td>Actualiza sesión. Si status→PAID: crea ingreso en Finanzas. Si cambió fecha: actualiza evento de Calendar.</td></tr>
+  <tr><td><span class="method DELETE">DELETE</span></td><td><span class="rpath">/api/fotografia/sessions/[id]</span></td><td>Elimina sesión, sus transacciones vinculadas y el evento de Calendar.</td></tr>
+  <tr><td><span class="method GET">GET</span></td><td><span class="rpath">/api/fotografia/drive/[folderId]</span></td><td>Lista imágenes de una carpeta de Drive. Usado por PhotoBrowser en el detalle de sesión.</td></tr>
+  <tr><td><span class="method GET">GET</span></td><td><span class="rpath">/api/fotografia/drive/browse/[folderId]</span></td><td>Lista carpetas e imágenes. "root" = raíz de Mi unidad. Usado por el Drive browser del editor.</td></tr>
+  <tr><td><span class="method GET">GET</span></td><td><span class="rpath">/api/fotografia/drive/thumbnail/[fileId]</span></td><td>Proxy autenticado de thumbnails de Drive. Cache de 1 hora. Permite mostrar fotos privadas en el browser sin exponer tokens.</td></tr>
+  <tr><td><span class="method POST">POST</span></td><td><span class="rpath">/api/fotografia/editor</span></td><td>Llama a Claude Sonnet con el prompt y devuelve HTML para Instagram Story. extractHtml() limpia markdown si Claude lo incluye.</td></tr>
+</table>
+
+<!-- 8. FLUJOS CLAVE -->
+<h1 class="s" id="flows">8. Flujos de datos clave</h1>
+
+<h2 class="s">Registrar un gasto via QuickAdd con IA</h2>
+<div class="flow">
+  <div class="fs"><div class="fn2">1</div><div><div class="fl2">Usuario escribe: "gasté 5000 en el super"</div><div class="fs2">En el QuickAdd (botón + flotante), modo texto libre.</div></div></div>
+  <div class="fa">↓</div>
+  <div class="fs"><div class="fn2 p">2</div><div><div class="fl2">POST /api/finanzas/transactions con el texto</div><div class="fs2">expense-parser.ts llama a Claude Haiku. El prompt le pide JSON con type, amount, currency, description, category. Claude responde: { type: "EXPENSE", amount: 5000, currency: "ARS", description: "Supermercado", category: "Alimentación" }.</div></div></div>
+  <div class="fa">↓</div>
+  <div class="fs"><div class="fn2 y">3</div><div><div class="fl2">El formulario se pre-completa</div><div class="fs2">QuickAdd.tsx recibe el resultado y llena los campos. El usuario puede revisar y corregir antes de confirmar.</div></div></div>
+  <div class="fa">↓</div>
+  <div class="fs"><div class="fn2 g">4</div><div><div class="fl2">POST /api/finanzas/gastos</div><div class="fs2">Crea la Transaction en DB y decrementa el balance de la wallet seleccionada en una sola $transaction atómica de Prisma.</div></div></div>
+</div>
+
+<h2 class="s">Crear una sesión fotográfica</h2>
+<div class="flow">
+  <div class="fs"><div class="fn2">1</div><div><div class="fl2">SessionForm.tsx → POST /api/fotografia/sessions</div><div class="fs2">Fecha + hora combinadas con offset -03:00. Verifica que el cliente exista y pertenezca al usuario.</div></div></div>
+  <div class="fa">↓</div>
+  <div class="fs"><div class="fn2">2</div><div><div class="fl2">Se crea la sesión en la DB</div><div class="fs2">db.session.create() con status PENDING.</div></div></div>
+  <div class="fa">↓</div>
+  <div class="fs"><div class="fn2 y">3</div><div><div class="fl2">Promise.all(): Drive + Calendar en paralelo</div><div class="fs2">createSessionFolder() crea [Equipo]/[DD-MM-YYYY] en Drive. createCalendarEvent() crea el evento en Google Calendar. Si alguno falla, el otro sigue.</div></div></div>
+  <div class="fa">↓</div>
+  <div class="fs"><div class="fn2 g">4</div><div><div class="fl2">Guarda IDs externos + actualiza UI</div><div class="fs2">Si Drive devolvió URL → Session.driveUrl. Si Calendar devolvió ID → Session.googleCalendarId. router.refresh() actualiza la lista.</div></div></div>
+</div>
+
+<h2 class="s">Marcar sesión como PAID → ingreso automático en Finanzas</h2>
+<div class="flow">
+  <div class="fs"><div class="fn2">1</div><div><div class="fl2">SessionRow edición → status: "PAID"</div><div class="fs2">PATCH /api/fotografia/sessions/[id] con { status: "PAID", ...otros campos }.</div></div></div>
+  <div class="fa">↓</div>
+  <div class="fs"><div class="fn2">2</div><div><div class="fl2">Detección del cambio de estado</div><div class="fs2">body.status === "PAID" && existing.status !== "PAID" && existing._count.transactions === 0 → condición para crear el ingreso.</div></div></div>
+  <div class="fa">↓</div>
+  <div class="fs"><div class="fn2 g">3</div><div><div class="fl2">db.transaction.create() en Finanzas</div><div class="fs2">type=INCOME, source=PHOTOGRAPHY, amount=session.price, currency, category="Fotografía", sessionId=id.</div></div></div>
+  <div class="fa">↓</div>
+  <div class="fs"><div class="fn2 g">4</div><div><div class="fl2">Aparece en /finanzas/ingresos con badge "Fotografía"</div><div class="fs2">La query de ingresos incluye source IN [PERSONAL, PHOTOGRAPHY]. Las transacciones de fotografía son de solo lectura.</div></div></div>
+</div>
+
+<!-- 9. ENV -->
+<h1 class="s" id="env">9. Variables de entorno</h1>
+<p class="intro">Todas en el archivo <code>.env</code> (raíz del proyecto). Está en .gitignore y nunca sube a GitHub.</p>
+<table class="et">
+  <tr><th>Variable</th><th>Para qué</th><th></th></tr>
+  <tr><td><span class="ekey">DATABASE_URL</span></td><td>Conexión a PostgreSQL: postgresql://user:pass@host:5432/liford</td><td><span class="req">requerida</span></td></tr>
+  <tr><td><span class="ekey">SESSION_SECRET</span></td><td>Firma los JWT. Generá con: openssl rand -base64 32</td><td><span class="req">requerida</span></td></tr>
+  <tr><td><span class="ekey">ANTHROPIC_API_KEY</span></td><td>Para QuickAdd con IA (Claude Haiku) y Editor de Stories (Claude Sonnet)</td><td><span class="ereq">requerida para IA</span></td></tr>
+  <tr><td><span class="ekey">GOOGLE_CLIENT_ID</span></td><td>ID OAuth2 de Google Cloud Console</td><td><span class="ereq">requerida para Google</span></td></tr>
+  <tr><td><span class="ekey">GOOGLE_CLIENT_SECRET</span></td><td>Secreto OAuth2. No compartir.</td><td><span class="ereq">requerida para Google</span></td></tr>
+  <tr><td><span class="ekey">GOOGLE_REFRESH_TOKEN</span></td><td>Token de larga duración para Calendar + Drive. Se obtiene con: node scripts/google-auth.mjs</td><td><span class="ereq">requerida para Google</span></td></tr>
+  <tr><td><span class="ekey">GOOGLE_CALENDAR_ID</span></td><td>Calendario donde crear eventos. "primary" = calendario principal.</td><td><span class="eopt">opcional</span></td></tr>
+  <tr><td><span class="ekey">GOOGLE_DRIVE_PHOTOS_FOLDER_ID</span></td><td>ID de la carpeta raíz de Drive para sesiones. Sin esto, se crean en Mi unidad raíz.</td><td><span class="eopt">opcional</span></td></tr>
+</table>
+
+<!-- 10. SETUP -->
+<h1 class="s" id="setup">10. Setup inicial</h1>
+<div class="flow">
+  <div class="fs"><div class="fn2">1</div><div><div class="fl2">Clonar e instalar</div><div class="fs2"><code>npm install</code> en la raíz del proyecto.</div></div></div>
+  <div class="fs"><div class="fn2">2</div><div><div class="fl2">Configurar .env</div><div class="fs2">Copiar .env.example a .env y completar DATABASE_URL y SESSION_SECRET como mínimo.</div></div></div>
+  <div class="fs"><div class="fn2">3</div><div><div class="fl2">Crear la DB</div><div class="fs2"><code>npx prisma migrate dev</code> crea todas las tablas. <code>npx prisma generate</code> genera los tipos TypeScript.</div></div></div>
+  <div class="fs"><div class="fn2 y">4</div><div><div class="fl2">Configurar Google (opcional)</div><div class="fs2">Completar GOOGLE_CLIENT_ID y GOOGLE_CLIENT_SECRET. Correr <code>node scripts/google-auth.mjs</code> para obtener el REFRESH_TOKEN con scopes de Calendar + Drive.</div></div></div>
+  <div class="fs"><div class="fn2 g">5</div><div><div class="fl2">Correr</div><div class="fs2"><code>npm run dev</code> → localhost:3000. Registrar usuario en /api/auth/register (o usar el formulario si está implementado).</div></div></div>
+</div>
+<div class="warn" style="margin-top:16px;"><strong>Sin Google:</strong> la app funciona igual. Las sesiones se crean sin carpeta de Drive ni evento de Calendar. <strong>Sin ANTHROPIC_API_KEY:</strong> el QuickAdd de IA y el Editor de Stories no funcionan.</div>
+
+<hr class="divider">
+<div style="text-align:center;color:var(--muted);font-size:12px;padding-bottom:40px;">
+  Liford — Documentación Técnica Completa &nbsp;·&nbsp; Módulo Finanzas + Módulo Fotografía &nbsp;·&nbsp; Abril 2026
+</div>
+
+</div>
+</body>
+</html>

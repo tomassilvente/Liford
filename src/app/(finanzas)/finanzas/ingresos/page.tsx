@@ -46,7 +46,7 @@ export default async function IngresosPage({
       where: {
         userId,
         type: TransactionType.INCOME,
-        source: TransactionSource.PERSONAL,
+        source: { in: [TransactionSource.PERSONAL, TransactionSource.PHOTOGRAPHY] },
         date: { gte: from, lt: to },
       },
       orderBy: { date: "desc" },
@@ -98,6 +98,7 @@ export default async function IngresosPage({
                 currency={t.currency}
                 type="INCOME"
                 categories={CATEGORIAS_INGRESO}
+                source={t.source as "PERSONAL" | "PHOTOGRAPHY"}
               />
             ))}
           </div>

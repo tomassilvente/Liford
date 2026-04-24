@@ -1,5 +1,5 @@
 /**
- * Script para obtener el refresh_token de Google Calendar.
+ * Script para obtener el refresh_token de Google Calendar + Drive.
  *
  * Uso:
  *   1. Completá GOOGLE_CLIENT_ID y GOOGLE_CLIENT_SECRET en .env
@@ -10,7 +10,6 @@
  *   6. Copiá el refresh_token que aparece en .env
  */
 
-import { createServer } from "http";
 import { google } from "googleapis";
 import { config } from "dotenv";
 import readline from "readline";
@@ -24,13 +23,16 @@ if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) {
 }
 
 const REDIRECT_URI = "urn:ietf:wg:oauth:2.0:oob";
-const SCOPES = ["https://www.googleapis.com/auth/calendar.events"];
+const SCOPES = [
+  "https://www.googleapis.com/auth/calendar.events",
+  "https://www.googleapis.com/auth/drive",
+];
 
 const auth = new google.auth.OAuth2(GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, REDIRECT_URI);
 
 const url = auth.generateAuthUrl({ access_type: "offline", scope: SCOPES, prompt: "consent" });
 
-console.log("\n=== Google Calendar Auth ===");
+console.log("\n=== Google Calendar + Drive Auth ===");
 console.log("\nAbrí esta URL en el browser:\n");
 console.log(url);
 console.log("\n");

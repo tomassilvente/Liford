@@ -48,13 +48,13 @@ export default async function SesionesPage({
         <SessionForm clients={clients} />
       </div>
 
-      {/* Tabs de filtro */}
-      <div className="mt-8 flex flex-wrap gap-1">
+      {/* Tabs de filtro — scroll horizontal en mobile */}
+      <div className="mt-8 flex gap-1 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {STATUS_TABS.map((tab) => (
           <a
             key={tab.value}
             href={tab.value === "all" ? "/fotografia/sesiones" : `/fotografia/sesiones?status=${tab.value}`}
-            className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
+            className={`flex-shrink-0 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
               activeStatus === tab.value
                 ? "bg-neutral-700 text-white"
                 : "text-neutral-500 hover:bg-neutral-800 hover:text-neutral-300"

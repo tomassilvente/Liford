@@ -129,7 +129,7 @@ export default function ClientRow(props: ClientRowProps) {
     <div className="flex items-center gap-3 px-4 py-3">
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-medium text-white">{props.name}</p>
-        <p className="text-xs text-neutral-500">
+        <p className="truncate text-xs text-neutral-500">
           {props.instagram ? `@${props.instagram}` : ""}
           {props.instagram && props.phone ? " · " : ""}
           {props.phone ?? ""}

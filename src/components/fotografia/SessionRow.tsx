@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { LuPencil, LuTrash2, LuCheck, LuX, LuEllipsis, LuExternalLink } from "react-icons/lu";
+import Link from "next/link";
+import { LuPencil, LuTrash2, LuCheck, LuX, LuEllipsis, LuExternalLink, LuImages } from "react-icons/lu";
 
 const TZ = "America/Argentina/Buenos_Aires";
 
@@ -143,7 +144,7 @@ export default function SessionRow(props: SessionRowProps) {
   if (editing) {
     return (
       <div className="flex flex-col gap-3 px-4 py-4">
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+        <div className="grid grid-cols-2 gap-2">
           {/* Estado */}
           <div>
             <p className="mb-1 text-xs text-neutral-500">Estado</p>
@@ -278,23 +279,28 @@ export default function SessionRow(props: SessionRowProps) {
   }
 
   return (
-    <div className="flex items-center gap-3 px-4 py-3">
+    <div className="flex items-center gap-2 px-4 py-3">
       <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2">
-          <p className="truncate text-sm font-medium text-white">{props.clientName}</p>
+        <div className="flex items-center gap-1.5">
+          <Link
+            href={`/fotografia/sesiones/${props.id}`}
+            className="truncate text-sm font-medium text-white hover:text-blue-400 transition-colors"
+          >
+            {props.clientName}
+          </Link>
           {props.driveUrl && (
             <a
               href={props.driveUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-neutral-500 hover:text-cyan-400 transition-colors"
-              title="Ver Drive"
+              className="flex-shrink-0 text-neutral-500 hover:text-cyan-400 transition-colors"
+              title="Ver carpeta en Drive"
             >
-              <LuExternalLink size={13} />
+              <LuImages size={12} />
             </a>
           )}
         </div>
-        <p className="text-xs text-neutral-500">
+        <p className="truncate text-xs text-neutral-500">
           {TYPE_LABELS[props.type]}
           {props.eventName ? ` — ${props.eventName}` : ""}
           {" · "}{fmtDateTime(props.date)}

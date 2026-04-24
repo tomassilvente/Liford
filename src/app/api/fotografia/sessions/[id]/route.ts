@@ -2,6 +2,9 @@ import { db } from "@/lib/db";
 import { NextRequest } from "next/server";
 import { getApiSession } from "@/lib/auth";
 import { updateCalendarEvent, deleteCalendarEvent } from "@/lib/google-calendar";
+import { TransactionType, TransactionSource } from "@/generated/prisma/enums";
+
+const TYPE_LABELS: Record<string, string> = { SPORT: "Deporte", EVENT: "Evento", OTHER: "Otro" };
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const authSession = await getApiSession();
@@ -12,7 +15,10 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
   const existing = await db.session.findUnique({
     where: { id },
-    include: { client: { select: { userId: true, name: true } } },
+    include: {
+      client: { select: { userId: true, name: true } },
+      _count: { select: { transactions: true } },
+    },
   });
   if (!existing || existing.client.userId !== authSession.userId) {
     return Response.json({ error: "Sesión no encontrada" }, { status: 404 });
@@ -35,7 +41,34 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     include: { client: { select: { name: true, instagram: true } } },
   });
 
-  // Actualizar evento en Google Calendar si cambiaron fecha o duración
+  // ── Auto-registrar ingreso en finanzas al marcar como PAID ────────────────
+  const becomingPaid = body.status === "PAID" && existing.status !== "PAID";
+  const noTransactionYet = existing._count.transactions === 0;
+
+  if (becomingPaid && noTransactionYet) {
+    const price = body.price !== undefined ? Number(body.price) : existing.price;
+    const currency = body.currency ?? existing.currency;
+    const typeLabel = TYPE_LABELS[existing.type] ?? existing.type;
+    const description = existing.eventName
+      ? `${existing.eventName} (${typeLabel})`
+      : `${existing.client.name} — ${typeLabel}`;
+
+    await db.transaction.create({
+      data: {
+        userId: authSession.userId,
+        type: TransactionType.INCOME,
+        source: TransactionSource.PHOTOGRAPHY,
+        amount: price,
+        currency,
+        category: "Fotografía",
+        description,
+        date: existing.date,
+        sessionId: id,
+      },
+    });
+  }
+
+  // ── Actualizar Google Calendar si cambió fecha o duración ─────────────────
   if (existing.googleCalendarId && (body.date !== undefined || body.durationMinutes !== undefined)) {
     const newDate = body.date ? new Date(body.date) : existing.date;
     const newDuration = body.durationMinutes ?? existing.durationMinutes ?? 120;
@@ -62,6 +95,8 @@ export async function DELETE(_: NextRequest, { params }: { params: Promise<{ id:
     return Response.json({ error: "Sesión no encontrada" }, { status: 404 });
   }
 
+  // Eliminar transacciones vinculadas antes de borrar la sesión
+  await db.transaction.deleteMany({ where: { sessionId: id } });
   await db.session.delete({ where: { id } });
 
   if (existing.googleCalendarId) {

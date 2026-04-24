@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { LuPencil, LuTrash2 } from "react-icons/lu";
+import { LuPencil, LuTrash2, LuCheck, LuX } from "react-icons/lu";
+import { toast } from "sonner";
 import type { WalletModel as Wallet } from "@/generated/prisma/models";
 
 function formatCurrency(amount: number, currency: string) {
@@ -15,21 +16,52 @@ function formatCurrency(amount: number, currency: string) {
 
 export default function WalletCard({ wallet }: { wallet: Wallet }) {
   const router = useRouter();
-  const [editing, setEditing] = useState(false);
+  const [editingName, setEditingName] = useState(false);
+  const [editingBalance, setEditingBalance] = useState(false);
   const [name, setName] = useState(wallet.name);
   const [balance, setBalance] = useState(String(wallet.balance));
   const [loading, setLoading] = useState(false);
+  const balanceInputRef = useRef<HTMLInputElement>(null);
 
-  async function handleSave() {
+  useEffect(() => {
+    if (editingBalance) balanceInputRef.current?.select();
+  }, [editingBalance]);
+
+  async function saveBalance() {
+    const newBalance = Number(balance);
+    if (isNaN(newBalance)) { setBalance(String(wallet.balance)); setEditingBalance(false); return; }
+    if (newBalance === wallet.balance) { setEditingBalance(false); return; }
+
     setLoading(true);
-    await fetch(`/api/finanzas/wallets/${wallet.id}`, {
+    const res = await fetch(`/api/finanzas/wallets/${wallet.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, balance }),
+      body: JSON.stringify({ balance: newBalance }),
     });
     setLoading(false);
-    setEditing(false);
-    router.refresh();
+    setEditingBalance(false);
+
+    if (res.ok) {
+      toast.success("Saldo actualizado");
+      router.refresh();
+    } else {
+      toast.error("No se pudo actualizar");
+      setBalance(String(wallet.balance));
+    }
+  }
+
+  async function saveName() {
+    if (!name.trim()) { setName(wallet.name); setEditingName(false); return; }
+    setLoading(true);
+    const res = await fetch(`/api/finanzas/wallets/${wallet.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name }),
+    });
+    setLoading(false);
+    setEditingName(false);
+    if (res.ok) { router.refresh(); }
+    else { toast.error("No se pudo actualizar"); setName(wallet.name); }
   }
 
   async function handleDelete() {
@@ -38,74 +70,81 @@ export default function WalletCard({ wallet }: { wallet: Wallet }) {
     router.refresh();
   }
 
-  if (editing) {
-    return (
-      <div className="rounded-xl bg-neutral-800 p-5 ring-1 ring-blue-500">
-        <div className="flex flex-col gap-3">
-          <input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="rounded-lg bg-neutral-900 px-3 py-2 text-sm text-white outline-none ring-1 ring-neutral-700 focus:ring-blue-500"
-          />
-          <div>
-            <label className="mb-1 block text-xs text-neutral-400">Saldo actual</label>
-            <input
-              type="number"
-              value={balance}
-              onChange={(e) => setBalance(e.target.value)}
-              step="0.01"
-              className="w-full rounded-lg bg-neutral-900 px-3 py-2 text-sm text-white outline-none ring-1 ring-neutral-700 focus:ring-blue-500"
-            />
-          </div>
-          <div className="flex gap-2">
-            <button
-              onClick={handleSave}
-              disabled={loading}
-              className="rounded-lg bg-blue-600 px-4 py-1.5 text-xs font-medium text-white hover:bg-blue-500 disabled:opacity-50"
-            >
-              Guardar
-            </button>
-            <button
-              onClick={() => setEditing(false)}
-              className="rounded-lg bg-neutral-700 px-4 py-1.5 text-xs font-medium text-white hover:bg-neutral-600"
-            >
-              Cancelar
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="group relative rounded-xl bg-neutral-800 p-5">
-      <div className="flex items-start justify-between">
-        <div>
-          <p className="text-sm text-neutral-400">{wallet.name}</p>
-          <p className={`mt-1 text-2xl font-bold ${wallet.balance < 0 ? "text-red-400" : "text-white"}`}>
-            {formatCurrency(wallet.balance, wallet.currency)}
-          </p>
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0 flex-1">
+
+          {/* Nombre */}
+          {editingName ? (
+            <div className="flex items-center gap-1.5 mb-1">
+              <input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") saveName(); if (e.key === "Escape") { setName(wallet.name); setEditingName(false); } }}
+                autoFocus
+                className="rounded-lg bg-neutral-900 px-2 py-1 text-sm text-white outline-none ring-1 ring-blue-500 w-full"
+              />
+              <button onClick={saveName} disabled={loading} className="text-green-400 hover:text-green-300 flex-shrink-0"><LuCheck size={15} /></button>
+              <button onClick={() => { setName(wallet.name); setEditingName(false); }} className="text-neutral-500 hover:text-neutral-300 flex-shrink-0"><LuX size={15} /></button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setEditingName(true)}
+              className="text-sm text-neutral-400 hover:text-neutral-200 transition-colors text-left"
+            >
+              {wallet.name}
+            </button>
+          )}
+
+          {/* Balance — clickeable para editar */}
+          {editingBalance ? (
+            <div className="flex items-center gap-1.5 mt-1">
+              <input
+                ref={balanceInputRef}
+                type="number"
+                value={balance}
+                onChange={(e) => setBalance(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") saveBalance(); if (e.key === "Escape") { setBalance(String(wallet.balance)); setEditingBalance(false); } }}
+                onBlur={saveBalance}
+                step="0.01"
+                className="rounded-lg bg-neutral-900 px-3 py-1.5 text-xl font-bold text-white outline-none ring-1 ring-blue-500 w-full [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              />
+            </div>
+          ) : (
+            <button
+              onClick={() => { setBalance(String(wallet.balance)); setEditingBalance(true); }}
+              title="Tocar para editar el saldo"
+              className={`mt-1 text-left text-2xl font-bold transition-colors hover:opacity-70 ${
+                wallet.balance < 0 ? "text-red-400" : "text-white"
+              }`}
+            >
+              {formatCurrency(wallet.balance, wallet.currency)}
+            </button>
+          )}
+
           <span className="mt-2 inline-block rounded-full bg-neutral-700 px-2 py-0.5 text-xs text-neutral-300">
             {wallet.currency}
           </span>
         </div>
-        <div className="flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-          <button
-            onClick={() => setEditing(true)}
-            className="rounded-lg p-1.5 text-neutral-400 hover:bg-neutral-700 hover:text-white"
-            title="Editar"
-          >
-            <LuPencil size={14} />
-          </button>
-          <button
-            onClick={handleDelete}
-            className="rounded-lg p-1.5 text-neutral-400 hover:bg-neutral-700 hover:text-red-400"
-            title="Eliminar"
-          >
-            <LuTrash2 size={14} />
-          </button>
-        </div>
+
+        {/* Botón eliminar */}
+        <button
+          onClick={handleDelete}
+          className="rounded-lg p-1.5 text-neutral-600 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-neutral-700 hover:text-red-400"
+          title="Eliminar billetera"
+        >
+          <LuTrash2 size={14} />
+        </button>
       </div>
+
+      {/* Hint edición inline */}
+      {!editingBalance && !editingName && (
+        <p className="mt-2 flex items-center gap-1 text-xs text-neutral-700">
+          <LuPencil size={10} />
+          Tocá el saldo o el nombre para editar
+        </p>
+      )}
     </div>
   );
 }

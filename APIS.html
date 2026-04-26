@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Liford — Cómo funciona cada API</title>
+<style>
+  :root {
+    --bg: #0a0a0a; --card: #141414; --card2: #1c1c1c;
+    --border: #252525; --text: #ddd; --muted: #666;
+    --blue: #4a9eff; --green: #4ade80; --yellow: #fbbf24;
+    --red: #f87171; --purple: #c084fc; --cyan: #22d3ee;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--bg); color:var(--text); font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; font-size:14px; line-height:1.75; }
+  .page { max-width:860px; margin:0 auto; padding:60px 36px; }
+
+  h1 { font-size:36px; font-weight:800; color:#fff; letter-spacing:-1px; }
+  h1 span { color:var(--blue); }
+  .subtitle { color:var(--muted); margin-top:8px; font-size:15px; }
+
+  h2 { font-size:22px; font-weight:700; color:#fff; margin:56px 0 6px; padding-bottom:10px; border-bottom:2px solid var(--blue); }
+  h3 { font-size:16px; font-weight:600; color:var(--cyan); margin:28px 0 8px; }
+
+  p { color:var(--muted); margin-bottom:10px; }
+  p strong { color:var(--text); }
+  p em { color:var(--yellow); font-style:normal; }
+
+  /* Patron box */
+  .pattern { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:24px 28px; margin:20px 0; }
+  .pattern-title { font-size:11px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:var(--muted); margin-bottom:14px; }
+  .step { display:flex; gap:14px; margin:10px 0; }
+  .step-num { width:24px; height:24px; border-radius:50%; background:var(--blue); color:#000; font-weight:800; font-size:11px; display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-top:2px; }
+  .step-num.g { background:var(--green); }
+  .step-num.y { background:var(--yellow); }
+  .step-num.r { background:var(--red); }
+  .step-body { flex:1; }
+  .step-title { font-weight:600; color:#fff; font-size:13px; }
+  .step-desc { font-size:13px; color:var(--muted); margin-top:2px; }
+  .arr { color:var(--border); margin:2px 0 2px 12px; }
+
+  /* Route card */
+  .route { background:var(--card); border:1px solid var(--border); border-radius:10px; margin:14px 0; overflow:hidden; }
+  .route-head { padding:13px 20px; display:flex; align-items:center; gap:12px; background:var(--card2); }
+  .method { font-family:'SF Mono','Fira Code',monospace; font-weight:700; font-size:11px; border-radius:4px; padding:3px 9px; flex-shrink:0; }
+  .GET    { background:rgba(74,222,128,.12); color:var(--green); }
+  .POST   { background:rgba(74,158,255,.12); color:var(--blue); }
+  .PATCH  { background:rgba(251,191,36,.12); color:var(--yellow); }
+  .DELETE { background:rgba(248,113,113,.12); color:var(--red); }
+  .route-path { font-family:'SF Mono','Fira Code',monospace; font-size:12px; color:var(--cyan); }
+  .route-name { font-size:13px; color:var(--muted); margin-left:auto; }
+  .route-body { padding:16px 20px; }
+  .route-body p { margin-bottom:8px; font-size:13px; }
+  .route-body p:last-child { margin-bottom:0; }
+
+  /* Recibe / Devuelve boxes */
+  .io { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:12px 0; }
+  .io-box { background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:12px 14px; }
+  .io-title { font-size:10px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; margin-bottom:8px; }
+  .io-title.in  { color:var(--blue); }
+  .io-title.out { color:var(--green); }
+  .io-body { font-size:12px; color:var(--muted); }
+  .io-body code { color:var(--yellow); font-family:'SF Mono','Fira Code',monospace; font-size:11px; }
+
+  /* Nota / warning */
+  .nota { background:rgba(74,158,255,.07); border:1px solid rgba(74,158,255,.2); border-radius:7px; padding:10px 14px; margin:10px 0; font-size:13px; color:var(--muted); }
+  .nota strong { color:var(--blue); }
+  .warn { background:rgba(251,191,36,.07); border:1px solid rgba(251,191,36,.2); border-radius:7px; padding:10px 14px; margin:10px 0; font-size:13px; color:var(--muted); }
+  .warn strong { color:var(--yellow); }
+
+  code { font-family:'SF Mono','Fira Code',monospace; font-size:12px; color:var(--yellow); background:rgba(251,191,36,.08); border-radius:3px; padding:1px 5px; }
+
+  .divider { border:none; border-top:1px solid var(--border); margin:48px 0; }
+
+  @media print {
+    body { background:#fff; color:#111; }
+    :root { --bg:#fff;--card:#f5f5f5;--card2:#ebebeb;--border:#ddd;--text:#111;--muted:#555;--blue:#1a56db;--green:#057a55;--yellow:#92400e;--red:#9b1c1c;--purple:#6b21a8;--cyan:#0e7490; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+<div style="margin-bottom:48px;">
+  <h1>Cómo funciona <span>cada API</span></h1>
+  <p class="subtitle">Una explicación en lenguaje llano de qué hace cada ruta, qué recibe y qué devuelve — sin asumir que sabés cómo funciona.</p>
+</div>
+
+<!-- CONCEPTO BASE -->
+<h2>Primero: ¿qué es una API route?</h2>
+
+<p>Cada vez que hacés algo en la app (guardar un gasto, crear una sesión, borrar un cliente), el browser le manda un pedido al servidor. Ese pedido llega a una <strong>API route</strong> — una función que vive en el servidor, hace lo que tiene que hacer, y le responde al browser.</p>
+
+<p>Hay cuatro tipos de pedido, y cada uno tiene una intención:</p>
+
+<div class="pattern">
+  <div class="step"><div class="step-num" style="background:var(--green)">G</div><div class="step-body"><div class="step-title">GET — "Dame información"</div><div class="step-desc">No cambia nada. Solo lee la DB y devuelve datos. Ej: traer la lista de gastos del mes.</div></div></div>
+  <div class="step"><div class="step-num" style="background:var(--blue)">P</div><div class="step-body"><div class="step-title">POST — "Creá algo nuevo"</div><div class="step-desc">Recibe datos y crea un nuevo registro en la DB. Ej: crear un gasto, una billetera, una sesión.</div></div></div>
+  <div class="step"><div class="step-num" style="background:var(--yellow)">A</div><div class="step-body"><div class="step-title">PATCH — "Modificá algo que ya existe"</div><div class="step-desc">Recibe los campos a cambiar y actualiza el registro. Ej: editar el nombre de una billetera, cambiar el estado de una sesión.</div></div></div>
+  <div class="step"><div class="step-num" style="background:var(--red)">D</div><div class="step-body"><div class="step-title">DELETE — "Eliminá algo"</div><div class="step-desc">Borra un registro de la DB. Ej: eliminar un gasto, un cliente, una inversión.</div></div></div>
+</div>
+
+<h3>El patrón que siguen TODAS las rutas</h3>
+<p>Sin excepción, cada ruta hace estos pasos en orden:</p>
+
+<div class="pattern">
+  <div class="pattern-title">Patrón universal</div>
+  <div class="step"><div class="step-num">1</div><div class="step-body"><div class="step-title">Verificar que el usuario esté logueado</div><div class="step-desc">Llama a <code>getApiSession()</code>. Lee la cookie de sesión y verifica el JWT. Si no hay sesión válida, devuelve error 401 y para todo.</div></div></div>
+  <div class="arr">↓</div>
+  <div class="step"><div class="step-num">2</div><div class="step-body"><div class="step-title">Leer lo que mandó el browser</div><div class="step-desc">Para GET: lee los parámetros de la URL (ej: <code>?mes=2026-04</code>). Para POST/PATCH: lee el JSON del body (<code>request.json()</code>).</div></div></div>
+  <div class="arr">↓</div>
+  <div class="step"><div class="step-num">3</div><div class="step-body"><div class="step-title">Verificar que los datos le pertenecen al usuario</div><div class="step-desc">Siempre filtra por <code>userId</code>. Esto evita que alguien acceda a los datos de otro usuario aunque consiga el ID.</div></div></div>
+  <div class="arr">↓</div>
+  <div class="step"><div class="step-num y">4</div><div class="step-body"><div class="step-title">Ejecutar la operación en la base de datos</div><div class="step-desc">Acá es donde realmente pasa algo: create, update, delete, findMany. Usando Prisma.</div></div></div>
+  <div class="arr">↓</div>
+  <div class="step"><div class="step-num g">5</div><div class="step-body"><div class="step-title">Responder al browser</div><div class="step-desc"><code>Response.json(datos)</code> devuelve el resultado. El browser lo recibe y actualiza la pantalla.</div></div></div>
+</div>
+
+<hr class="divider">
+
+<!-- FINANZAS - BILLETERAS -->
+<h2>Billeteras</h2>
+<p>Las billeteras son las cuentas donde guardás plata. Pueden ser ARS o USD. El balance se actualiza automáticamente cada vez que registrás un gasto o ingreso vinculado a esa billetera.</p>
+
+<div class="route">
+  <div class="route-head">
+    <span class="method GET">GET</span>
+    <span class="route-path">/api/finanzas/wallets</span>
+    <span class="route-name">Traer todas las billeteras</span>
+  </div>
+  <div class="route-body">
+    <p>Busca en la DB todas las billeteras que le pertenecen al usuario logueado y las devuelve en orden por nombre.</p>
+    <div class="io">
+      <div class="io-box"><div class="io-title in">Recibe</div><div class="io-body">Nada. Solo la cookie de sesión para saber quién es.</div></div>
+      <div class="io-box"><div class="io-title out">Devuelve</div><div class="io-body">Array de billeteras: <code>[ { id, name, currency, balance }, ... ]</code></div></div>
+    </div>
+    <p><strong>¿Cuándo se llama?</strong> Al abrir /finanzas/billeteras y también en el layout al cargar el QuickAdd (necesita saber las billeteras disponibles).</p>
+  </div>
+</div>
+
+<div class="route">
+  <div class="route-head">
+    <span class="method POST">POST</span>
+    <span class="route-path">/api/finanzas/wallets</span>
+    <span class="route-name">Crear billetera</span>
+  </div>
+  <div class="route-body">
+    <p>Crea una nueva billetera con saldo inicial en cero.</p>
+    <div class="io">
+      <div class="io-box"><div class="io-title in">Recibe</div><div class="io-body"><code>{ name: "Mercado Pago", currency: "ARS" }</code></div></div>
+      <div class="io-box"><div class="io-title out">Devuelve</div><div class="io-body">La billetera recién creada con su <code>id</code> generado.</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="route">
+  <div class="route-head">
+    <span class="method PATCH">PATCH</span>
+    <span class="route-path">/api/finanzas/wallets/[id]</span>
+    <span class="route-name">Editar billetera</span>
+  </div>
+  <div class="route-body">
+    <p>Actualiza el nombre y/o el balance de una billetera. Si mandás solo el nombre, solo cambia el nombre. Si mandás solo el balance, solo cambia el balance. Podés mandar ambos.</p>
+    <div class="io">
+      <div class="io-box"><div class="io-title in">Recibe</div><div class="io-body"><code>{ name?: "Nuevo nombre", balance?: 50000 }</code><br><br>Todos los campos son opcionales.</div></div>
+      <div class="io-box"><div class="io-title out">Devuelve</div><div class="io-body">La billetera actualizada.</div></div>
+    </div>
+    <div class="warn"><strong>Importante:</strong> cuando editás el balance directamente (tocando el número en la pantalla), estás usando esta ruta. El balance nuevo reemplaza al anterior — no suma ni resta, <em>sobreescribe</em>. Esto es intencional para correcciones manuales.</div>
+  </div>
+</div>
+
+<div class="route">
+  <div class="route-head">
+    <span class="method DELETE">DELETE</span>
+    <span class="route-path">/api/finanzas/wallets/[id]</span>
+    <span class="route-name">Eliminar billetera</span>
+  </div>
+  <div class="route-body">
+    <p>Elimina la billetera. Las transacciones que estaban vinculadas a ella quedan en la DB pero sin referencia a ninguna billetera.</p>
+    <div class="io">
+      <div class="io-box"><div class="io-title in">Recibe</div><div class="io-body">Solo el <code>id</code> en la URL.</div></div>
+      <div class="io-box"><div class="io-title out">Devuelve</div><div class="io-body">Nada (status 204 = "ok, sin contenido").</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- CUENTAS FORANEAS -->
+<h2>Cuentas Foráneas</h2>
+<p>Cuentas en el exterior (Wise, Payoneer, brokers, etc.). A diferencia de las billeteras normales, el balance se puede editar manualmente porque son cuentas externas que no se actualizan automáticamente con transacciones.</p>
+
+<div class="route">
+  <div class="route-head"><span class="method GET">GET</span><span class="route-path">/api/finanzas/foreign-accounts</span><span class="route-name">Traer cuentas foráneas</span></div>
+  <div class="route-body"><p>Igual que wallets. Devuelve todas las cuentas foráneas del usuario.</p></div>
+</div>
+
+<div class="route">
+  <div class="route-head"><span class="method POST">POST</span><span class="route-path">/api/finanzas/foreign-accounts</span><span class="route-name">Crear cuenta foránea</span></div>
+  <div class="route-body">
+    <div class="io">
+      <div class="io-box"><div class="io-title in">Recibe</div><div class="io-body"><code>{ name: "Wise", currency: "USD", balance: 0, notes?: "..." }</code></div></div>
+      <div class="io-box"><div class="io-title out">Devuelve</div><div class="io-body">La cuenta creada.</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="route">
+  <div class="route-head"><span class="method PATCH">PATCH</span><span class="route-path">/api/finanzas/foreign-accounts/[id]</span><span class="route-name">Editar cuenta foránea</span></div>
+  <div class="route-body">
+    <p>Permite cambiar el nombre, el balance o las notas. El balance se puede sobreescribir directamente para sincronizarlo con el balance real de la cuenta.</p>
+    <div class="io">
+      <div class="io-box"><div class="io-title in">Recibe</div><div class="io-body"><code>{ name?, balance?, notes? }</code></div></div>
+      <div class="io-box"><div class="io-title out">Devuelve</div><div class="io-body">La cuenta actualizada.</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="route">
+  <div class="route-head"><span class="method DELETE">DELETE</span><span class="route-path">/api/finanzas/foreign-accounts/[id]</span><span class="route-name">Eliminar cuenta foránea</span></div>
+  <div class="route-body"><p>Elimina la cuenta foránea.</p></div>
+</div>
+
+<!-- GASTOS -->
+<h2>Gastos</h2>
+
+<div class="route">
+  <div class="route-head"><span class="method POST">POST</span><span class="route-path">/api/finanzas/gastos</span><span class="route-name">Registrar un gasto</span></div>
+  <div class="route-body">
+    <p>Esta es la ruta más importante del módulo de finanzas. Hace <strong>dos cosas al mismo tiempo</strong> (atómicamente, usando una transacción de Prisma — si una falla, la otra no se ejecuta).</p>
+    <div class="io">
+      <div class="io-box"><div class="io-title in">Recibe</div><div class="io-body"><code>{ description, amount, category, date, walletId? }</code><br><br>O en lugar de <code>walletId</code>: <code>foreignAccountId</code></div></div>
+      <div class="io-box"><div class="io-title out">Devuelve</div><div class="io-body">La transacción creada con su <code>id</code>.</div></div>
+    </div>
+    <div class="pattern" style="margin-top:12px;">
+      <div class="pattern-title">Lo que pasa adentro</div>
+      <div class="step"><div class="step-num">1</div><div class="step-body"><div class="step-title">Verifica que la billetera existe y es tuya</div><div class="step-desc">Busca la wallet por id Y por userId. Si alguien intenta usar el id de la billetera de otro usuario, falla.</div></div></div>
+      <div class="arr">↓</div>
+      <div class="step"><div class="step-num y">2</div><div class="step-body"><div class="step-title">db.$transaction([...]) — las dos cosas juntas</div><div class="step-desc">Crea la Transaction en la tabla de transacciones. Y simultáneamente hace <code>balance: { decrement: amount }</code> en la wallet. Las dos operaciones se ejecutan o ninguna.</div></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- INGRESOS -->
+<h2>Ingresos</h2>
+
+<div class="route">
+  <div class="route-head"><span class="method POST">POST</span><span class="route-path">/api/finanzas/ingresos</span><span class="route-name">Registrar un ingreso</span></div>
+  <div class="route-body">
+    <p>Exactamente igual que gastos pero al revés. En lugar de <code>decrement</code>, hace <code>increment</code> en el balance de la wallet. La transacción queda con <code>type: INCOME</code> y <code>source: PERSONAL</code>.</p>
+    <div class="io">
+      <div class="io-box"><div class="io-title in">Recibe</div><div class="io-body"><code>{ description, amount, category, date, walletId? }</code></div></div>
+      <div class="io-box"><div class="io-title out">Devuelve</div><div class="io-body">La transacción creada.</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- TRANSACCIONES -->
+<h2>Transacciones (editar y borrar)</h2>
+
+<div class="route">
+  <div class="route-head"><span class="method POST">POST</span><span class="route-path">/api/finanzas/transactions</span><span class="route-name">Parsear con IA (QuickAdd)</span></div>
+  <div class="route-body">
+    <p>Esta ruta es la que usa el QuickAdd cuando escribís en lenguaje natural. <strong>No guarda nada</strong>. Solo parsea el texto y devuelve lo que entendió para que vos lo confirmes.</p>
+    <div class="io">
+      <div class="io-box"><div class="io-title in">Recibe</div><div class="io-body"><code>{ text: "gasté 5000 en el super" }</code></div></div>
+      <div class="io-box"><div class="io-title out">Devuelve</div><div class="io-body"><code>{ type: "EXPENSE", amount: 5000, currency: "ARS", description: "Supermercado", category: "Alimentación" }</code></div></div>
+    </div>
+    <div class="nota"><strong>Claude Haiku:</strong> internamente llama a expense-parser.ts que llama a Claude Haiku con un prompt específico. Haiku es más rápido y barato que Sonnet para esta tarea porque la respuesta esperada es simple y estructurada.</div>
+  </div>
+</div>
+
+<div class="route">
+  <div class="route-head"><span class="method PATCH">PATCH</span><span class="route-path">/api/finanzas/transactions/[id]</span><span class="route-name">Editar transacción</span></div>
+  <div class="route-body">
+    <p>Permite cambiar la descripción, categoría y monto de una transacción ya guardada. Se usa cuando clickeás el ícono de editar en una fila de gasto/ingreso.</p>
+    <div class="io">
+      <div class="io-box"><div class="io-title in">Recibe</div><div class="io-body"><code>{ description?, category?, amount? }</code></div></div>
+      <div class="io-box"><div class="io-title out">Devuelve</div><div class="io-body">La transacción actualizada.</div></div>
+    </div>
+    <div class="warn"><strong>No actualiza el balance de la wallet.</strong> Si cambiás el monto de un gasto de $1000 a $2000, el balance de la wallet no cambia automáticamente. Esto es una limitación conocida — para ajustes de monto, lo más limpio es eliminar y volver a registrar.</div>
+  </div>
+</div>
+
+<div class="route">
+  <div class="route-head"><span class="method DELETE">DELETE</span><span class="route-path">/api/finanzas/transactions/[id]</span><span class="route-name">Eliminar transacción</span></div>
+  <div class="route-body">
+    <p>Elimina una transacción. Tampoco revierte el balance de la wallet — la transacción desaparece del historial pero el dinero no "vuelve" a la billetera automáticamente.</p>
+    <div class="warn"><strong>¿Por qué no revierte el balance?</strong> Porque podría romper casos donde el usuario ajustó el balance manualmente. Si necesitás que el balance refleje la eliminación, editá el balance de la billetera directamente tocando el número.</div>
+  </div>
+</div>
+
+<!-- INVERSIONES -->
+<h2>Inversiones</h2>
+<p>Acciones y criptomonedas. El precio actual no se guarda en la DB — se consulta en Yahoo Finance cada vez que abrís la página.</p>
+
+<div class="route">
+  <div class="route-head"><span class="method GET">GET</span><span class="route-path">/api/finanzas/inversiones</span><span class="route-name">Listar inversiones</span></div>
+  <div class="route-body"><p>Devuelve todas las posiciones del usuario. No incluye el precio actual — ese se pide por separado a Yahoo Finance desde la página.</p></div>
+</div>
+
+<div class="route">
+  <div class="route-head"><span class="method POST">POST</span><span class="route-path">/api/finanzas/inversiones</span><span class="route-name">Agregar activo</span></div>
+  <div class="route-body">
+    <p>Agrega un activo a la cartera. Si el ticker ya existe, recalcula el precio promedio ponderado en vez de crear un duplicado.</p>
+    <div class="io">
+      <div class="io-box"><div class="io-title in">Recibe</div><div class="io-body"><code>{ ticker: "GGAL", type: "STOCK", quantity: 100, avgBuyPrice: 5.20 }</code></div></div>
+      <div class="io-box"><div class="io-title out">Devuelve</div><div class="io-body">La inversión creada o actualizada.</div></div>
+    </div>
+    <div class="nota"><strong>Precio promedio ponderado:</strong> si tenías 100 acciones a $5 y comprás 50 más a $6, el nuevo promedio es (100×5 + 50×6) / 150 = $5.33.</div>
+  </div>
+</div>
+
+<div class="route">
+  <div class="route-head"><span class="method PATCH">PATCH</span><span class="route-path">/api/finanzas/inversiones/[id]</span><span class="route-name">Editar posición</span></div>
+  <div class="route-body">
+    <p>Permite corregir la cantidad o el precio promedio de una posición. Útil si te equivocaste al cargar.</p>
+    <div class="io">
+      <div class="io-box"><div class="io-title in">Recibe</div><div class="io-body"><code>{ quantity?, avgBuyPrice? }</code></div></div>
+      <div class="io-box"><div class="io-title out">Devuelve</div><div class="io-body">La inversión actualizada.</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="route">
+  <div class="route-head"><span class="method GET">GET</span><span class="route-path">/api/finanzas/cotizaciones/[ticker]</span><span class="route-name">Precio histórico de un activo</span></div>
+  <div class="route-body">
+    <p>Esta ruta actúa como <strong>intermediario</strong> entre tu app y Yahoo Finance. El browser le pide a tu servidor, tu servidor le pide a Yahoo, y le devuelve el resultado al browser. Esto evita problemas de CORS (Yahoo no deja que el browser le pida directamente).</p>
+    <div class="io">
+      <div class="io-box"><div class="io-title in">Recibe</div><div class="io-body"><code>[ticker]</code> en la URL + <code>?range=1mo</code> (opciones: 1w, 1mo, 3mo, 6mo, 1y)</div></div>
+      <div class="io-box"><div class="io-title out">Devuelve</div><div class="io-body"><code>{ ticker, range, data: [{date, price}] }</code> — array de precios históricos para el gráfico.</div></div>
+    </div>
+    <div class="nota"><strong>Cache de 5 minutos:</strong> Next.js cachea automáticamente la respuesta 5 minutos (<code>next: { revalidate: 300 }</code>). Si dos usuarios piden el mismo ticker en menos de 5 minutos, Yahoo solo recibe un pedido.</div>
+  </div>
+</div>
+
+<!-- PRESUPUESTO -->
+<h2>Presupuesto</h2>
+<p>Límites de gasto por categoría y mes. La app no impide gastar más — solo te muestra visualmente que te pasaste.</p>
+
+<div class="route">
+  <div class="route-head"><span class="method GET">GET</span><span class="route-path">/api/finanzas/presupuesto</span><span class="route-name">Listar presupuestos</span></div>
+  <div class="route-body"><p>Devuelve todos los presupuestos del usuario. La página los cruza contra los gastos reales del mes para calcular el porcentaje usado.</p></div>
+</div>
+
+<div class="route">
+  <div class="route-head"><span class="method POST">POST</span><span class="route-path">/api/finanzas/presupuesto</span><span class="route-name">Crear presupuesto</span></div>
+  <div class="route-body">
+    <div class="io">
+      <div class="io-box"><div class="io-title in">Recibe</div><div class="io-body"><code>{ category: "Alimentación", limit: 80000, month: "2026-04" }</code></div></div>
+      <div class="io-box"><div class="io-title out">Devuelve</div><div class="io-body">El presupuesto creado.</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- METAS -->
+<h2>Metas de ahorro</h2>
+
+<div class="route">
+  <div class="route-head"><span class="method POST">POST</span><span class="route-path">/api/finanzas/metas</span><span class="route-name">Crear meta</span></div>
+  <div class="route-body">
+    <div class="io">
+      <div class="io-box"><div class="io-title in">Recibe</div><div class="io-body"><code>{ name: "Viaje a Brasil", targetAmount: 500000, currency: "ARS" }</code></div></div>
+      <div class="io-box"><div class="io-title out">Devuelve</div><div class="io-body">La meta creada con <code>currentAmount: 0</code>.</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="route">
+  <div class="route-head"><span class="method PATCH">PATCH</span><span class="route-path">/api/finanzas/metas/[id]</span><span class="route-name">Aportar a una meta</span></div>
+  <div class="route-body">
+    <p>La única forma de avanzar en una meta. Actualizás <code>currentAmount</code> con el monto acumulado hasta ahora.</p>
+    <div class="io">
+      <div class="io-box"><div class="io-title in">Recibe</div><div class="io-body"><code>{ currentAmount: 50000 }</code> (el total actual, no el incremento)</div></div>
+      <div class="io-box"><div class="io-title out">Devuelve</div><div class="io-body">La meta actualizada.</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- RECURRENTES -->
+<h2>Gastos / Ingresos Recurrentes</h2>
+<p>Cosas que pasan todos los meses el mismo día: Netflix, sueldo, alquiler. Se aplican automáticamente cuando abrís finanzas.</p>
+
+<div class="route">
+  <div class="route-head"><span class="method POST">POST</span><span class="route-path">/api/finanzas/recurrentes</span><span class="route-name">Crear recurrente</span></div>
+  <div class="route-body">
+    <div class="io">
+      <div class="io-box"><div class="io-title in">Recibe</div><div class="io-body"><code>{ description: "Netflix", amount: 8000, currency: "ARS", category: "Suscripciones", dayOfMonth: 15, transactionType: "EXPENSE", walletId: "..." }</code></div></div>
+      <div class="io-box"><div class="io-title out">Devuelve</div><div class="io-body">El recurrente creado con <code>isActive: true</code> y <code>lastApplied: null</code>.</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="route">
+  <div class="route-head"><span class="method PATCH">PATCH</span><span class="route-path">/api/finanzas/recurrentes/[id]</span><span class="route-name">Editar / activar / desactivar</span></div>
+  <div class="route-body">
+    <p>Sirve para editar cualquier campo del recurrente, incluyendo <code>isActive</code> para pausarlo sin borrarlo.</p>
+    <div class="nota"><strong>¿Cuándo se aplican automáticamente?</strong> Cada vez que abrís el módulo de finanzas, el layout llama a <code>applyRecurringExpenses()</code>. Esta función busca todos los recurrentes activos cuyo <code>dayOfMonth</code> ya pasó en el mes actual y cuyo <code>lastApplied</code> es del mes anterior. Los aplica todos juntos y actualiza el balance.</div>
+  </div>
+</div>
+
+<!-- IMPORTAR / EXPORTAR -->
+<h2>Importar y Exportar</h2>
+
+<div class="route">
+  <div class="route-head"><span class="method POST">POST</span><span class="route-path">/api/finanzas/import</span><span class="route-name">Parsear archivo (paso 1 de 2)</span></div>
+  <div class="route-body">
+    <p>Recibe el archivo, lo parsea y <strong>devuelve una preview sin guardar nada</strong>. Es el paso de "¿esto es lo que querés importar?" antes de confirmar.</p>
+    <div class="io">
+      <div class="io-box"><div class="io-title in">Recibe</div><div class="io-body">Archivo multipart: <code>.xlsx</code>, <code>.json</code> o <code>.mmbackup</code></div></div>
+      <div class="io-box"><div class="io-title out">Devuelve</div><div class="io-body">Array de transacciones parseadas: <code>[{ date, type, amount, currency, category, description }]</code></div></div>
+    </div>
+    <div class="nota"><strong>Tres parsers distintos</strong> según el formato. El más complejo es el .mmbackup (exportación de la app Money Manager): es un ZIP con 8 bytes propietarios, contiene una DB SQLite interna con las transacciones.</div>
+  </div>
+</div>
+
+<div class="route">
+  <div class="route-head"><span class="method POST">POST</span><span class="route-path">/api/finanzas/import/confirm</span><span class="route-name">Confirmar importación (paso 2 de 2)</span></div>
+  <div class="route-body">
+    <p>Recibe el array de transacciones que se revisó en el paso anterior y las inserta todas en la DB de una sola vez.</p>
+    <div class="io">
+      <div class="io-box"><div class="io-title in">Recibe</div><div class="io-body">El mismo array del paso anterior: <code>{ transactions: [...] }</code></div></div>
+      <div class="io-box"><div class="io-title out">Devuelve</div><div class="io-body"><code>{ imported: 47 }</code> — cuántas se importaron.</div></div>
+    </div>
+    <div class="nota"><strong>Usa createMany():</strong> inserta todas las transacciones en un solo query de DB, mucho más eficiente que hacer un INSERT por cada una. No actualiza balances de billeteras — la importación es solo para historial.</div>
+  </div>
+</div>
+
+<div class="route">
+  <div class="route-head"><span class="method GET">GET</span><span class="route-path">/api/finanzas/export</span><span class="route-name">Exportar a Excel</span></div>
+  <div class="route-body">
+    <p>Trae todas las transacciones del usuario de la DB, las convierte a formato Excel con la librería <code>xlsx</code> y las devuelve como descarga directa.</p>
+    <div class="io">
+      <div class="io-box"><div class="io-title in">Recibe</div><div class="io-body">Nada. Solo la sesión.</div></div>
+      <div class="io-box"><div class="io-title out">Devuelve</div><div class="io-body">Archivo <code>.xlsx</code> con columnas: Fecha, Tipo, Descripción, Categoría, Monto, Moneda.</div></div>
+    </div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- FOTOGRAFÍA - CLIENTES -->
+<h2>Fotografía — Clientes</h2>
+<p>Un cliente es un equipo, persona o empresa a quien le sacás fotos. Cada sesión está vinculada a un cliente.</p>
+
+<div class="route">
+  <div class="route-head"><span class="method GET">GET</span><span class="route-path">/api/fotografia/clients</span><span class="route-name">Listar clientes</span></div>
+  <div class="route-body">
+    <p>Devuelve todos los clientes del usuario, ordenados por nombre. Incluye el conteo de sesiones de cada uno (<code>_count.sessions</code>) para mostrar "3 sesiones" en la lista.</p>
+  </div>
+</div>
+
+<div class="route">
+  <div class="route-head"><span class="method POST">POST</span><span class="route-path">/api/fotografia/clients</span><span class="route-name">Crear cliente</span></div>
+  <div class="route-body">
+    <div class="io">
+      <div class="io-box"><div class="io-title in">Recibe</div><div class="io-body"><code>{ name: "Racing Club", instagram?: "racing", phone?: "+54...", notes?: "..." }</code></div></div>
+      <div class="io-box"><div class="io-title out">Devuelve</div><div class="io-body">El cliente creado.</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="route">
+  <div class="route-head"><span class="method PATCH">PATCH</span><span class="route-path">/api/fotografia/clients/[id]</span><span class="route-name">Editar cliente</span></div>
+  <div class="route-body">
+    <p>Antes de actualizar, verifica que el cliente le pertenezca al usuario. Esto es importante porque alguien podría intentar editar el cliente de otro usuario si consigue el ID.</p>
+    <div class="io">
+      <div class="io-box"><div class="io-title in">Recibe</div><div class="io-body"><code>{ name?, instagram?, phone?, notes? }</code></div></div>
+      <div class="io-box"><div class="io-title out">Devuelve</div><div class="io-body">El cliente actualizado.</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="route">
+  <div class="route-head"><span class="method DELETE">DELETE</span><span class="route-path">/api/fotografia/clients/[id]</span><span class="route-name">Eliminar cliente</span></div>
+  <div class="route-body">
+    <p>Elimina el cliente. Si tenía sesiones, Prisma las elimina en cascada (depende de cómo está configurado el schema).</p>
+  </div>
+</div>
+
+<!-- FOTOGRAFÍA - SESIONES -->
+<h2>Fotografía — Sesiones</h2>
+<p>Una sesión es un trabajo fotográfico: un partido, un evento, un media day. Es el modelo central del módulo.</p>
+
+<div class="route">
+  <div class="route-head"><span class="method GET">GET</span><span class="route-path">/api/fotografia/sessions</span><span class="route-name">Listar sesiones</span></div>
+  <div class="route-body">
+    <p>Devuelve todas las sesiones del usuario con el nombre del cliente incluido. Acepta filtro opcional por estado.</p>
+    <div class="io">
+      <div class="io-box"><div class="io-title in">Recibe</div><div class="io-body"><code>?status=PENDING</code> (opcional). Sin el param, devuelve todas.</div></div>
+      <div class="io-box"><div class="io-title out">Devuelve</div><div class="io-body">Array de sesiones con <code>client: { name, instagram }</code> incluido.</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="route">
+  <div class="route-head"><span class="method POST">POST</span><span class="route-path">/api/fotografia/sessions</span><span class="route-name">Crear sesión</span></div>
+  <div class="route-body">
+    <p>La ruta más compleja de fotografía. Hace 3 cosas en secuencia:</p>
+    <div class="pattern" style="margin-top:10px;">
+      <div class="step"><div class="step-num">1</div><div class="step-body"><div class="step-title">Verifica el cliente</div><div class="step-desc">Busca el cliente por <code>clientId</code> y verifica que le pertenezca al usuario. Si no existe, 404.</div></div></div>
+      <div class="arr">↓</div>
+      <div class="step"><div class="step-num">2</div><div class="step-body"><div class="step-title">Crea la sesión en la DB</div><div class="step-desc">Estado inicial: PENDING. La fecha viene con offset -03:00 del form para guardarse correctamente en UTC.</div></div></div>
+      <div class="arr">↓</div>
+      <div class="step"><div class="step-num y">3</div><div class="step-body"><div class="step-title">Promise.all(): Drive + Calendar en paralelo</div><div class="step-desc">Llama a <code>createSessionFolder()</code> y <code>createCalendarEvent()</code> al mismo tiempo. Ambas pueden fallar sin romper la creación de la sesión. Si tienen éxito, guarda la <code>driveUrl</code> y el <code>googleCalendarId</code> en la sesión.</div></div></div>
+    </div>
+    <div class="io" style="margin-top:12px;">
+      <div class="io-box"><div class="io-title in">Recibe</div><div class="io-body"><code>{ clientId, type, date, price, currency, durationMinutes?, eventName?, notes? }</code></div></div>
+      <div class="io-box"><div class="io-title out">Devuelve</div><div class="io-body">La sesión creada con <code>driveUrl</code> y <code>googleCalendarId</code> si se pudieron crear.</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="route">
+  <div class="route-head"><span class="method PATCH">PATCH</span><span class="route-path">/api/fotografia/sessions/[id]</span><span class="route-name">Editar sesión (la más importante)</span></div>
+  <div class="route-body">
+    <p>Actualiza cualquier campo de la sesión. Pero además tiene lógica especial que se activa según qué cambió:</p>
+
+    <div class="pattern" style="margin-top:10px;">
+      <div class="step"><div class="step-num y">★</div><div class="step-body"><div class="step-title">Si el estado cambia a PAID (y no tenía transacciones aún)</div><div class="step-desc">Crea automáticamente un ingreso en Finanzas: <code>type=INCOME</code>, <code>source=PHOTOGRAPHY</code>, <code>sessionId=[id]</code>. Esto es el puente entre fotografía y finanzas.</div></div></div>
+      <div class="step"><div class="step-num">★</div><div class="step-body"><div class="step-title">Si cambió la fecha o la duración, y hay un evento en Calendar</div><div class="step-desc">Llama a <code>updateCalendarEvent()</code> para sincronizar el evento con la nueva fecha/hora.</div></div></div>
+    </div>
+
+    <div class="io" style="margin-top:12px;">
+      <div class="io-box"><div class="io-title in">Recibe</div><div class="io-body">Cualquier campo de la sesión: <code>{ status?, date?, price?, driveUrl?, photosDelivered?, notes?, ... }</code></div></div>
+      <div class="io-box"><div class="io-title out">Devuelve</div><div class="io-body">La sesión actualizada con los datos del cliente incluidos.</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="route">
+  <div class="route-head"><span class="method DELETE">DELETE</span><span class="route-path">/api/fotografia/sessions/[id]</span><span class="route-name">Eliminar sesión</span></div>
+  <div class="route-body">
+    <p>Hace tres cosas en orden:</p>
+    <div class="pattern" style="margin-top:8px;">
+      <div class="step"><div class="step-num">1</div><div class="step-body"><div class="step-title">Elimina las transacciones de finanzas vinculadas</div><div class="step-desc"><code>db.transaction.deleteMany({ where: { sessionId: id } })</code> — elimina el ingreso que se había creado en finanzas cuando se marcó PAID.</div></div></div>
+      <div class="arr">↓</div>
+      <div class="step"><div class="step-num">2</div><div class="step-body"><div class="step-title">Elimina la sesión</div><div class="step-desc"><code>db.session.delete()</code></div></div></div>
+      <div class="arr">↓</div>
+      <div class="step"><div class="step-num">3</div><div class="step-body"><div class="step-title">Elimina el evento de Google Calendar</div><div class="step-desc">Si la sesión tenía <code>googleCalendarId</code>, llama a <code>deleteCalendarEvent()</code>. Si falla, no importa — la sesión ya está eliminada.</div></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- DRIVE -->
+<h2>Fotografía — Drive</h2>
+
+<div class="route">
+  <div class="route-head"><span class="method GET">GET</span><span class="route-path">/api/fotografia/drive/[folderId]</span><span class="route-name">Listar fotos de una carpeta</span></div>
+  <div class="route-body">
+    <p>Devuelve solo las imágenes (no carpetas) de una carpeta específica de Drive. Se usa en la página de detalle de sesión para mostrar las fotos entregadas.</p>
+    <div class="io">
+      <div class="io-box"><div class="io-title in">Recibe</div><div class="io-body"><code>[folderId]</code> en la URL — el ID de la carpeta de Drive.</div></div>
+      <div class="io-box"><div class="io-title out">Devuelve</div><div class="io-body">Array de fotos: <code>[{ id, name, thumbnailLink, webViewLink, mimeType }]</code></div></div>
+    </div>
+  </div>
+</div>
+
+<div class="route">
+  <div class="route-head"><span class="method GET">GET</span><span class="route-path">/api/fotografia/drive/browse/[folderId]</span><span class="route-name">Navegar Drive completo</span></div>
+  <div class="route-body">
+    <p>Similar al anterior pero devuelve carpetas E imágenes mezcladas. Es el que usa el explorador de Drive en el Editor de Stories. Mandando <code>root</code> como folderId mostrás la raíz de Mi unidad.</p>
+    <div class="nota"><strong>Las carpetas van primero</strong> (orderBy: "folder,name"), así podés navegar la estructura antes de ver las imágenes.</div>
+  </div>
+</div>
+
+<div class="route">
+  <div class="route-head"><span class="method GET">GET</span><span class="route-path">/api/fotografia/drive/thumbnail/[fileId]</span><span class="route-name">Proxy de thumbnail</span></div>
+  <div class="route-body">
+    <p>Esta ruta existe porque los thumbnails de Drive requieren autenticación con Google. El browser por sí solo no puede pedirlos. Entonces el browser le pide a <em>tu servidor</em>, tu servidor le pide a Google con el token de OAuth, y le devuelve la imagen al browser.</p>
+    <div class="pattern" style="margin-top:8px;">
+      <div class="step"><div class="step-num">1</div><div class="step-body"><div class="step-title">Browser pide /api/fotografia/drive/thumbnail/[fileId]</div></div></div>
+      <div class="arr">↓</div>
+      <div class="step"><div class="step-num">2</div><div class="step-body"><div class="step-title">Servidor obtiene el thumbnailLink del archivo via Drive API</div><div class="step-desc">La URL del thumbnail de Google viene con autenticación. El servidor la llama con el access token de OAuth.</div></div></div>
+      <div class="arr">↓</div>
+      <div class="step"><div class="step-num g">3</div><div class="step-body"><div class="step-title">Devuelve la imagen al browser con Cache-Control de 1 hora</div><div class="step-desc">El browser la cachea, por lo que la siguiente vez que la pida no necesita ir al servidor.</div></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- EDITOR IA -->
+<h2>Fotografía — Editor de Stories con IA</h2>
+
+<div class="route">
+  <div class="route-head"><span class="method POST">POST</span><span class="route-path">/api/fotografia/editor</span><span class="route-name">Generar Story con Claude</span></div>
+  <div class="route-body">
+    <div class="io">
+      <div class="io-box"><div class="io-title in">Recibe</div><div class="io-body"><code>{ prompt: "...", photoUrl?: "...", previousHtml?: "..." }</code><br><br><code>photoUrl</code>: si el usuario eligió una foto.<br><code>previousHtml</code>: si está usando "Ajustar diseño actual".</div></div>
+      <div class="io-box"><div class="io-title out">Devuelve</div><div class="io-body"><code>{ html: "<!DOCTYPE html>..." }</code><br><br>HTML completo y autocontenido de 1080×1920px.</div></div>
+    </div>
+
+    <div class="pattern" style="margin-top:12px;">
+      <div class="step"><div class="step-num">1</div><div class="step-body"><div class="step-title">Construye el mensaje para Claude</div><div class="step-desc">Si hay <code>previousHtml</code>, el mensaje dice "partiendo de este diseño, aplicá estos cambios". Si hay <code>photoUrl</code>, dice "usá esta foto de fondo".</div></div></div>
+      <div class="arr">↓</div>
+      <div class="step"><div class="step-num p">2</div><div class="step-body"><div class="step-title">Llama a Claude Sonnet 4.6</div><div class="step-desc">El system prompt define el estilo de @stomas.ph: Bebas Neue, colores contextuales por deporte, overlay oscuro en fotos, logo al pie. Claude devuelve HTML puro.</div></div></div>
+      <div class="arr">↓</div>
+      <div class="step"><div class="step-num">3</div><div class="step-body"><div class="step-title">extractHtml() limpia la respuesta</div><div class="step-desc">A veces Claude envuelve el HTML en bloques de código markdown (```html ... ```). Esta función extrae el HTML limpio en cualquier caso.</div></div></div>
+      <div class="arr">↓</div>
+      <div class="step"><div class="step-num g">4</div><div class="step-body"><div class="step-title">Devuelve { html } al browser</div><div class="step-desc">El componente DesignEditor.tsx lo muestra en el iframe del preview escalado.</div></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- WHATSAPP -->
+<h2>WhatsApp Bot</h2>
+
+<div class="route">
+  <div class="route-head"><span class="method GET">GET</span><span class="route-path">/api/whatsapp/webhook</span><span class="route-name">Verificación de Meta</span></div>
+  <div class="route-body">
+    <p>Meta llama a esta ruta cuando configurás el webhook por primera vez para verificar que el servidor es tuyo. Responde el <code>hub.challenge</code> si el token coincide con <code>WHATSAPP_VERIFY_TOKEN</code> en el .env.</p>
+  </div>
+</div>
+
+<div class="route">
+  <div class="route-head"><span class="method POST">POST</span><span class="route-path">/api/whatsapp/webhook</span><span class="route-name">Procesar mensaje entrante</span></div>
+  <div class="route-body">
+    <p>Meta llama a esta ruta cada vez que te llega un mensaje. El flujo completo:</p>
+    <div class="pattern" style="margin-top:8px;">
+      <div class="step"><div class="step-num">1</div><div class="step-body"><div class="step-title">Verifica que el número es el autorizado</div><div class="step-desc">Si viene de otro número, lo ignora silenciosamente (devuelve 200 para que Meta no reintente).</div></div></div>
+      <div class="arr">↓</div>
+      <div class="step"><div class="step-num">2</div><div class="step-body"><div class="step-title">Procesa el tipo de mensaje</div><div class="step-desc">Si es texto: usa el texto directo. Si es audio: lo transcribe via Groq Whisper. Si es otro tipo (foto, sticker, etc.): responde que no lo soporta.</div></div></div>
+      <div class="arr">↓</div>
+      <div class="step"><div class="step-num p">3</div><div class="step-body"><div class="step-title">parseTransaction() con Claude Haiku</div><div class="step-desc">Detecta tipo (gasto/ingreso), monto, moneda, descripción y categoría del texto libre.</div></div></div>
+      <div class="arr">↓</div>
+      <div class="step"><div class="step-num y">4a</div><div class="step-body"><div class="step-title">Si categoría = "Fotografía" + tipo = INCOME</div><div class="step-desc">Busca o crea el cliente, crea la sesión como PAID, crea la transacción con source=PHOTOGRAPHY. El ingreso queda tanto en fotografía como en finanzas.</div></div></div>
+      <div class="step"><div class="step-num">4b</div><div class="step-body"><div class="step-title">Si es cualquier otro gasto/ingreso</div><div class="step-desc">Crea la transacción normal con source=PERSONAL y actualiza el balance de la wallet.</div></div></div>
+      <div class="arr">↓</div>
+      <div class="step"><div class="step-num g">5</div><div class="step-body"><div class="step-title">Responde por WhatsApp</div><div class="step-desc">Manda un mensaje de confirmación con el resumen de lo que se registró.</div></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- AUTH -->
+<h2>Autenticación</h2>
+
+<div class="route">
+  <div class="route-head"><span class="method POST">POST</span><span class="route-path">/api/auth/login</span><span class="route-name">Iniciar sesión</span></div>
+  <div class="route-body">
+    <div class="io">
+      <div class="io-box"><div class="io-title in">Recibe</div><div class="io-body"><code>{ username, password }</code></div></div>
+      <div class="io-box"><div class="io-title out">Devuelve</div><div class="io-body">Si es correcto: setea la cookie y devuelve <code>{ ok: true }</code>. Si no: error 401.</div></div>
+    </div>
+    <p>bcryptjs compara la contraseña ingresada con el hash guardado en la DB. Si coincide, crea el JWT y lo guarda en la cookie <code>liford_session</code>.</p>
+  </div>
+</div>
+
+<div class="route">
+  <div class="route-head"><span class="method POST">POST</span><span class="route-path">/api/auth/logout</span><span class="route-name">Cerrar sesión</span></div>
+  <div class="route-body"><p>Elimina la cookie de sesión. El browser ya no puede autenticarse hasta que haga login de nuevo.</p></div>
+</div>
+
+<div class="route">
+  <div class="route-head"><span class="method GET">GET</span><span class="route-path">/api/auth/me</span><span class="route-name">¿Quién soy?</span></div>
+  <div class="route-body"><p>Devuelve los datos del usuario logueado (sin la contraseña). Útil para saber en el browser qué usuario está activo.</p></div>
+</div>
+
+<div class="route">
+  <div class="route-head"><span class="method POST">POST</span><span class="route-path">/api/auth/password</span><span class="route-name">Cambiar contraseña</span></div>
+  <div class="route-body">
+    <div class="io">
+      <div class="io-box"><div class="io-title in">Recibe</div><div class="io-body"><code>{ currentPassword, newPassword }</code></div></div>
+      <div class="io-box"><div class="io-title out">Devuelve</div><div class="io-body"><code>{ ok: true }</code> o error si la contraseña actual es incorrecta.</div></div>
+    </div>
+    <p>Verifica primero que la contraseña actual sea correcta antes de cambiarla. El nuevo hash se guarda en la DB.</p>
+  </div>
+</div>
+
+<hr class="divider">
+
+<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px 28px;margin-top:0;">
+  <div style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:12px;">Resumen del patrón</div>
+  <p>Todas las rutas siguen el mismo camino: <strong>verificar sesión → leer datos → verificar ownership → operar en DB → responder</strong>. La diferencia entre rutas es qué operación hacen en el paso de DB y qué lógica adicional disparan (Google Calendar, Drive, Claude, etc.).</p>
+  <p style="margin-top:8px;">Si en algún momento algo falla, la respuesta es siempre un JSON con <code>{ error: "..." }</code> y un código HTTP apropiado (401 si no autenticado, 404 si no existe, 400 si faltan datos, 500 si hay un error del servidor).</p>
+</div>
+
+<div style="text-align:center;color:var(--muted);font-size:12px;margin-top:48px;">
+  Liford — Cómo funciona cada API &nbsp;·&nbsp; Abril 2026
+</div>
+
+</div>
+</body>
+</html>

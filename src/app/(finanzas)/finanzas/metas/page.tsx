@@ -30,6 +30,7 @@ export default async function MetasPage() {
     notes: g.notes,
     targetDate: g.targetDate?.toISOString() ?? null,
     isAchieved: g.isAchieved,
+    monthlyDeposit: g.monthlyDeposit ?? null,
     accountKey: g.walletId ? `wallet:${g.walletId}` : g.foreignAccountId ? `foreign:${g.foreignAccountId}` : null,
     currentBalance: g.wallet?.balance ?? g.foreignAccount?.balance ?? 0,
   }));

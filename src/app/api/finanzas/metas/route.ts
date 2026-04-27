@@ -25,6 +25,7 @@ export async function POST(request: NextRequest) {
       currency: body.currency ?? "USD",
       notes: body.notes ?? null,
       targetDate: body.targetDate ? new Date(body.targetDate) : null,
+      monthlyDeposit: body.monthlyDeposit ? Number(body.monthlyDeposit) : null,
       walletId: body.walletId ?? null,
       foreignAccountId: body.foreignAccountId ?? null,
     },

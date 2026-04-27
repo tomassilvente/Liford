@@ -49,11 +49,12 @@ enum SessionStatus {
 // ─── USUARIOS ────────────────────────────────────────────────────────────────
 
 model User {
-  id           String   @id @default(cuid())
-  username     String   @unique
-  passwordHash String
-  displayName  String?
-  createdAt    DateTime @default(now())
+  id                   String    @id @default(cuid())
+  username             String    @unique
+  passwordHash         String
+  displayName          String?
+  onboardingCompleted  Boolean   @default(false)
+  createdAt            DateTime  @default(now())
 
   wallets            Wallet[]
   foreignAccounts    ForeignAccount[]
@@ -64,6 +65,7 @@ model User {
   recurringExpenses  RecurringExpense[]
   savingsGoals       SavingsGoal[]
   wealthSnapshots    WealthSnapshot[]
+  categories         Category[]
 }
 
 // Transacciones automáticas mensuales (gastos e ingresos recurrentes)
@@ -114,12 +116,32 @@ model SavingsGoal {
   notes            String?
   targetDate       DateTime?
   isAchieved       Boolean         @default(false)
+  monthlyDeposit   Float?          // aporte mensual automático
   walletId         String?
   wallet           Wallet?         @relation(fields: [walletId], references: [id])
   foreignAccountId String?
   foreignAccount   ForeignAccount? @relation(fields: [foreignAccountId], references: [id])
   createdAt        DateTime        @default(now())
   updatedAt        DateTime        @updatedAt
+}
+
+// Categorías personalizadas del usuario
+model Category {
+  id        String     @id @default(cuid())
+  userId    String
+  user      User       @relation(fields: [userId], references: [id])
+  name      String
+  icon      String?    // emoji
+  color     String?    // hex color, ej: "#3b82f6"
+  type      String     @default("EXPENSE") // EXPENSE | INCOME | BOTH
+  parentId  String?
+  parent    Category?  @relation("CategoryTree", fields: [parentId], references: [id])
+  children  Category[] @relation("CategoryTree")
+  sortOrder Int        @default(0)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@unique([userId, name])
 }
 
 // Snapshot mensual de patrimonio

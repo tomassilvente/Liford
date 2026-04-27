@@ -1,24 +1,12 @@
 export const dynamic = "force-dynamic";
 
 import { db } from "@/lib/db";
-import { TransactionType } from "@/generated/prisma/enums";
+import { TransactionType, TransactionSource } from "@/generated/prisma/enums";
 import { requireSession } from "@/lib/auth";
 import { fetchCotizaciones } from "@/lib/cotizaciones";
-import MonthlyChart, { type MonthlyDataPoint } from "@/components/finanzas/MonthlyChart";
-import CategoryChart from "@/components/finanzas/CategoryChart";
-import WealthChart, { type WealthDataPoint } from "@/components/finanzas/WealthChart";
-import Link from "next/link";
-import { LuTrendingDown, LuTrendingUp, LuArrowUp, LuArrowDown } from "react-icons/lu";
-
-function fmtARS(n: number) {
-  return new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", maximumFractionDigits: 0 }).format(n);
-}
-function fmtUSD(n: number) {
-  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2 }).format(n);
-}
-function fmtDate(date: Date) {
-  return new Intl.DateTimeFormat("es-AR", { day: "2-digit", month: "short" }).format(new Date(date));
-}
+import type { MonthlyDataPoint } from "@/components/finanzas/MonthlyChart";
+import type { WealthDataPoint } from "@/components/finanzas/WealthChart";
+import DashboardContent from "./DashboardContent";
 
 export default async function FinanzasDashboard() {
   const session = await requireSession();
@@ -29,23 +17,49 @@ export default async function FinanzasDashboard() {
   const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
   const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
   const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
 
-  const [wallets, foreignAccounts, investments, allTransactions, recentTransactions, wealthSnapshots] =
-    await Promise.all([
-      db.wallet.findMany({ where: { userId } }),
-      db.foreignAccount.findMany({ where: { userId } }),
-      db.investment.findMany({ where: { userId } }),
-      db.transaction.findMany({
-        where: { userId, date: { gte: sixMonthsAgo } },
-        orderBy: { date: "asc" },
-      }),
-      db.transaction.findMany({ where: { userId }, orderBy: { date: "desc" }, take: 8 }),
-      db.wealthSnapshot.findMany({
-        where: { userId },
-        orderBy: { date: "asc" },
-        take: 12,
-      }),
-    ]);
+  const [
+    wallets,
+    foreignAccounts,
+    investments,
+    allTransactions,
+    recentTransactions,
+    wealthSnapshots,
+    budgets,
+    sessionsToday,
+    recurringItems,
+  ] = await Promise.all([
+    db.wallet.findMany({ where: { userId } }),
+    db.foreignAccount.findMany({ where: { userId } }),
+    db.investment.findMany({ where: { userId } }),
+    db.transaction.findMany({
+      where: { userId, date: { gte: sixMonthsAgo } },
+      orderBy: { date: "asc" },
+    }),
+    db.transaction.findMany({
+      where: { userId },
+      orderBy: { date: "desc" },
+      take: 8,
+    }),
+    db.wealthSnapshot.findMany({
+      where: { userId },
+      orderBy: { date: "asc" },
+      take: 12,
+    }),
+    db.budget.findMany({ where: { userId } }),
+    db.session.findMany({
+      where: {
+        client: { userId },
+        date: { gte: startOfToday, lt: endOfToday },
+      },
+      include: { client: { select: { name: true } } },
+    }),
+    db.recurringExpense.findMany({
+      where: { userId, isActive: true, dayOfMonth: now.getDate() },
+    }),
+  ]);
 
   // ── Portfolio ──────────────────────────────────────────────────────────────
   const tickers = investments.map((i) => i.ticker);
@@ -56,7 +70,6 @@ export default async function FinanzasDashboard() {
     return sum + inv.quantity * price;
   }, 0);
 
-  // Variación del portfolio hoy en USD
   const portfolioDayChange = investments.reduce((sum, inv) => {
     const c = cotizaciones[inv.ticker];
     if (!c?.changeAmount) return sum;
@@ -67,9 +80,8 @@ export default async function FinanzasDashboard() {
   const totalARS = wallets.filter((w) => w.currency === "ARS").reduce((s, w) => s + w.balance, 0);
   const walletsUSD = wallets.filter((w) => w.currency === "USD").reduce((s, w) => s + w.balance, 0);
   const foreignUSD = foreignAccounts.reduce((s, a) => s + a.balance, 0);
-  const totalUSD = walletsUSD + portfolioUSD + foreignUSD;
 
-  // ── Mes actual ────────────────────────────────────────────────────────────
+  // ── Mes actual ─────────────────────────────────────────────────────────────
   const thisMes = allTransactions.filter((t) => t.date >= startOfMonth && t.date < endOfMonth);
   const lastMes = allTransactions.filter((t) => t.date >= startOfLastMonth && t.date < startOfMonth);
 
@@ -84,7 +96,7 @@ export default async function FinanzasDashboard() {
   const diffGastos = gastosLastMes > 0 ? ((gastosMes - gastosLastMes) / gastosLastMes) * 100 : null;
   const diffIngresos = ingresosLastMes > 0 ? ((ingresosMes - ingresosLastMes) / ingresosLastMes) * 100 : null;
 
-  // ── Categorías de gasto del mes ───────────────────────────────────────────
+  // ── Categorías ─────────────────────────────────────────────────────────────
   const categoryMap: Record<string, number> = {};
   for (const t of thisMes) {
     if (t.type !== TransactionType.EXPENSE || t.currency !== "ARS") continue;
@@ -95,13 +107,12 @@ export default async function FinanzasDashboard() {
     .sort((a, b) => b.total - a.total)
     .slice(0, 8);
 
-  // ── Gráfico mensual ───────────────────────────────────────────────────────
+  // ── Gráfico mensual ────────────────────────────────────────────────────────
   const monthlyMap: Record<string, MonthlyDataPoint> = {};
   for (let i = 5; i >= 0; i--) {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
     const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-    const label = d.toLocaleDateString("es-AR", { month: "short", year: "2-digit" });
-    monthlyMap[key] = { month: label, ingresos: 0, gastos: 0 };
+    monthlyMap[key] = { month: d.toLocaleDateString("es-AR", { month: "short", year: "2-digit" }), ingresos: 0, gastos: 0 };
   }
   for (const t of allTransactions) {
     if (t.currency !== "ARS") continue;
@@ -110,183 +121,78 @@ export default async function FinanzasDashboard() {
     if (t.type === TransactionType.INCOME) monthlyMap[key].ingresos += t.amount;
     if (t.type === TransactionType.EXPENSE) monthlyMap[key].gastos += t.amount;
   }
-  const monthlyData = Object.values(monthlyMap);
 
-  const mesLabel = now.toLocaleDateString("es-AR", { month: "long", year: "numeric" });
-
-  // ── Gráfico de patrimonio ─────────────────────────────────────────────────
+  // ── Patrimonio chart ───────────────────────────────────────────────────────
   const wealthData: WealthDataPoint[] = wealthSnapshots.map((s) => ({
     month: s.date.toLocaleDateString("es-AR", { month: "short", year: "2-digit" }),
     totalARS: s.totalARS,
     totalUSD: s.totalUSD,
   }));
 
+  // ── Alertas de presupuesto ─────────────────────────────────────────────────
+  const gastoPorCat: Record<string, number> = {};
+  for (const t of thisMes) {
+    if (t.type === TransactionType.EXPENSE && t.source === TransactionSource.PERSONAL && t.currency === "ARS") {
+      gastoPorCat[t.category] = (gastoPorCat[t.category] ?? 0) + t.amount;
+    }
+  }
+  const budgetAlerts = budgets
+    .filter((b) => b.currency === "ARS")
+    .map((b) => {
+      const spent = gastoPorCat[b.category] ?? 0;
+      const pct = b.monthlyLimit > 0 ? (spent / b.monthlyLimit) * 100 : 0;
+      return { category: b.category, spent, limit: b.monthlyLimit, pct };
+    })
+    .filter((a) => a.pct >= 90)
+    .sort((a, b) => b.pct - a.pct);
+
+  // ── Sesiones hoy ───────────────────────────────────────────────────────────
+  const sessionsTodayData = sessionsToday.map((s) => ({
+    clientName: s.client.name,
+    time: s.date.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" }),
+    type: s.type,
+  }));
+
+  // ── Recurrentes hoy ────────────────────────────────────────────────────────
+  const recurringTodayData = recurringItems.map((r) => ({
+    description: r.description,
+    amount: r.amount,
+    currency: r.currency,
+    transactionType: r.transactionType,
+  }));
+
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-white">Liford</h1>
-        <p className="mt-1 text-neutral-400 capitalize">
-          {now.toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
-        </p>
-      </div>
-
-      {/* ── Patrimonio ── */}
-      <section>
-        <p className="mb-3 text-md font-medium uppercase tracking-wider text-neutral-500">Patrimonio</p>
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          <div className="rounded-xl bg-neutral-800 p-5">
-            <p className="text-sm text-neutral-400">Billeteras ARS</p>
-            <p className="mt-2 text-xl font-bold text-white">{fmtARS(totalARS)}</p>
-            <Link href="/finanzas/billeteras" className="mt-1 block text-sm text-neutral-600 hover:text-neutral-400">
-              {wallets.filter((w) => w.currency === "ARS").length} billeteras →
-            </Link>
-          </div>
-          <div className="rounded-xl bg-neutral-800 p-5">
-            <p className="text-sm text-neutral-400">Cuentas Foráneas</p>
-            <p className="mt-2 text-xl font-bold text-white">{fmtUSD(foreignUSD)}</p>
-            <Link href="/finanzas/billeteras" className="mt-1 block text-sm text-neutral-600 hover:text-neutral-400">
-              {foreignAccounts.length} cuentas →
-            </Link>
-          </div>
-          <div className="rounded-xl bg-neutral-800 p-5">
-            <p className="text-sm text-neutral-400">Portfolio</p>
-            <p className="mt-2 text-xl font-bold text-white">{fmtUSD(portfolioUSD)}</p>
-            {portfolioDayChange !== 0 && (
-              <p className={`mt-1 flex items-center gap-0.5 text-sm font-medium ${portfolioDayChange >= 0 ? "text-green-400" : "text-red-400"}`}>
-                {portfolioDayChange >= 0 ? <LuArrowUp size={13} /> : <LuArrowDown size={13} />}
-                {portfolioDayChange >= 0 ? "+" : ""}{fmtUSD(portfolioDayChange)} hoy
-              </p>
-            )}
-            <Link href="/finanzas/inversiones" className="mt-1 block text-sm text-neutral-600 hover:text-neutral-400">
-              {investments.length} activos →
-            </Link>
-          </div>
-          <div className="rounded-xl bg-gradient-to-br from-blue-900 to-neutral-800 p-5 ring-1 ring-blue-800">
-            <p className="text-sm text-blue-300">Total USD</p>
-            <p className="mt-2 text-xl font-bold text-white">{fmtUSD(totalUSD)}</p>
-            <p className="mt-1 text-sm text-blue-400">
-              Foráneas + Portfolio{walletsUSD > 0 ? " + Billeteras" : ""}
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* ── Mes actual ── */}
-      <section>
-        <p className="mb-3 text-sm font-medium uppercase tracking-wider text-neutral-500 capitalize">{mesLabel}</p>
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          <div className="rounded-xl bg-neutral-800 p-5">
-            <p className="text-sm text-neutral-400">Ingresos</p>
-            <p className="mt-2 text-xl font-bold text-green-400">{fmtARS(ingresosMes)}</p>
-            {diffIngresos !== null && (
-              <p className={`mt-1 text-sm ${diffIngresos >= 0 ? "text-green-600" : "text-red-600"}`}>
-                {diffIngresos >= 0 ? "+" : ""}{diffIngresos.toFixed(0)}% vs mes anterior
-              </p>
-            )}
-          </div>
-          <div className="rounded-xl bg-neutral-800 p-5">
-            <p className="text-sm text-neutral-400">Gastos</p>
-            <p className="mt-2 text-xl font-bold text-red-400">{fmtARS(gastosMes)}</p>
-            {diffGastos !== null && (
-              <p className={`mt-1 text-sm ${diffGastos <= 0 ? "text-green-600" : "text-red-600"}`}>
-                {diffGastos >= 0 ? "+" : ""}{diffGastos.toFixed(0)}% vs mes anterior
-              </p>
-            )}
-          </div>
-          <div className={`rounded-xl p-5 ${balanceMes >= 0 ? "bg-green-950 ring-1 ring-green-900" : "bg-red-950 ring-1 ring-red-900"}`}>
-            <p className="text-sm text-neutral-400">Balance</p>
-            <p className={`mt-2 text-xl font-bold ${balanceMes >= 0 ? "text-green-400" : "text-red-400"}`}>
-              {balanceMes >= 0 ? "+" : ""}{fmtARS(balanceMes)}
-            </p>
-            <p className="mt-1 text-sm text-neutral-600">
-              {balanceMes >= 0 ? "Ahorrás este mes" : "Déficit este mes"}
-            </p>
-          </div>
-          <div className="rounded-xl bg-neutral-800 p-5">
-            <p className="text-sm text-neutral-400">Tasa de ahorro</p>
-            {tasaAhorro !== null ? (
-              <>
-                <p className={`mt-2 text-xl font-bold ${tasaAhorro >= 20 ? "text-green-400" : tasaAhorro >= 0 ? "text-yellow-400" : "text-red-400"}`}>
-                  {tasaAhorro.toFixed(1)}%
-                </p>
-                <p className="mt-1 text-sm text-neutral-600">
-                  {tasaAhorro >= 20 ? "Excelente" : tasaAhorro >= 10 ? "Aceptable" : tasaAhorro >= 0 ? "Bajo" : "En rojo"}
-                </p>
-              </>
-            ) : (
-              <p className="mt-2 text-xl font-bold text-neutral-600">—</p>
-            )}
-          </div>
-        </div>
-      </section>
-
-      {/* ── Fila: Categorías + Gráfico mensual ── */}
-      <section className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        {/* Gastos por categoría */}
-        {categoryData.length > 0 && (
-          <div className="rounded-xl bg-neutral-800 p-5">
-            <p className="mb-1 text-sm font-medium text-white">Gastos por categoría</p>
-            <p className="mb-5 text-sm text-neutral-500 capitalize">{mesLabel}</p>
-            <CategoryChart data={categoryData} />
-          </div>
-        )}
-
-        {/* Gráfico mensual */}
-        {monthlyData.some((m) => m.ingresos > 0 || m.gastos > 0) && (
-          <div className="rounded-xl bg-neutral-800 p-5">
-            <p className="mb-1 text-sm font-medium text-white">Ingresos vs Gastos</p>
-            <p className="mb-5 text-sm text-neutral-500">Últimos 6 meses en ARS</p>
-            <MonthlyChart data={monthlyData} />
-          </div>
-        )}
-      </section>
-
-      {/* ── Evolución del patrimonio ── */}
-      {wealthData.length >= 2 && (
-        <section>
-          <div className="rounded-xl bg-neutral-800 p-5">
-            <p className="mb-1 text-sm font-medium text-white">Evolución del patrimonio</p>
-            <p className="mb-5 text-sm text-neutral-500">Snapshots mensuales</p>
-            <WealthChart data={wealthData} />
-          </div>
-        </section>
-      )}
-
-      {/* ── Últimas transacciones ── */}
-      {recentTransactions.length > 0 && (
-        <section>
-          <div className="rounded-xl bg-neutral-800 p-5">
-            <div className="mb-4 flex items-center justify-between">
-              <p className="text-sm font-medium text-white">Últimas transacciones</p>
-              <div className="flex gap-3">
-                <Link href="/finanzas/gastos" className="text-sm text-neutral-500 hover:text-neutral-300">Gastos</Link>
-                <Link href="/finanzas/ingresos" className="text-sm text-neutral-500 hover:text-neutral-300">Ingresos</Link>
-              </div>
-            </div>
-            <div className="flex flex-col divide-y divide-neutral-700">
-              {recentTransactions.map((t) => {
-                const isExpense = t.type === TransactionType.EXPENSE;
-                return (
-                  <div key={t.id} className="flex items-center justify-between py-2.5">
-                    <div className="flex items-center gap-3">
-                      <span className={isExpense ? "text-red-400" : "text-green-400"}>
-                        {isExpense ? <LuTrendingDown size={16} /> : <LuTrendingUp size={16} />}
-                      </span>
-                      <div>
-                        <p className="text-sm text-white">{t.description}</p>
-                        <p className="text-sm text-neutral-500">{t.category} · {fmtDate(t.date)}</p>
-                      </div>
-                    </div>
-                    <p className={`text-sm font-semibold ${isExpense ? "text-red-400" : "text-green-400"}`}>
-                      {isExpense ? "-" : "+"}{t.currency === "ARS" ? fmtARS(t.amount) : fmtUSD(t.amount)}
-                    </p>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </section>
-      )}
-    </div>
+    <DashboardContent
+      totalARS={totalARS}
+      walletsARSCount={wallets.filter((w) => w.currency === "ARS").length}
+      foreignUSD={foreignUSD}
+      foreignAccountsCount={foreignAccounts.length}
+      portfolioUSD={portfolioUSD}
+      walletsUSD={walletsUSD}
+      investmentsCount={investments.length}
+      portfolioDayChange={portfolioDayChange}
+      ingresosMes={ingresosMes}
+      gastosMes={gastosMes}
+      balanceMes={balanceMes}
+      tasaAhorro={tasaAhorro}
+      diffGastos={diffGastos}
+      diffIngresos={diffIngresos}
+      mesLabel={now.toLocaleDateString("es-AR", { month: "long", year: "numeric" })}
+      categoryData={categoryData}
+      monthlyData={Object.values(monthlyMap)}
+      wealthData={wealthData}
+      recentTransactions={recentTransactions.map((t) => ({
+        id: t.id,
+        description: t.description,
+        category: t.category,
+        date: t.date.toISOString(),
+        amount: t.amount,
+        currency: t.currency,
+        type: t.type,
+      }))}
+      budgetAlerts={budgetAlerts}
+      sessionsToday={sessionsTodayData}
+      recurringToday={recurringTodayData}
+    />
   );
 }

@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { LuPencil, LuTrash2, LuCheck, LuX, LuEllipsis } from "react-icons/lu";
+import Link from "next/link";
+import { LuPencil, LuTrash2, LuCheck, LuX, LuEllipsis, LuMessageCircle, LuChevronRight } from "react-icons/lu";
 
 interface ClientRowProps {
   id: string;
@@ -125,21 +126,34 @@ export default function ClientRow(props: ClientRowProps) {
     );
   }
 
+  const rawPhone = props.phone?.replace(/\D/g, "");
+  const whatsappUrl = rawPhone ? `https://wa.me/${rawPhone.startsWith("54") ? rawPhone : `54${rawPhone}`}` : null;
+
   return (
     <div className="flex items-center gap-3 px-4 py-3">
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium text-white">{props.name}</p>
+      <Link href={`/fotografia/clientes/${props.id}`} className="min-w-0 flex-1 group">
+        <p className="truncate text-sm font-medium text-white group-hover:text-blue-400 transition-colors">{props.name}</p>
         <p className="truncate text-xs text-neutral-500">
           {props.instagram ? `@${props.instagram}` : ""}
           {props.instagram && props.phone ? " · " : ""}
           {props.phone ?? ""}
           {!props.instagram && !props.phone ? "Sin contacto" : ""}
         </p>
-      </div>
+      </Link>
 
       <p className="flex-shrink-0 text-xs text-neutral-500">
         {props.sessionCount} {props.sessionCount === 1 ? "sesión" : "sesiones"}
       </p>
+
+      {whatsappUrl && (
+        <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="flex-shrink-0 rounded-lg p-1.5 text-neutral-600 hover:bg-neutral-700 hover:text-green-400 transition-colors" title="WhatsApp">
+          <LuMessageCircle size={14} />
+        </a>
+      )}
+
+      <Link href={`/fotografia/clientes/${props.id}`} className="flex-shrink-0 text-neutral-700 hover:text-neutral-400 transition-colors">
+        <LuChevronRight size={15} />
+      </Link>
 
       <div className="relative flex-shrink-0">
         <button

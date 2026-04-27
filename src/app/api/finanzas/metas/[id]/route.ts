@@ -19,6 +19,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       ...(body.notes !== undefined && { notes: body.notes }),
       ...(body.targetDate !== undefined && { targetDate: body.targetDate ? new Date(body.targetDate) : null }),
       ...(body.isAchieved !== undefined && { isAchieved: body.isAchieved }),
+      ...(body.monthlyDeposit !== undefined && { monthlyDeposit: body.monthlyDeposit !== null ? Number(body.monthlyDeposit) : null }),
       ...("walletId" in body && { walletId: body.walletId }),
       ...("foreignAccountId" in body && { foreignAccountId: body.foreignAccountId }),
     },

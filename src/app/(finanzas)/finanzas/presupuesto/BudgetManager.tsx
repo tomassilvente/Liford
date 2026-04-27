@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { LuTrash2, LuPlus, LuPencil, LuCheck, LuX } from "react-icons/lu";
+import { useCurrency } from "@/context/CurrencyContext";
 
 interface Budget {
   id: string;
@@ -13,12 +14,9 @@ interface Budget {
 
 interface Props {
   budgets: Budget[];
-  gastoPorCategoria: Record<string, number>;
+  gastoPorCategoria: Record<string, number>;   // clave: category, valor en ARS
+  gastoPorCategoriaUSD: Record<string, number>; // clave: category, valor en USD
   categorias: string[];
-}
-
-function fmt(n: number) {
-  return new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", maximumFractionDigits: 0 }).format(n);
 }
 
 function BudgetBar({ spent, limit }: { spent: number; limit: number }) {
@@ -34,17 +32,19 @@ function BudgetBar({ spent, limit }: { spent: number; limit: number }) {
   );
 }
 
-export default function BudgetManager({ budgets, gastoPorCategoria, categorias }: Props) {
+export default function BudgetManager({ budgets, gastoPorCategoria, gastoPorCategoriaUSD, categorias }: Props) {
   const router = useRouter();
+  const { fmt } = useCurrency();
   const [adding, setAdding] = useState(false);
   const [newCat, setNewCat] = useState("");
   const [newLimit, setNewLimit] = useState("");
+  const [newCurrency, setNewCurrency] = useState<"ARS" | "USD">("ARS");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editLimit, setEditLimit] = useState("");
   const [saving, setSaving] = useState(false);
 
   const existingCategories = new Set(budgets.map((b) => b.category));
-  const availableCategories = categorias.filter((c) => !existingCategories.has(c));
+  const available = categorias.filter((c) => !existingCategories.has(c));
 
   async function handleAdd() {
     if (!newCat || !newLimit) return;
@@ -52,25 +52,22 @@ export default function BudgetManager({ budgets, gastoPorCategoria, categorias }
     await fetch("/api/finanzas/presupuesto", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ category: newCat, monthlyLimit: newLimit, currency: "ARS" }),
+      body: JSON.stringify({ category: newCat, monthlyLimit: newLimit, currency: newCurrency }),
     });
     setSaving(false);
     setAdding(false);
-    setNewCat(""); setNewLimit("");
+    setNewCat(""); setNewLimit(""); setNewCurrency("ARS");
     router.refresh();
   }
 
-  async function handleEdit(id: string) {
+  async function handleEdit(id: string, origCurrency: string) {
     if (!editLimit) return;
     setSaving(true);
+    const b = budgets.find((b) => b.id === id)!;
     await fetch("/api/finanzas/presupuesto", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        category: budgets.find((b) => b.id === id)!.category,
-        monthlyLimit: editLimit,
-        currency: "ARS",
-      }),
+      body: JSON.stringify({ category: b.category, monthlyLimit: editLimit, currency: origCurrency }),
     });
     setSaving(false);
     setEditingId(null);
@@ -87,54 +84,42 @@ export default function BudgetManager({ budgets, gastoPorCategoria, categorias }
     router.refresh();
   }
 
+  const INPUT = "rounded-lg bg-neutral-900 px-3 py-1.5 text-sm text-white outline-none ring-1 ring-neutral-700 focus:ring-blue-500";
+
   return (
     <div className="space-y-3">
       {budgets.map((b) => {
-        const spent = gastoPorCategoria[b.category] ?? 0;
+        const budgetCur = b.currency as "ARS" | "USD";
+        const spent = budgetCur === "ARS" ? (gastoPorCategoria[b.category] ?? 0) : (gastoPorCategoriaUSD[b.category] ?? 0);
         const pct = b.monthlyLimit > 0 ? (spent / b.monthlyLimit) * 100 : 0;
         const over = spent > b.monthlyLimit;
         const isEditing = editingId === b.id;
 
         return (
           <div key={b.id} className="rounded-xl bg-neutral-800 px-5 py-4">
-            <div className="flex items-center justify-between gap-3">
+            <div className="flex items-start justify-between gap-3">
               <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between">
-                  <p className="text-sm font-medium text-white">{b.category}</p>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-medium text-white">{b.category}</p>
+                    <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-medium ${budgetCur === "USD" ? "bg-blue-900/40 text-blue-400" : "bg-neutral-700 text-neutral-400"}`}>
+                      {budgetCur}
+                    </span>
+                  </div>
                   <div className="flex items-center gap-1">
                     {isEditing ? (
                       <>
-                        <input
-                          type="number"
-                          value={editLimit}
-                          onChange={(e) => setEditLimit(e.target.value)}
-                          className="w-28 rounded-lg bg-neutral-900 px-2 py-1 text-sm text-white outline-none ring-1 ring-neutral-700 focus:ring-blue-500"
-                          autoFocus
-                        />
-                        <button onClick={() => handleEdit(b.id)} disabled={saving} className="rounded-lg p-1.5 text-green-400 hover:bg-neutral-700">
-                          <LuCheck size={14} />
-                        </button>
-                        <button onClick={() => setEditingId(null)} className="rounded-lg p-1.5 text-neutral-400 hover:bg-neutral-700">
-                          <LuX size={14} />
-                        </button>
+                        <input type="number" value={editLimit} onChange={(e) => setEditLimit(e.target.value)} className={`${INPUT} w-28`} autoFocus />
+                        <button onClick={() => handleEdit(b.id, b.currency)} disabled={saving} className="rounded-lg p-1.5 text-green-400 hover:bg-neutral-700"><LuCheck size={14} /></button>
+                        <button onClick={() => setEditingId(null)} className="rounded-lg p-1.5 text-neutral-400 hover:bg-neutral-700"><LuX size={14} /></button>
                       </>
                     ) : (
                       <>
-                        <span className={`text-sm font-medium ${over ? "text-red-400" : "text-neutral-300"}`}>
-                          {fmt(spent)} / {fmt(b.monthlyLimit)}
+                        <span className={`text-sm font-medium tabular-nums ${over ? "text-red-400" : "text-neutral-300"}`}>
+                          {fmt(spent, budgetCur)} / {fmt(b.monthlyLimit, budgetCur)}
                         </span>
-                        <button
-                          onClick={() => { setEditingId(b.id); setEditLimit(String(b.monthlyLimit)); }}
-                          className="ml-2 rounded-lg p-1.5 text-neutral-500 hover:bg-neutral-700 hover:text-white"
-                        >
-                          <LuPencil size={13} />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(b.id, b.category)}
-                          className="rounded-lg p-1.5 text-neutral-500 hover:bg-neutral-700 hover:text-red-400"
-                        >
-                          <LuTrash2 size={13} />
-                        </button>
+                        <button onClick={() => { setEditingId(b.id); setEditLimit(String(b.monthlyLimit)); }} className="ml-1 rounded-lg p-1.5 text-neutral-500 hover:bg-neutral-700 hover:text-white"><LuPencil size={13} /></button>
+                        <button onClick={() => handleDelete(b.id, b.category)} className="rounded-lg p-1.5 text-neutral-500 hover:bg-neutral-700 hover:text-red-400"><LuTrash2 size={13} /></button>
                       </>
                     )}
                   </div>
@@ -143,9 +128,8 @@ export default function BudgetManager({ budgets, gastoPorCategoria, categorias }
                 <div className="mt-1 flex justify-between text-xs text-neutral-500">
                   <span>{pct.toFixed(0)}% usado</span>
                   {over
-                    ? <span className="text-red-400">Excedido en {fmt(spent - b.monthlyLimit)}</span>
-                    : <span className="text-neutral-600">Disponible {fmt(b.monthlyLimit - spent)}</span>
-                  }
+                    ? <span className="text-red-400">Excedido en {fmt(spent - b.monthlyLimit, budgetCur)}</span>
+                    : <span className="text-neutral-600">Disponible {fmt(b.monthlyLimit - spent, budgetCur)}</span>}
                 </div>
               </div>
             </div>
@@ -153,51 +137,30 @@ export default function BudgetManager({ budgets, gastoPorCategoria, categorias }
         );
       })}
 
-      {/* Agregar nuevo presupuesto */}
       {adding ? (
-        <div className="rounded-xl bg-neutral-800 px-5 py-4">
-          <p className="mb-3 text-sm font-medium text-white">Nueva categoría</p>
-          <div className="flex gap-2">
-            <select
-              value={newCat}
-              onChange={(e) => setNewCat(e.target.value)}
-              className="flex-1 rounded-lg bg-neutral-900 px-3 py-2 text-sm text-white outline-none ring-1 ring-neutral-700 focus:ring-blue-500"
-            >
-              <option value="">Seleccioná una categoría</option>
-              {availableCategories.map((c) => (
-                <option key={c} value={c}>{c}</option>
-              ))}
+        <div className="rounded-xl bg-neutral-800 px-5 py-4 space-y-3">
+          <p className="text-sm font-medium text-white">Nuevo presupuesto</p>
+          <div className="flex flex-wrap gap-2">
+            <select value={newCat} onChange={(e) => setNewCat(e.target.value)} className={`${INPUT} flex-1 min-w-[160px]`}>
+              <option value="">Seleccioná categoría</option>
+              {available.map((c) => <option key={c} value={c}>{c}</option>)}
             </select>
-            <input
-              type="number"
-              value={newLimit}
-              onChange={(e) => setNewLimit(e.target.value)}
-              placeholder="Límite mensual"
-              className="w-36 rounded-lg bg-neutral-900 px-3 py-2 text-sm text-white placeholder-neutral-600 outline-none ring-1 ring-neutral-700 focus:ring-blue-500"
-            />
+            <input type="number" value={newLimit} onChange={(e) => setNewLimit(e.target.value)} placeholder="Límite" className={`${INPUT} w-32`} />
+            <select value={newCurrency} onChange={(e) => setNewCurrency(e.target.value as "ARS" | "USD")} className={`${INPUT} w-24`}>
+              <option value="ARS">ARS</option>
+              <option value="USD">USD</option>
+            </select>
           </div>
-          <div className="mt-3 flex gap-2">
-            <button
-              onClick={handleAdd}
-              disabled={saving || !newCat || !newLimit}
-              className="rounded-lg bg-blue-600 px-4 py-1.5 text-xs font-medium text-white hover:bg-blue-500 disabled:opacity-50"
-            >
+          <div className="flex gap-2">
+            <button onClick={handleAdd} disabled={saving || !newCat || !newLimit} className="rounded-lg bg-blue-600 px-4 py-1.5 text-xs font-medium text-white hover:bg-blue-500 disabled:opacity-50">
               {saving ? "Guardando..." : "Agregar"}
             </button>
-            <button
-              onClick={() => { setAdding(false); setNewCat(""); setNewLimit(""); }}
-              className="rounded-lg bg-neutral-700 px-4 py-1.5 text-xs font-medium text-white hover:bg-neutral-600"
-            >
-              Cancelar
-            </button>
+            <button onClick={() => { setAdding(false); setNewCat(""); setNewLimit(""); }} className="rounded-lg bg-neutral-700 px-4 py-1.5 text-xs text-white hover:bg-neutral-600">Cancelar</button>
           </div>
         </div>
-      ) : availableCategories.length > 0 && (
-        <button
-          onClick={() => setAdding(true)}
-          className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-neutral-700 py-4 text-sm text-neutral-400 transition-colors hover:border-neutral-500 hover:text-white"
-        >
-          <LuPlus size={16} /> Agregar categoría
+      ) : (
+        <button onClick={() => setAdding(true)} className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-neutral-700 py-4 text-sm text-neutral-400 hover:border-neutral-500 hover:text-white transition-colors">
+          <LuPlus size={16} /> Agregar presupuesto
         </button>
       )}
     </div>

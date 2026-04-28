@@ -3,7 +3,7 @@ import { Resend } from "resend";
 export async function sendPasswordResetEmail(to: string, username: string, resetUrl: string) {
   const resend = new Resend(process.env.RESEND_API_KEY);
   await resend.emails.send({
-    from: "Liford <noreply@liford.app>",
+    from: process.env.EMAIL_FROM ?? "Liford <onboarding@resend.dev>",
     to,
     subject: "Restablecer contraseña — Liford",
     html: `

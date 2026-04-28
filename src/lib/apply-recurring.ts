@@ -31,10 +31,10 @@ export async function applyRecurringExpenses(userId: string): Promise<void> {
           description: r.description,
           source: r.source,
           date: new Date(now.getFullYear(), now.getMonth(), r.dayOfMonth),
+          recurrentRuleId: r.id,
         },
       })
     ),
-    // Adjust wallet balance: decrement for expenses, increment for income
     ...pending
       .filter((r) => r.walletId)
       .map((r) =>

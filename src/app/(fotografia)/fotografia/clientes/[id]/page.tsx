@@ -44,11 +44,7 @@ export default async function ClientDetailPage({
 
   const client = await db.client.findFirst({
     where: { id, userId },
-    include: {
-      sessions: {
-        orderBy: { date: "desc" },
-      },
-    },
+    include: { sessions: { orderBy: { date: "desc" } } },
   });
 
   if (!client) notFound();
@@ -94,27 +90,52 @@ export default async function ClientDetailPage({
           <LuArrowLeft size={14} /> Clientes
         </Link>
         <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold text-white">{client.name}</h1>
-            <div className="mt-2 flex flex-wrap items-center gap-3">
-              {client.instagram && (
-                <a
-                  href={`https://instagram.com/${client.instagram.replace("@", "")}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-1.5 text-sm text-neutral-500 hover:text-pink-400 transition-colors"
-                >
-                  <LuInstagram size={13} />
-                  {client.instagram}
-                </a>
-              )}
-              {client.phone && (
-                <span className="flex items-center gap-1.5 text-sm text-neutral-500">
-                  <LuPhone size={13} />
-                  {client.phone}
-                </span>
-              )}
-            </div>
+          <div className="flex items-center gap-4">
+            {/* Avatar con iniciales + gradient */}
+            {(() => {
+              const initials = client.name.split(" ").slice(0, 2).map((w) => w[0]?.toUpperCase() ?? "").join("");
+              const GRADIENTS = [
+                "from-blue-600 to-indigo-700",
+                "from-violet-600 to-purple-700",
+                "from-rose-600 to-pink-700",
+                "from-emerald-600 to-teal-700",
+                "from-amber-600 to-orange-700",
+                "from-cyan-600 to-sky-700",
+              ];
+              const gradient = GRADIENTS[client.name.charCodeAt(0) % GRADIENTS.length];
+              const clientSince = new Date(client.createdAt).toLocaleDateString("es-AR", { month: "short", year: "numeric" });
+              return (
+                <>
+                  <div className={`flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br ${gradient} text-lg font-bold text-white select-none`}>
+                    {initials}
+                  </div>
+                  <div>
+                    <h1 className="text-2xl font-bold text-white">{client.name}</h1>
+                    <div className="mt-1.5 flex flex-wrap items-center gap-3">
+                      {client.instagram && (
+                        <a
+                          href={`https://instagram.com/${client.instagram.replace("@", "")}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1.5 text-sm text-neutral-500 hover:text-pink-400 transition-colors"
+                        >
+                          <LuInstagram size={13} />
+                          {client.instagram}
+                        </a>
+                      )}
+                      {client.phone && (
+                        <span className="flex items-center gap-1.5 text-sm text-neutral-500">
+                          <LuPhone size={13} />
+                          {client.phone}
+                        </span>
+                      )}
+                      <span className="text-xs text-neutral-600">Cliente desde {clientSince}</span>
+                    </div>
+                    {client.notes && <p className="mt-1 text-xs text-neutral-600">{client.notes}</p>}
+                  </div>
+                </>
+              );
+            })()}
           </div>
           <div className="flex gap-2">
             {whatsappUrl && (
@@ -184,14 +205,6 @@ export default async function ClientDetailPage({
               {STATUS_LABELS[nextSession.status]}
             </span>
           </div>
-        </div>
-      )}
-
-      {/* Notas */}
-      {client.notes && (
-        <div className="mb-6 rounded-xl bg-neutral-800 p-4">
-          <p className="mb-1 text-xs font-medium uppercase tracking-wider text-neutral-500">Notas</p>
-          <p className="text-sm text-neutral-300 whitespace-pre-wrap">{client.notes}</p>
         </div>
       )}
 

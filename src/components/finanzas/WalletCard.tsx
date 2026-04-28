@@ -72,73 +72,69 @@ export default function WalletCard({ wallet }: { wallet: Wallet }) {
 
   return (
     <div className="group relative rounded-xl bg-neutral-800 p-5">
-      <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0 flex-1">
 
-          {/* Nombre */}
-          {editingName ? (
-            <div className="flex items-center gap-1.5 mb-1">
-              <input
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                onKeyDown={(e) => { if (e.key === "Enter") saveName(); if (e.key === "Escape") { setName(wallet.name); setEditingName(false); } }}
-                autoFocus
-                className="rounded-lg bg-neutral-900 px-2 py-1 text-sm text-white outline-none ring-1 ring-blue-500 w-full"
-              />
-              <button onClick={saveName} disabled={loading} className="text-green-400 hover:text-green-300 flex-shrink-0"><LuCheck size={15} /></button>
-              <button onClick={() => { setName(wallet.name); setEditingName(false); }} className="text-neutral-500 hover:text-neutral-300 flex-shrink-0"><LuX size={15} /></button>
-            </div>
-          ) : (
-            <button
-              onClick={() => setEditingName(true)}
-              className="text-sm text-neutral-400 hover:text-neutral-200 transition-colors text-left"
-            >
-              {wallet.name}
-            </button>
-          )}
+      {/* Fila superior: nombre + botón eliminar */}
+      <div className="flex items-start justify-between gap-2 mb-3">
+        {editingName ? (
+          <div className="flex items-center gap-1.5 flex-1">
+            <input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") saveName(); if (e.key === "Escape") { setName(wallet.name); setEditingName(false); } }}
+              autoFocus
+              className="rounded-lg bg-neutral-900 px-2 py-1 text-sm text-white outline-none ring-1 ring-blue-500 w-full"
+            />
+            <button onClick={saveName} disabled={loading} className="text-green-400 hover:text-green-300 flex-shrink-0"><LuCheck size={15} /></button>
+            <button onClick={() => { setName(wallet.name); setEditingName(false); }} className="text-neutral-500 hover:text-neutral-300 flex-shrink-0"><LuX size={15} /></button>
+          </div>
+        ) : (
+          <button
+            onClick={() => setEditingName(true)}
+            className="text-sm text-neutral-400 hover:text-neutral-200 transition-colors text-left"
+          >
+            {wallet.name}
+          </button>
+        )}
 
-          {/* Balance — clickeable para editar */}
-          {editingBalance ? (
-            <div className="flex items-center gap-1.5 mt-1">
-              <input
-                ref={balanceInputRef}
-                type="number"
-                value={balance}
-                onChange={(e) => setBalance(e.target.value)}
-                onKeyDown={(e) => { if (e.key === "Enter") saveBalance(); if (e.key === "Escape") { setBalance(String(wallet.balance)); setEditingBalance(false); } }}
-                onBlur={saveBalance}
-                step="0.01"
-                className="rounded-lg bg-neutral-900 px-3 py-1.5 text-xl font-bold text-white outline-none ring-1 ring-blue-500 w-full [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-              />
-            </div>
-          ) : (
-            <button
-              onClick={() => { setBalance(String(wallet.balance)); setEditingBalance(true); }}
-              title="Tocar para editar el saldo"
-              className={`mt-1 text-left text-2xl font-bold transition-colors hover:opacity-70 ${
-                wallet.balance < 0 ? "text-red-400" : "text-white"
-              }`}
-            >
-              {formatCurrency(wallet.balance, wallet.currency)}
-            </button>
-          )}
-
-          <span className="mt-2 inline-block rounded-full bg-neutral-700 px-2 py-0.5 text-xs text-neutral-300">
-            {wallet.currency}
-          </span>
-        </div>
-
-        {/* Botón eliminar */}
         <button
           onClick={handleDelete}
-          className="rounded-lg p-1.5 text-neutral-600 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-neutral-700 hover:text-red-400"
+          className="rounded-lg p-1.5 text-neutral-600 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-neutral-700 hover:text-red-400 flex-shrink-0"
           title="Eliminar billetera"
         >
           <LuTrash2 size={14} />
         </button>
       </div>
 
-      {/* Hint edición inline */}
+      {/* Monto — ocupa todo el ancho */}
+      {editingBalance ? (
+        <input
+          ref={balanceInputRef}
+          type="number"
+          value={balance}
+          onChange={(e) => setBalance(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter") saveBalance(); if (e.key === "Escape") { setBalance(String(wallet.balance)); setEditingBalance(false); } }}
+          onBlur={saveBalance}
+          step="0.01"
+          className="w-full rounded-lg bg-neutral-900 px-3 py-1.5 text-2xl font-bold text-white outline-none ring-1 ring-blue-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+        />
+      ) : (
+        <button
+          onClick={() => { setBalance(String(wallet.balance)); setEditingBalance(true); }}
+          title="Tocar para editar el saldo"
+          className={`text-left text-2xl font-bold tabular-nums transition-colors hover:opacity-70 ${
+            wallet.balance < 0 ? "text-red-400" : "text-white"
+          }`}
+        >
+          {formatCurrency(wallet.balance, wallet.currency)}
+        </button>
+      )}
+
+      {/* Badge moneda */}
+      <span className="mt-2 inline-block rounded-full bg-neutral-700 px-2 py-0.5 text-xs text-neutral-300">
+        {wallet.currency}
+      </span>
+
+      {/* Hint */}
       {!editingBalance && !editingName && (
         <p className="mt-2 flex items-center gap-1 text-xs text-neutral-700">
           <LuPencil size={10} />

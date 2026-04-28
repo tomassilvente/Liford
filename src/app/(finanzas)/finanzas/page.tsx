@@ -21,15 +21,9 @@ export default async function FinanzasDashboard() {
   const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
 
   const [
-    wallets,
-    foreignAccounts,
-    investments,
-    allTransactions,
-    recentTransactions,
-    wealthSnapshots,
-    budgets,
-    sessionsToday,
-    recurringItems,
+    wallets, foreignAccounts, investments,
+    allTransactions, recentTransactions, wealthSnapshots,
+    budgets, sessionsToday, allRecurring,
   ] = await Promise.all([
     db.wallet.findMany({ where: { userId } }),
     db.foreignAccount.findMany({ where: { userId } }),
@@ -38,42 +32,25 @@ export default async function FinanzasDashboard() {
       where: { userId, date: { gte: sixMonthsAgo } },
       orderBy: { date: "asc" },
     }),
-    db.transaction.findMany({
-      where: { userId },
-      orderBy: { date: "desc" },
-      take: 8,
-    }),
-    db.wealthSnapshot.findMany({
-      where: { userId },
-      orderBy: { date: "asc" },
-      take: 12,
-    }),
+    db.transaction.findMany({ where: { userId }, orderBy: { date: "desc" }, take: 8 }),
+    db.wealthSnapshot.findMany({ where: { userId }, orderBy: { date: "asc" }, take: 12 }),
     db.budget.findMany({ where: { userId } }),
     db.session.findMany({
-      where: {
-        client: { userId },
-        date: { gte: startOfToday, lt: endOfToday },
-      },
+      where: { client: { userId }, date: { gte: startOfToday, lt: endOfToday } },
       include: { client: { select: { name: true } } },
     }),
-    db.recurringExpense.findMany({
-      where: { userId, isActive: true, dayOfMonth: now.getDate() },
-    }),
+    db.recurringExpense.findMany({ where: { userId, isActive: true }, orderBy: { dayOfMonth: "asc" } }),
   ]);
 
   // ── Portfolio ──────────────────────────────────────────────────────────────
   const tickers = investments.map((i) => i.ticker);
   const cotizaciones = tickers.length > 0 ? await fetchCotizaciones(tickers) : {};
-
   const portfolioUSD = investments.reduce((sum, inv) => {
-    const price = cotizaciones[inv.ticker]?.price ?? inv.avgBuyPrice;
-    return sum + inv.quantity * price;
+    return sum + inv.quantity * (cotizaciones[inv.ticker]?.price ?? inv.avgBuyPrice);
   }, 0);
-
   const portfolioDayChange = investments.reduce((sum, inv) => {
     const c = cotizaciones[inv.ticker];
-    if (!c?.changeAmount) return sum;
-    return sum + c.changeAmount * inv.quantity;
+    return c?.changeAmount ? sum + c.changeAmount * inv.quantity : sum;
   }, 0);
 
   // ── Billeteras ─────────────────────────────────────────────────────────────
@@ -92,9 +69,45 @@ export default async function FinanzasDashboard() {
 
   const gastosLastMes = lastMes.filter((t) => t.type === TransactionType.EXPENSE && t.currency === "ARS").reduce((s, t) => s + t.amount, 0);
   const ingresosLastMes = lastMes.filter((t) => t.type === TransactionType.INCOME && t.currency === "ARS").reduce((s, t) => s + t.amount, 0);
-
   const diffGastos = gastosLastMes > 0 ? ((gastosMes - gastosLastMes) / gastosLastMes) * 100 : null;
   const diffIngresos = ingresosLastMes > 0 ? ((ingresosMes - ingresosLastMes) / ingresosLastMes) * 100 : null;
+
+  // ── Gastado hoy ────────────────────────────────────────────────────────────
+  const txHoy = allTransactions.filter((t) => t.date >= startOfToday && t.date < endOfToday && t.type === TransactionType.EXPENSE && t.currency === "ARS");
+  const gastadoHoy = txHoy.reduce((s, t) => s + t.amount, 0);
+
+  // ── Presupuesto del mes ────────────────────────────────────────────────────
+  const presupuestoTotal = budgets.filter((b) => b.currency === "ARS").reduce((s, b) => s + b.monthlyLimit, 0);
+  const presupuestoRestante = Math.max(0, presupuestoTotal - gastosMes);
+  const presupuestoPct = presupuestoTotal > 0 ? (gastosMes / presupuestoTotal) * 100 : null;
+  const diasRestantesMes = Math.ceil((endOfMonth.getTime() - now.getTime()) / 86400000);
+
+  // ── Próximo recurrente (primero que vence en los próximos días) ────────────
+  const today = now.getDate();
+  const proximoRecurrente = (() => {
+    // Recurrentes que aún no se aplicaron este mes (dayOfMonth >= today)
+    const proximos = allRecurring
+      .filter((r) => r.transactionType === TransactionType.EXPENSE)
+      .filter((r) => {
+        if (r.dayOfMonth >= today) return true;
+        return false;
+      })
+      .sort((a, b) => a.dayOfMonth - b.dayOfMonth);
+    return proximos[0] ?? null;
+  })();
+
+  // ── Alertas de presupuesto ─────────────────────────────────────────────────
+  const gastoPorCat: Record<string, number> = {};
+  for (const t of thisMes) {
+    if (t.type === TransactionType.EXPENSE && t.source === TransactionSource.PERSONAL && t.currency === "ARS") {
+      gastoPorCat[t.category] = (gastoPorCat[t.category] ?? 0) + t.amount;
+    }
+  }
+  const budgetAlerts = budgets
+    .filter((b) => b.currency === "ARS")
+    .map((b) => ({ category: b.category, spent: gastoPorCat[b.category] ?? 0, limit: b.monthlyLimit, pct: b.monthlyLimit > 0 ? ((gastoPorCat[b.category] ?? 0) / b.monthlyLimit) * 100 : 0 }))
+    .filter((a) => a.pct >= 90)
+    .sort((a, b) => b.pct - a.pct);
 
   // ── Categorías ─────────────────────────────────────────────────────────────
   const categoryMap: Record<string, number> = {};
@@ -129,23 +142,6 @@ export default async function FinanzasDashboard() {
     totalUSD: s.totalUSD,
   }));
 
-  // ── Alertas de presupuesto ─────────────────────────────────────────────────
-  const gastoPorCat: Record<string, number> = {};
-  for (const t of thisMes) {
-    if (t.type === TransactionType.EXPENSE && t.source === TransactionSource.PERSONAL && t.currency === "ARS") {
-      gastoPorCat[t.category] = (gastoPorCat[t.category] ?? 0) + t.amount;
-    }
-  }
-  const budgetAlerts = budgets
-    .filter((b) => b.currency === "ARS")
-    .map((b) => {
-      const spent = gastoPorCat[b.category] ?? 0;
-      const pct = b.monthlyLimit > 0 ? (spent / b.monthlyLimit) * 100 : 0;
-      return { category: b.category, spent, limit: b.monthlyLimit, pct };
-    })
-    .filter((a) => a.pct >= 90)
-    .sort((a, b) => b.pct - a.pct);
-
   // ── Sesiones hoy ───────────────────────────────────────────────────────────
   const sessionsTodayData = sessionsToday.map((s) => ({
     clientName: s.client.name,
@@ -153,16 +149,9 @@ export default async function FinanzasDashboard() {
     type: s.type,
   }));
 
-  // ── Recurrentes hoy ────────────────────────────────────────────────────────
-  const recurringTodayData = recurringItems.map((r) => ({
-    description: r.description,
-    amount: r.amount,
-    currency: r.currency,
-    transactionType: r.transactionType,
-  }));
-
   return (
     <DashboardContent
+      displayName={session.displayName ?? session.username}
       totalARS={totalARS}
       walletsARSCount={wallets.filter((w) => w.currency === "ARS").length}
       foreignUSD={foreignUSD}
@@ -178,6 +167,18 @@ export default async function FinanzasDashboard() {
       diffGastos={diffGastos}
       diffIngresos={diffIngresos}
       mesLabel={now.toLocaleDateString("es-AR", { month: "long", year: "numeric" })}
+      gastadoHoy={gastadoHoy}
+      txHoyCount={txHoy.length}
+      presupuestoTotal={presupuestoTotal}
+      presupuestoRestante={presupuestoRestante}
+      presupuestoPct={presupuestoPct}
+      diasRestantesMes={diasRestantesMes}
+      proximoRecurrente={proximoRecurrente ? {
+        description: proximoRecurrente.description,
+        amount: proximoRecurrente.amount,
+        currency: proximoRecurrente.currency,
+        dayOfMonth: proximoRecurrente.dayOfMonth,
+      } : null}
       categoryData={categoryData}
       monthlyData={Object.values(monthlyMap)}
       wealthData={wealthData}
@@ -192,7 +193,6 @@ export default async function FinanzasDashboard() {
       }))}
       budgetAlerts={budgetAlerts}
       sessionsToday={sessionsTodayData}
-      recurringToday={recurringTodayData}
     />
   );
 }

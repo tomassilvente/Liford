@@ -33,6 +33,9 @@ export default async function MetasPage() {
     monthlyDeposit: g.monthlyDeposit ?? null,
     accountKey: g.walletId ? `wallet:${g.walletId}` : g.foreignAccountId ? `foreign:${g.foreignAccountId}` : null,
     currentBalance: g.wallet?.balance ?? g.foreignAccount?.balance ?? 0,
+    autoContributionAmount: g.autoContributionAmount ?? null,
+    autoContributionDay: g.autoContributionDay ?? null,
+    autoContributionFromWallet: g.autoContributionFromWallet ?? null,
   }));
 
   const active = serialized.filter((g) => !g.isAchieved);

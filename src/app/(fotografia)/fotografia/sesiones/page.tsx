@@ -96,7 +96,7 @@ export default async function SesionesPage({
         <div>
           <h1 className="text-2xl font-bold text-white">Sesiones</h1>
           <p className="mt-1 text-sm text-neutral-400">
-            {sessions.length} sesiones
+            {activeView === "kanban" ? "Tu pipeline visual · arrastrá para cambiar de estado" : `${sessions.length} sesiones`}
             {pendingPayment > 0 && (
               <span className="ml-2 rounded-full bg-green-900/40 px-2 py-0.5 text-xs text-green-400 ring-1 ring-green-800/40">
                 {pendingPayment} por cobrar

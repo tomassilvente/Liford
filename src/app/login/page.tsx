@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { LuLock, LuUser, LuUserPlus } from "react-icons/lu";
 
 type Mode = "login" | "register";
@@ -213,6 +214,14 @@ export default function LoginPage() {
               : isLogin ? "Ingresar" : "Crear cuenta"
             }
           </button>
+
+          {isLogin && (
+            <div className="mt-4 text-center">
+              <Link href="/forgot-password" className="text-xs text-neutral-500 hover:text-neutral-300 transition-colors">
+                ¿Olvidaste tu contraseña?
+              </Link>
+            </div>
+          )}
         </form>
 
       </div>

@@ -53,11 +53,13 @@ model User {
   username             String    @unique
   passwordHash         String
   displayName          String?
+  email                String?   @unique
   onboardingCompleted  Boolean   @default(false)
   createdAt            DateTime  @default(now())
 
   wallets            Wallet[]
   foreignAccounts    ForeignAccount[]
+  passwordResetTokens PasswordResetToken[]
   investments        Investment[]
   transactions       Transaction[]
   clients            Client[]
@@ -162,6 +164,15 @@ model WealthSnapshot {
   createdAt    DateTime @default(now())
 
   @@unique([userId, date])
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique @default(cuid())
+  expiresAt DateTime
+  createdAt DateTime @default(now())
 }
 
 // ─── FINANZAS ────────────────────────────────────────────────────────────────

@@ -40,21 +40,24 @@ export default async function BilleterasPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-white">Billeteras</h1>
-      <p className="mt-1 text-neutral-400">Tus billeteras, cuentas y portfolio</p>
+      {/* Page header */}
+      <div style={{ borderTop: "4px solid var(--ink)", paddingTop: 12, marginBottom: 24 }}>
+        <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.16em", color: "var(--ink3)", margin: 0, textTransform: "uppercase" }}>II · Patrimonio</p>
+        <h1 style={{ fontFamily: "var(--font-display)", fontSize: 36, fontStyle: "italic", color: "var(--ink)", margin: "4px 0 0", lineHeight: 0.95, letterSpacing: "-0.02em" }}>El estado de cuentas</h1>
+      </div>
 
       {/* Totales */}
       <div className="mt-6 flex flex-wrap gap-3">
         {totalARS > 0 && (
-          <div className="rounded-xl bg-neutral-900 px-5 py-3">
-            <p className="text-xs text-neutral-400">Total ARS</p>
-            <p className="mt-1 text-lg font-bold text-white">{fmtARS(totalARS)}</p>
+          <div style={{ background: "var(--paper2)", border: "1px solid var(--rule2)", padding: "12px 20px" }}>
+            <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.12em", color: "var(--ink3)", textTransform: "uppercase", margin: 0 }}>Total ARS</p>
+            <p style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700, color: "var(--ink)", marginTop: 4 }}>{fmtARS(totalARS)}</p>
           </div>
         )}
-        <div className="rounded-xl bg-neutral-900 px-5 py-3">
-          <p className="text-xs text-neutral-400">Total USD</p>
-          <p className="mt-1 text-lg font-bold text-white">{fmtUSD(totalUSD)}</p>
-          <p className="mt-0.5 text-xs text-neutral-600">
+        <div style={{ background: "var(--paper2)", border: "1px solid var(--rule2)", padding: "12px 20px" }}>
+          <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.12em", color: "var(--ink3)", textTransform: "uppercase", margin: 0 }}>Total USD</p>
+          <p style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700, color: "var(--ink)", marginTop: 4 }}>{fmtUSD(totalUSD)}</p>
+          <p style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ink3)", marginTop: 2 }}>
             {[
               walletsUSD > 0 && `Billeteras ${fmtUSD(walletsUSD)}`,
               foreignUSD > 0 && `Foráneas ${fmtUSD(foreignUSD)}`,
@@ -66,7 +69,7 @@ export default async function BilleterasPage() {
 
       {/* Billeteras locales */}
       <div className="mt-8">
-        <p className="mb-3 text-xs font-medium uppercase tracking-wider text-neutral-500">Billeteras</p>
+        <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.12em", color: "var(--ink3)", textTransform: "uppercase", marginBottom: 12 }}>Billeteras</p>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {wallets.map((w) => (
             <WalletCard key={w.id} wallet={w} />
@@ -77,9 +80,9 @@ export default async function BilleterasPage() {
 
       {/* Cuentas foráneas */}
       <div className="mt-8">
-        <p className="mb-3 text-xs font-medium uppercase tracking-wider text-neutral-500">
+        <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.12em", color: "var(--ink3)", textTransform: "uppercase", marginBottom: 12 }}>
           Cuentas foráneas
-          <span className="ml-2 normal-case text-neutral-600">Payoneer, Wise, Deel, etc.</span>
+          <span style={{ fontFamily: "var(--font-serif)", fontSize: 11, textTransform: "none", letterSpacing: 0, color: "var(--ink3)", marginLeft: 8 }}>Payoneer, Wise, Deel, etc.</span>
         </p>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {foreignAccounts.map((a) => (
@@ -92,17 +95,17 @@ export default async function BilleterasPage() {
       {/* Portfolio */}
       {investments.length > 0 && (
         <div className="mt-8">
-          <p className="mb-3 text-xs font-medium uppercase tracking-wider text-neutral-500">Portfolio de inversiones</p>
-          <div className="rounded-xl bg-neutral-800 p-5">
+          <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.12em", color: "var(--ink3)", textTransform: "uppercase", marginBottom: 12 }}>Portfolio de inversiones</p>
+          <div style={{ background: "var(--paper2)", border: "1px solid var(--rule2)", padding: 20 }}>
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-neutral-400">Valor actual del portfolio</p>
-                <p className="mt-1 text-2xl font-bold text-white">{fmtUSD(portfolioUSD)}</p>
-                <p className="mt-1 text-xs text-neutral-500">{investments.length} activos · Precios en tiempo real</p>
+                <p style={{ fontFamily: "var(--font-serif)", fontSize: 13, color: "var(--ink2)" }}>Valor actual del portfolio</p>
+                <p style={{ fontFamily: "var(--font-mono)", fontSize: 24, fontWeight: 700, color: "var(--ink)", marginTop: 4 }}>{fmtUSD(portfolioUSD)}</p>
+                <p style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ink3)", marginTop: 4 }}>{investments.length} activos · Precios en tiempo real</p>
               </div>
               <Link
                 href="/finanzas/inversiones"
-                className="rounded-lg bg-neutral-700 px-4 py-2 text-sm text-white hover:bg-neutral-600"
+                style={{ background: "var(--ink)", color: "var(--paper)", border: "none", padding: "8px 16px", fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: "0.1em", textTransform: "uppercase", textDecoration: "none", display: "inline-block" }}
               >
                 Ver inversiones →
               </Link>

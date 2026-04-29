@@ -14,7 +14,6 @@ export default async function InversionesPage() {
   const tickers = inversiones.map((i) => i.ticker);
   const cotizaciones = await fetchCotizaciones(tickers);
 
-  // Totales
   let totalInvertido = 0;
   let totalActual = 0;
   let hayPrecios = false;
@@ -42,40 +41,44 @@ export default async function InversionesPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-white">Inversiones</h1>
-      <p className="mt-1 text-neutral-400">Tu portfolio de acciones y crypto en USD</p>
+      {/* Page header */}
+      <div style={{ borderTop: "4px solid var(--ink)", paddingTop: 12, marginBottom: 24 }}>
+        <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.16em", color: "var(--ink3)", margin: 0, textTransform: "uppercase" }}>III · Portfolio</p>
+        <h1 style={{ fontFamily: "var(--font-display)", fontSize: 36, fontStyle: "italic", color: "var(--ink)", margin: "4px 0 0", lineHeight: 0.95, letterSpacing: "-0.02em" }}>Inversiones</h1>
+        <p style={{ fontFamily: "var(--font-serif)", fontSize: 13, color: "var(--ink2)", marginTop: 6, fontStyle: "italic" }}>Tu portfolio de acciones y crypto en USD</p>
+      </div>
 
       {/* Resumen del portfolio */}
       {inversiones.length > 0 && (
         <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <div className="rounded-xl bg-neutral-800 px-4 py-3">
-            <p className="text-xs text-neutral-400">Invertido</p>
-            <p className="mt-1 text-lg font-bold text-white">{fmt(totalInvertido)}</p>
+          <div style={{ background: "var(--paper2)", border: "1px solid var(--rule2)", padding: "12px 16px" }}>
+            <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--ink3)", margin: 0 }}>Invertido</p>
+            <p style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700, color: "var(--ink)", marginTop: 4 }}>{fmt(totalInvertido)}</p>
           </div>
-          <div className="rounded-xl bg-neutral-800 px-4 py-3">
-            <p className="text-xs text-neutral-400">Valor actual</p>
-            <p className="mt-1 text-lg font-bold text-white">
+          <div style={{ background: "var(--paper2)", border: "1px solid var(--rule2)", padding: "12px 16px" }}>
+            <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--ink3)", margin: 0 }}>Valor actual</p>
+            <p style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700, color: "var(--ink)", marginTop: 4 }}>
               {hayPrecios ? fmt(totalActual) : "—"}
             </p>
           </div>
-          <div className="rounded-xl bg-neutral-800 px-4 py-3">
-            <p className="text-xs text-neutral-400">P&L total</p>
+          <div style={{ background: "var(--paper2)", border: "1px solid var(--rule2)", padding: "12px 16px" }}>
+            <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--ink3)", margin: 0 }}>P&L total</p>
             {hayPrecios ? (
-              <p className={`mt-1 text-lg font-bold ${pnlTotal >= 0 ? "text-green-400" : "text-red-400"}`}>
+              <p style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700, color: pnlTotal >= 0 ? "var(--olive)" : "var(--brick)", marginTop: 4 }}>
                 {pnlTotal >= 0 ? "+" : ""}{fmt(pnlTotal)}
               </p>
             ) : (
-              <p className="mt-1 text-lg font-bold text-neutral-500">—</p>
+              <p style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700, color: "var(--ink3)", marginTop: 4 }}>—</p>
             )}
           </div>
-          <div className="rounded-xl bg-neutral-800 px-4 py-3">
-            <p className="text-xs text-neutral-400">Rendimiento</p>
+          <div style={{ background: "var(--paper2)", border: "1px solid var(--rule2)", padding: "12px 16px" }}>
+            <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--ink3)", margin: 0 }}>Rendimiento</p>
             {hayPrecios ? (
-              <p className={`mt-1 text-lg font-bold ${pnlPct >= 0 ? "text-green-400" : "text-red-400"}`}>
+              <p style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700, color: pnlPct >= 0 ? "var(--olive)" : "var(--brick)", marginTop: 4 }}>
                 {pnlPct >= 0 ? "+" : ""}{pnlPct.toFixed(2)}%
               </p>
             ) : (
-              <p className="mt-1 text-lg font-bold text-neutral-500">—</p>
+              <p style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700, color: "var(--ink3)", marginTop: 4 }}>—</p>
             )}
           </div>
         </div>
@@ -107,7 +110,7 @@ export default async function InversionesPage() {
       </div>
 
       {inversiones.length > 0 && (
-        <p className="mt-4 text-xs text-neutral-600">
+        <p style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ink3)", marginTop: 16 }}>
           Precios actualizados cada 5 min · Fuente: Yahoo Finance
         </p>
       )}

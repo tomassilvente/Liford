@@ -13,6 +13,17 @@ function formatCurrency(amount: number, currency: string) {
   }).format(amount);
 }
 
+const inputStyle: React.CSSProperties = {
+  background: "var(--paper)",
+  border: "1px solid var(--rule2)",
+  fontFamily: "var(--font-serif)",
+  fontSize: 14,
+  color: "var(--ink)",
+  padding: "8px 10px",
+  outline: "none",
+  width: "100%",
+};
+
 export default function ForeignAccountCard({ account }: { account: ForeignAccount }) {
   const router = useRouter();
   const [editing, setEditing] = useState(false);
@@ -40,34 +51,34 @@ export default function ForeignAccountCard({ account }: { account: ForeignAccoun
 
   if (editing) {
     return (
-      <div className="rounded-xl bg-neutral-800 p-5 ring-1 ring-blue-500">
+      <div style={{ background: "var(--paper2)", border: "1px solid var(--ink)", padding: 20 }}>
         <div className="flex flex-col gap-3">
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="rounded-lg bg-neutral-900 px-3 py-2 text-sm text-white outline-none ring-1 ring-neutral-700 focus:ring-blue-500"
+            style={inputStyle}
           />
           <div>
-            <label className="mb-1 block text-xs text-neutral-400">Saldo ({account.currency})</label>
+            <label style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--ink3)", display: "block", marginBottom: 4 }}>Saldo ({account.currency})</label>
             <input
               type="number"
               value={balance}
               onChange={(e) => setBalance(e.target.value)}
               step="0.01"
-              className="w-full rounded-lg bg-neutral-900 px-3 py-2 text-sm text-white outline-none ring-1 ring-neutral-700 focus:ring-blue-500"
+              style={inputStyle}
             />
           </div>
           <div className="flex gap-2">
             <button
               onClick={handleSave}
               disabled={loading}
-              className="rounded-lg bg-blue-600 px-4 py-1.5 text-xs font-medium text-white hover:bg-blue-500 disabled:opacity-50"
+              style={{ background: "var(--ink)", color: "var(--paper)", border: "none", padding: "8px 16px", fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: "0.1em", textTransform: "uppercase", cursor: "pointer", opacity: loading ? 0.5 : 1 }}
             >
               Guardar
             </button>
             <button
               onClick={() => setEditing(false)}
-              className="rounded-lg bg-neutral-700 px-4 py-1.5 text-xs font-medium text-white hover:bg-neutral-600"
+              style={{ background: "var(--paper3)", color: "var(--ink2)", border: "1px solid var(--rule2)", padding: "8px 16px", fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: "0.1em", textTransform: "uppercase", cursor: "pointer" }}
             >
               Cancelar
             </button>
@@ -78,31 +89,31 @@ export default function ForeignAccountCard({ account }: { account: ForeignAccoun
   }
 
   return (
-    <div className="group relative rounded-xl bg-neutral-800 p-5 ring-1 ring-neutral-700">
+    <div className="group relative" style={{ background: "var(--paper2)", border: "1px solid var(--rule2)", padding: 20 }}>
       <div className="flex items-start justify-between">
         <div>
-          <p className="text-sm text-neutral-400">{account.name}</p>
-          <p className="mt-1 text-2xl font-bold text-white">
+          <p style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ink2)" }}>{account.name}</p>
+          <p style={{ fontFamily: "var(--font-mono)", fontSize: 22, fontWeight: 700, color: "var(--ink)", marginTop: 4 }}>
             {formatCurrency(account.balance, account.currency)}
           </p>
           <div className="mt-2 flex items-center gap-2">
-            <span className="rounded-full bg-neutral-700 px-2 py-0.5 text-xs text-neutral-300">
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--ink3)", background: "var(--paper3)", padding: "2px 6px" }}>
               {account.currency}
             </span>
-            <span className="text-xs text-neutral-500">Cuenta foránea</span>
+            <span style={{ fontFamily: "var(--font-serif)", fontSize: 11, fontStyle: "italic", color: "var(--ink3)" }}>Cuenta foránea</span>
           </div>
         </div>
-        <div className="flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
           <button
             onClick={() => setEditing(true)}
-            className="rounded-lg p-1.5 text-neutral-400 hover:bg-neutral-700 hover:text-white"
+            style={{ color: "var(--ink3)", background: "none", border: "none", cursor: "pointer", padding: 4 }}
             title="Editar"
           >
             <LuPencil size={14} />
           </button>
           <button
             onClick={handleDelete}
-            className="rounded-lg p-1.5 text-neutral-400 hover:bg-neutral-700 hover:text-red-400"
+            style={{ color: "var(--ink3)", background: "none", border: "none", cursor: "pointer", padding: 4 }}
             title="Eliminar"
           >
             <LuTrash2 size={14} />

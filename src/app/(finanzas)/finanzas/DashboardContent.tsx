@@ -1,14 +1,10 @@
 "use client";
 
-import { useCurrency } from "@/context/CurrencyContext";
-import MonthlyChart, { type MonthlyDataPoint } from "@/components/finanzas/MonthlyChart";
-import CategoryChart from "@/components/finanzas/CategoryChart";
-import WealthChart, { type WealthDataPoint } from "@/components/finanzas/WealthChart";
 import Link from "next/link";
-import {
-  LuTrendingDown, LuTrendingUp, LuArrowUp, LuArrowDown,
-  LuTriangleAlert, LuCalendar, LuRepeat,
-} from "react-icons/lu";
+import type { MonthlyDataPoint } from "@/components/finanzas/MonthlyChart";
+import type { WealthDataPoint } from "@/components/finanzas/WealthChart";
+import WealthChart from "@/components/finanzas/WealthChart";
+import MonthlyChart from "@/components/finanzas/MonthlyChart";
 
 interface BudgetAlert {
   category: string;
@@ -65,27 +61,50 @@ interface Props {
   sessionsToday: SessionToday[];
 }
 
-function Diff({ pct, inverse = false }: { pct: number | null; inverse?: boolean }) {
-  if (pct === null) return null;
-  const isGood = inverse ? pct <= 0 : pct >= 0;
+const fmtARS = (n: number) =>
+  new Intl.NumberFormat("es-AR", { maximumFractionDigits: 0 }).format(n);
+const fmtUSD = (n: number) =>
+  new Intl.NumberFormat("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(n);
+
+function WavyRule({ width = 160 }: { width?: number }) {
   return (
-    <p className={`mt-1 flex items-center gap-0.5 text-xs ${isGood ? "text-green-500" : "text-red-500"}`}>
-      {pct >= 0 ? <LuArrowUp size={10} /> : <LuArrowDown size={10} />}
-      {pct >= 0 ? "+" : ""}{pct.toFixed(0)}% vs mes ant.
-    </p>
+    <svg width={width} height={6} viewBox={`0 0 ${width} 6`} style={{ display: "block", margin: "8px 0" }}>
+      <path
+        d={`M0,3 Q${width / 8},0 ${width / 4},3 T${width / 2},3 T${(3 * width) / 4},3 T${width},3`}
+        stroke="var(--rule2)" strokeWidth="1" fill="none"
+      />
+    </svg>
   );
 }
 
-function getHour() {
-  const h = new Date().getHours();
-  if (h < 12) return "Buenos días";
-  if (h < 19) return "Buenas tardes";
-  return "Buenas noches";
+function Stamp({ children, color = "var(--stamp)", rot = -8, size = 70 }: { children: React.ReactNode; color?: string; rot?: number; size?: number }) {
+  return (
+    <div style={{
+      width: size, height: size, transform: `rotate(${rot}deg)`,
+      border: `2px solid ${color}`, borderRadius: "50%",
+      color, fontFamily: "var(--font-mono)", fontSize: 8, fontWeight: 600,
+      letterSpacing: "0.08em", textTransform: "uppercase",
+      display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center",
+      lineHeight: 1.2, padding: 6, opacity: 0.8,
+    }}>
+      <span>{children}</span>
+    </div>
+  );
+}
+
+function SectionHeader({ num, title }: { num: string; title: string }) {
+  return (
+    <div style={{ borderTop: "4px solid var(--ink)", paddingTop: 12, marginBottom: 16 }}>
+      <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.16em", color: "var(--ink3)", margin: 0, textTransform: "uppercase" }}>{num}</p>
+      <h2 style={{ fontFamily: "var(--font-display)", fontSize: 28, fontStyle: "italic", margin: "2px 0 0", lineHeight: 0.95, letterSpacing: "-0.02em", color: "var(--ink)" }}>{title}</h2>
+    </div>
+  );
 }
 
 export default function DashboardContent({
   displayName,
-  totalARS, walletsARSCount, foreignUSD, foreignAccountsCount,
+  totalARS, walletsARSCount,
+  foreignUSD, foreignAccountsCount,
   portfolioUSD, walletsUSD, investmentsCount, portfolioDayChange,
   ingresosMes, gastosMes, balanceMes, tasaAhorro,
   diffGastos, diffIngresos, mesLabel,
@@ -95,284 +114,275 @@ export default function DashboardContent({
   categoryData, monthlyData, wealthData,
   recentTransactions, budgetAlerts, sessionsToday,
 }: Props) {
-  const { currency, fmt, usdArs } = useCurrency();
 
   const totalUSD = walletsUSD + foreignUSD + portfolioUSD;
-  const patrimonioUnificado =
-    currency === "ARS"
-      ? totalARS + totalUSD * usdArs
-      : totalARS / usdArs + totalUSD;
 
-  const fmtARS = (n: number) =>
-    new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", maximumFractionDigits: 0 }).format(n);
-  const fmtUSD_ = (n: number) =>
-    new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(n);
+  // Holdings para mostrar distribución
+  const arsHoldings: { name: string; amt: number; cur: string }[] = [];
+  if (totalARS > 0) arsHoldings.push({ name: `Billeteras ARS (${walletsARSCount})`, amt: totalARS, cur: "ARS" });
+  const usdHoldings: { name: string; amt: number; cur: string }[] = [];
+  if (walletsUSD > 0) usdHoldings.push({ name: "Billeteras USD", amt: walletsUSD, cur: "USD" });
+  if (foreignUSD > 0) usdHoldings.push({ name: `Cuentas ext. (${foreignAccountsCount})`, amt: foreignUSD, cur: "USD" });
+  if (portfolioUSD > 0) usdHoldings.push({ name: `Portfolio (${investmentsCount} posic.)`, amt: portfolioUSD, cur: "USD" });
 
-  const patrimonioFmt = currency === "ARS" ? fmtARS(patrimonioUnificado) : fmtUSD_(patrimonioUnificado);
+  const maxARS = Math.max(...arsHoldings.map((h) => h.amt), 1);
+  const maxUSD = Math.max(...usdHoldings.map((h) => h.amt), 1);
 
-  // Dias del mes para "Queda del mes"
-  const quedaPct = presupuestoTotal > 0 ? (presupuestoRestante / presupuestoTotal) * 100 : null;
+  // Categorías con % de ingresos
+  const catConPct = categoryData.map((c) => ({
+    ...c,
+    pct: ingresosMes > 0 ? (c.total / ingresosMes) * 100 : 0,
+  }));
+  const maxCat = Math.max(...catConPct.map((c) => c.total), 1);
+
+  const today = new Date();
+  const dateStr = today.toLocaleDateString("es-AR", { weekday: "short", day: "numeric", month: "short" }).toUpperCase();
 
   return (
-    <div className="space-y-6">
+    <div>
+      {/* ── Page header ──────────────────────────────────────────── */}
+      <header style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 32, paddingBottom: 16, borderBottom: "1px solid var(--rule2)" }}>
+        <div>
+          <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.18em", color: "var(--ink3)", margin: 0, textTransform: "uppercase" }}>I · Patrimonio — {mesLabel}</p>
+          <h1 style={{ fontFamily: "var(--font-display)", fontSize: 40, color: "var(--ink)", margin: "4px 0 0", lineHeight: 0.95, fontStyle: "italic", letterSpacing: "-0.02em" }}>
+            El estado de la cosa
+          </h1>
+        </div>
+        <p style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ink3)", margin: 0, letterSpacing: "0.08em", textTransform: "uppercase" }}>{dateStr}</p>
+      </header>
 
-      {/* ── Greeting ──────────────────────────────────────────────────────────── */}
-      <div className="flex items-center justify-between">
-        <h2 className="text-base font-medium text-neutral-400">
-          {getHour()},{" "}
-          <span className="text-white font-semibold capitalize">{displayName}</span>
-        </h2>
-      </div>
+      {/* ── Patrimonio: ARS + USD separados ──────────────────────── */}
+      <section className="grid grid-cols-1 lg:grid-cols-2" style={{ gap: 32, marginBottom: 40 }}>
 
-      {/* ── Hero: Patrimonio total ─────────────────────────────────────────────── */}
-      <section>
-        <div className="rounded-2xl bg-gradient-to-br from-blue-950 via-neutral-900 to-neutral-900 p-6 ring-1 ring-blue-900/40">
-          <p className="text-xs font-medium uppercase tracking-widest text-blue-400 mb-2">
-            Patrimonio total · {currency}
+        {/* ARS block */}
+        <div style={{ borderTop: "4px solid var(--ink)", paddingTop: 14, position: "relative" }}>
+          <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.14em", color: "var(--ink3)", margin: 0, textTransform: "uppercase" }}>Capital · ARS</p>
+          <p style={{ fontFamily: "var(--font-mono)", fontSize: "clamp(28px, 5vw, 48px)", lineHeight: 1, margin: "6px 0 0", color: "var(--ink)", fontVariantNumeric: "tabular-nums", letterSpacing: "-0.02em", fontWeight: 500 }}>
+            {fmtARS(totalARS)}
           </p>
-          <p className="text-4xl font-bold text-white tracking-tight tabular-nums">
-            {patrimonioFmt}
+          {diffIngresos !== null && (
+            <p style={{ fontFamily: "var(--font-mono)", fontSize: 11, margin: "6px 0 0", color: diffIngresos >= 0 ? "var(--olive)" : "var(--brick)" }}>
+              {diffIngresos >= 0 ? "▲" : "▼"} {Math.abs(diffIngresos).toFixed(1)}% MoM
+            </p>
+          )}
+          {arsHoldings.length > 0 && (
+            <div style={{ marginTop: 16, borderTop: "1px solid var(--rule2)", paddingTop: 12 }}>
+              {arsHoldings.map((h, i) => (
+                <div key={i} style={{ display: "grid", gridTemplateColumns: "1fr 80px 90px", alignItems: "center", gap: 10, padding: "4px 0", borderBottom: i < arsHoldings.length - 1 ? "1px dashed var(--rule)" : "none" }}>
+                  <span style={{ fontFamily: "var(--font-serif)", fontSize: 13, color: "var(--ink2)" }}>{h.name}</span>
+                  <div style={{ height: 6, background: "var(--paper2)" }}>
+                    <div style={{ height: "100%", width: `${(h.amt / maxARS) * 100}%`, background: "var(--ink)" }} />
+                  </div>
+                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--ink)", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>
+                    {fmtARS(h.amt)} <span style={{ color: "var(--ink3)", fontSize: 9 }}>ARS</span>
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* USD block */}
+        <div style={{ borderTop: "4px solid var(--ink)", paddingTop: 14 }}>
+          <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.14em", color: "var(--ink3)", margin: 0, textTransform: "uppercase" }}>Capital · USD</p>
+          <p style={{ fontFamily: "var(--font-mono)", fontSize: "clamp(28px, 5vw, 48px)", lineHeight: 1, margin: "6px 0 0", color: "var(--ink)", fontVariantNumeric: "tabular-nums", letterSpacing: "-0.02em", fontWeight: 500 }}>
+            {fmtUSD(totalUSD)}
           </p>
           {portfolioDayChange !== 0 && (
-            <p className={`mt-1.5 flex items-center gap-1 text-sm font-medium ${portfolioDayChange >= 0 ? "text-green-400" : "text-red-400"}`}>
-              {portfolioDayChange >= 0 ? <LuArrowUp size={13} /> : <LuArrowDown size={13} />}
-              {portfolioDayChange >= 0 ? "+" : ""}{fmt(portfolioDayChange, "USD")} portfolio hoy
+            <p style={{ fontFamily: "var(--font-mono)", fontSize: 11, margin: "6px 0 0", color: portfolioDayChange >= 0 ? "var(--olive)" : "var(--brick)" }}>
+              {portfolioDayChange >= 0 ? "▲" : "▼"} {fmtUSD(Math.abs(portfolioDayChange))} USD portfolio hoy
             </p>
           )}
-          {/* Breakdown pills */}
-          <div className="mt-4 flex flex-wrap gap-x-5 gap-y-1 text-sm text-neutral-400">
-            <span>
-              <span className="text-neutral-600 text-xs">Billeteras </span>
-              <span className="tabular-nums">{fmtARS(totalARS)}</span>
-              {walletsARSCount > 0 && <span className="ml-1 text-neutral-600 text-xs">({walletsARSCount})</span>}
-            </span>
-            <span>
-              <span className="text-neutral-600 text-xs">Cuentas USD </span>
-              <span className="tabular-nums">{fmtUSD_(foreignUSD)}</span>
-              {foreignAccountsCount > 0 && <span className="ml-1 text-neutral-600 text-xs">({foreignAccountsCount})</span>}
-            </span>
-            <span>
-              <span className="text-neutral-600 text-xs">Portfolio </span>
-              <span className="tabular-nums">{fmtUSD_(portfolioUSD)}</span>
-              {investmentsCount > 0 && <span className="ml-1 text-neutral-600 text-xs">({investmentsCount})</span>}
-            </span>
-          </div>
-        </div>
-      </section>
-
-      {/* ── Strip: Hoy — 3 KPIs fijos ─────────────────────────────────────────── */}
-      <section>
-        <p className="mb-3 text-xs font-medium uppercase tracking-wider text-neutral-500">Hoy</p>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-
-          {/* Gastado hoy */}
-          <div className="rounded-xl bg-neutral-800 px-4 py-4">
-            <p className="text-xs text-neutral-500 mb-1">Gastado hoy</p>
-            <p className="text-xl font-bold text-white tabular-nums">
-              {gastadoHoy > 0 ? fmtARS(gastadoHoy) : "—"}
-            </p>
-            <p className="mt-1 text-xs text-neutral-600">
-              {txHoyCount > 0 ? `${txHoyCount} transacción${txHoyCount !== 1 ? "es" : ""}` : "Sin movimientos"}
-            </p>
-          </div>
-
-          {/* Queda del mes */}
-          <div className={`rounded-xl px-4 py-4 ${quedaPct !== null && quedaPct < 20 ? "bg-red-950/40 ring-1 ring-red-900/30" : "bg-neutral-800"}`}>
-            <p className="text-xs text-neutral-500 mb-1">Queda del mes</p>
-            {presupuestoTotal > 0 ? (
-              <>
-                <p className={`text-xl font-bold tabular-nums ${quedaPct !== null && quedaPct < 20 ? "text-red-400" : "text-white"}`}>
-                  {fmtARS(presupuestoRestante)}
-                </p>
-                <p className="mt-1 text-xs text-neutral-600">
-                  {diasRestantesMes}d restantes · {presupuestoPct !== null ? `${presupuestoPct.toFixed(0)}% usado` : ""}
-                </p>
-              </>
-            ) : (
-              <>
-                <p className="text-xl font-bold text-neutral-600">—</p>
-                <Link href="/finanzas/presupuesto" className="mt-1 block text-xs text-blue-500 hover:text-blue-400">
-                  Configurar presupuesto →
-                </Link>
-              </>
-            )}
-          </div>
-
-          {/* Próximo recurrente / Sesión hoy */}
-          {sessionsToday.length > 0 ? (
-            <div className="rounded-xl bg-blue-950/30 px-4 py-4 ring-1 ring-blue-900/30">
-              <p className="text-xs text-neutral-500 mb-1 flex items-center gap-1.5">
-                <LuCalendar size={11} /> Sesión hoy
-              </p>
-              <p className="text-sm font-bold text-white truncate">{sessionsToday[0].clientName}</p>
-              <p className="mt-1 text-xs text-neutral-500">{sessionsToday[0].time}</p>
-            </div>
-          ) : proximoRecurrente ? (
-            <div className="rounded-xl bg-neutral-800 px-4 py-4">
-              <p className="text-xs text-neutral-500 mb-1 flex items-center gap-1.5">
-                <LuRepeat size={11} />
-                {proximoRecurrente.dayOfMonth === new Date().getDate() ? "Vence hoy" :
-                 proximoRecurrente.dayOfMonth === new Date().getDate() + 1 ? "Vence mañana" :
-                 `Vence el día ${proximoRecurrente.dayOfMonth}`}
-              </p>
-              <p className="text-sm font-bold text-white truncate">{proximoRecurrente.description}</p>
-              <p className="mt-1 text-xs text-neutral-600 tabular-nums">
-                {proximoRecurrente.currency === "USD"
-                  ? fmtUSD_(proximoRecurrente.amount)
-                  : fmtARS(proximoRecurrente.amount)}
-              </p>
+          {usdHoldings.length > 0 ? (
+            <div style={{ marginTop: 16, borderTop: "1px solid var(--rule2)", paddingTop: 12 }}>
+              {usdHoldings.map((h, i) => (
+                <div key={i} style={{ display: "grid", gridTemplateColumns: "1fr 80px 80px", alignItems: "center", gap: 10, padding: "4px 0", borderBottom: i < usdHoldings.length - 1 ? "1px dashed var(--rule)" : "none" }}>
+                  <span style={{ fontFamily: "var(--font-serif)", fontSize: 13, color: "var(--ink2)" }}>{h.name}</span>
+                  <div style={{ height: 6, background: "var(--paper2)" }}>
+                    <div style={{ height: "100%", width: `${(h.amt / maxUSD) * 100}%`, background: "var(--ink)" }} />
+                  </div>
+                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--ink)", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>
+                    {fmtUSD(h.amt)} <span style={{ color: "var(--ink3)", fontSize: 9 }}>USD</span>
+                  </span>
+                </div>
+              ))}
             </div>
           ) : (
-            <div className="rounded-xl bg-neutral-800/50 px-4 py-4">
-              <p className="text-xs text-neutral-600 mb-1">Sin eventos pendientes</p>
-              <p className="text-sm text-neutral-700">Todo al día ✓</p>
-            </div>
+            <p style={{ fontFamily: "var(--font-serif)", fontStyle: "italic", fontSize: 13, color: "var(--ink3)", marginTop: 16 }}>Sin cuentas USD · <Link href="/finanzas/billeteras" style={{ color: "var(--navy)" }}>agregar →</Link></p>
           )}
         </div>
       </section>
 
-      {/* ── Presupuesto del mes (strip) ───────────────────────────────────────── */}
-      {presupuestoPct !== null && (
-        <section>
-          <div className="rounded-xl bg-neutral-800 px-5 py-4">
-            <div className="flex items-center justify-between mb-3">
-              <div>
-                <p className="text-sm font-medium text-white capitalize">Presupuesto · {mesLabel}</p>
-                <p className="text-xs text-neutral-500 mt-0.5">
-                  {fmtARS(gastosMes)} gastado de {fmtARS(presupuestoTotal)} ·{" "}
-                  <span className={presupuestoPct > 90 ? "text-red-400" : presupuestoPct > 70 ? "text-yellow-400" : "text-green-400"}>
-                    {presupuestoPct > 100 ? "Excedido" : presupuestoPct <= 50 && diasRestantesMes > 10 ? "Vas adelantado" : `${(100 - presupuestoPct).toFixed(0)}% restante para fin de mes`}
-                  </span>
+      <WavyRule width={240} />
+
+      {/* ── Mes actual KPIs ──────────────────────────────────────── */}
+      <section style={{ marginBottom: 40 }}>
+        <SectionHeader num="II · Movimientos" title={`Bitácora · ${mesLabel}`} />
+
+        <div className="grid grid-cols-2 lg:grid-cols-4" style={{ gap: 20, marginBottom: 20 }}>
+          {[
+            { label: "Ingresos ARS", value: fmtARS(ingresosMes), diff: diffIngresos, good: true, color: "var(--olive)" },
+            { label: "Gastos ARS", value: fmtARS(gastosMes), diff: diffGastos, good: false, color: "var(--brick)" },
+            { label: "Balance", value: (balanceMes >= 0 ? "+ " : "− ") + fmtARS(Math.abs(balanceMes)), diff: null, good: balanceMes >= 0, color: balanceMes >= 0 ? "var(--olive)" : "var(--brick)" },
+            { label: "Tasa ahorro", value: tasaAhorro !== null ? tasaAhorro.toFixed(1) + "%" : "—", diff: null, good: tasaAhorro !== null && tasaAhorro >= 0, color: tasaAhorro !== null && tasaAhorro >= 20 ? "var(--olive)" : tasaAhorro !== null && tasaAhorro >= 0 ? "var(--rust)" : "var(--brick)" },
+          ].map((k, i) => (
+            <div key={i} style={{ borderTop: `2px solid ${k.color}`, paddingTop: 10 }}>
+              <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ink3)", margin: 0, letterSpacing: "0.12em", textTransform: "uppercase" }}>{k.label}</p>
+              <p style={{ fontFamily: "var(--font-mono)", fontSize: 20, color: "var(--ink)", margin: "4px 0 0", fontVariantNumeric: "tabular-nums", fontWeight: 500 }}>{k.value}</p>
+              {k.diff !== null && (
+                <p style={{ fontFamily: "var(--font-mono)", fontSize: 10, margin: "4px 0 0", color: (k.good ? k.diff <= 0 : k.diff >= 0) ? "var(--olive)" : "var(--brick)" }}>
+                  {k.diff >= 0 ? "▲ +" : "▼ "}{k.diff.toFixed(0)}% vs mes ant.
                 </p>
+              )}
+            </div>
+          ))}
+        </div>
+
+        {/* Presupuesto */}
+        {presupuestoPct !== null && (
+          <div style={{ padding: "14px 16px", border: "1px solid var(--rule2)", background: "var(--paper2)", marginBottom: 16 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+              <p style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ink3)", margin: 0, letterSpacing: "0.1em", textTransform: "uppercase" }}>Presupuesto del mes</p>
+              <div style={{ display: "flex", alignItems: "center", gap: 16, fontFamily: "var(--font-mono)", fontSize: 11 }}>
+                <span style={{ color: "var(--ink3)" }}>{fmtARS(gastosMes)} <span style={{ fontSize: 9 }}>gastado</span></span>
+                <span style={{ color: "var(--ink3)" }}>de {fmtARS(presupuestoTotal)}</span>
+                <Link href="/finanzas/presupuesto" style={{ color: "var(--navy)", fontSize: 10 }}>detalle →</Link>
               </div>
-              <Link href="/finanzas/presupuesto" className="text-xs text-neutral-500 hover:text-neutral-300 transition-colors flex-shrink-0">
-                Detalle →
-              </Link>
             </div>
-            <div className="h-1.5 w-full overflow-hidden rounded-full bg-neutral-700">
-              <div
-                className={`h-full rounded-full transition-all ${presupuestoPct > 100 ? "bg-red-500" : presupuestoPct > 80 ? "bg-yellow-500" : "bg-green-500"}`}
-                style={{ width: `${Math.min(presupuestoPct, 100)}%` }}
-              />
+            <div style={{ height: 6, background: "var(--rule)", position: "relative" }}>
+              <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: `${Math.min(presupuestoPct, 100)}%`, background: presupuestoPct > 100 ? "var(--brick)" : presupuestoPct > 80 ? "var(--rust)" : "var(--olive)" }} />
             </div>
-            {/* Alertas de categorías >90% */}
             {budgetAlerts.length > 0 && (
-              <div className="mt-3 flex flex-wrap gap-2">
+              <div style={{ marginTop: 10, display: "flex", flexWrap: "wrap", gap: 6 }}>
                 {budgetAlerts.map((a) => (
-                  <span key={a.category} className={`flex items-center gap-1 rounded-full px-2.5 py-1 text-xs ring-1 ${a.pct >= 100 ? "bg-red-950/30 text-red-400 ring-red-800/30" : "bg-orange-950/30 text-orange-400 ring-orange-800/30"}`}>
-                    <LuTriangleAlert size={10} />
+                  <span key={a.category} style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: a.pct >= 100 ? "var(--brick)" : "var(--rust)", border: `1px solid ${a.pct >= 100 ? "var(--brick)" : "var(--rust)"}`, padding: "2px 8px", letterSpacing: "0.06em", textTransform: "uppercase" }}>
                     {a.category} {a.pct.toFixed(0)}%
                   </span>
                 ))}
               </div>
             )}
           </div>
-        </section>
-      )}
+        )}
 
-      {/* ── Mes actual — KPIs ─────────────────────────────────────────────────── */}
-      <section>
-        <p className="mb-3 text-xs font-medium uppercase tracking-wider text-neutral-500 capitalize">{mesLabel}</p>
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          <div className="rounded-xl bg-neutral-800 p-4">
-            <p className="text-xs text-neutral-400">Ingresos</p>
-            <p className="mt-1.5 text-xl font-bold text-green-400 tabular-nums">{fmtARS(ingresosMes)}</p>
-            <Diff pct={diffIngresos} />
-          </div>
-          <div className="rounded-xl bg-neutral-800 p-4">
-            <p className="text-xs text-neutral-400">Gastos</p>
-            <p className="mt-1.5 text-xl font-bold text-red-400 tabular-nums">{fmtARS(gastosMes)}</p>
-            <Diff pct={diffGastos} inverse />
-          </div>
-          <div className={`rounded-xl p-4 ${balanceMes >= 0 ? "bg-green-950 ring-1 ring-green-900/50" : "bg-red-950 ring-1 ring-red-900/50"}`}>
-            <p className="text-xs text-neutral-400">Balance</p>
-            <p className={`mt-1.5 text-xl font-bold tabular-nums ${balanceMes >= 0 ? "text-green-400" : "text-red-400"}`}>
-              {balanceMes >= 0 ? "+" : ""}{fmtARS(balanceMes)}
-            </p>
-            <p className="mt-1 text-xs text-neutral-600">
-              {balanceMes >= 0 ? "Ahorrás este mes" : "Déficit este mes"}
-            </p>
-          </div>
-          <div className="rounded-xl bg-neutral-800 p-4">
-            <p className="text-xs text-neutral-400">Tasa de ahorro</p>
-            {tasaAhorro !== null ? (
-              <>
-                <p className={`mt-1.5 text-xl font-bold tabular-nums ${tasaAhorro >= 20 ? "text-green-400" : tasaAhorro >= 0 ? "text-yellow-400" : "text-red-400"}`}>
-                  {tasaAhorro.toFixed(1)}%
+        {/* Hoy strip */}
+        {(gastadoHoy > 0 || sessionsToday.length > 0 || proximoRecurrente) && (
+          <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
+            {gastadoHoy > 0 && (
+              <div style={{ borderLeft: "3px solid var(--ink)", paddingLeft: 12 }}>
+                <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ink3)", margin: 0, letterSpacing: "0.1em", textTransform: "uppercase" }}>Gastado hoy</p>
+                <p style={{ fontFamily: "var(--font-mono)", fontSize: 18, color: "var(--brick)", margin: "2px 0 0", fontVariantNumeric: "tabular-nums" }}>
+                  {fmtARS(gastadoHoy)} <span style={{ color: "var(--ink3)", fontSize: 10 }}>· {txHoyCount} mov.</span>
                 </p>
-                <p className="mt-1 text-xs text-neutral-600">
-                  {tasaAhorro >= 20 ? "Excelente" : tasaAhorro >= 10 ? "Aceptable" : tasaAhorro >= 0 ? "Bajo" : "En rojo"}
+              </div>
+            )}
+            {sessionsToday.length > 0 && (
+              <div style={{ borderLeft: "3px solid var(--navy)", paddingLeft: 12 }}>
+                <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ink3)", margin: 0, letterSpacing: "0.1em", textTransform: "uppercase" }}>Sesión hoy</p>
+                <p style={{ fontFamily: "var(--font-serif)", fontSize: 15, color: "var(--ink)", margin: "2px 0 0", fontStyle: "italic" }}>{sessionsToday[0].clientName}</p>
+              </div>
+            )}
+            {proximoRecurrente && (
+              <div style={{ borderLeft: "3px solid var(--rust)", paddingLeft: 12 }}>
+                <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ink3)", margin: 0, letterSpacing: "0.1em", textTransform: "uppercase" }}>
+                  Vence día {proximoRecurrente.dayOfMonth}
                 </p>
-              </>
-            ) : (
-              <p className="mt-1.5 text-xl font-bold text-neutral-600">—</p>
+                <p style={{ fontFamily: "var(--font-serif)", fontSize: 15, color: "var(--ink)", margin: "2px 0 0", fontStyle: "italic" }}>{proximoRecurrente.description}</p>
+              </div>
+            )}
+            {diasRestantesMes > 0 && (
+              <div style={{ borderLeft: "3px solid var(--rule2)", paddingLeft: 12 }}>
+                <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ink3)", margin: 0, letterSpacing: "0.1em", textTransform: "uppercase" }}>Quedan</p>
+                <p style={{ fontFamily: "var(--font-mono)", fontSize: 18, color: "var(--ink)", margin: "2px 0 0" }}>{diasRestantesMes}d</p>
+              </div>
             )}
           </div>
-        </div>
-      </section>
-
-      {/* ── Gráficos ─────────────────────────────────────────────────────────── */}
-      <section className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        {categoryData.length > 0 && (
-          <div className="rounded-xl bg-neutral-800 p-5">
-            <p className="mb-1 text-sm font-medium text-white">Gastos por categoría</p>
-            <p className="mb-5 text-xs text-neutral-500 capitalize">{mesLabel}</p>
-            <CategoryChart data={categoryData} />
-          </div>
-        )}
-        {monthlyData.some((m) => m.ingresos > 0 || m.gastos > 0) && (
-          <div className="rounded-xl bg-neutral-800 p-5">
-            <p className="mb-1 text-sm font-medium text-white">Ingresos vs Gastos</p>
-            <p className="mb-5 text-xs text-neutral-500">Últimos 6 meses · ARS</p>
-            <MonthlyChart data={monthlyData} />
-          </div>
         )}
       </section>
 
-      {/* ── Evolución patrimonio ─────────────────────────────────────────────── */}
-      {wealthData.length >= 2 && (
-        <section>
-          <div className="rounded-xl bg-neutral-800 p-5">
-            <p className="mb-1 text-sm font-medium text-white">Evolución del patrimonio</p>
-            <p className="mb-5 text-xs text-neutral-500">Snapshots mensuales</p>
-            <WealthChart data={wealthData} />
+      <WavyRule width={240} />
+
+      {/* ── Gastos por categoría con % de ingresos ───────────────── */}
+      {catConPct.length > 0 && (
+        <section style={{ marginBottom: 40 }}>
+          <SectionHeader num="III · Categorías" title="Distribución del gasto" />
+          <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ink3)", margin: "-12px 0 16px", letterSpacing: "0.1em", textTransform: "uppercase" }}>
+            % sobre ingresos ARS del mes
+          </p>
+          <div className="grid grid-cols-1 lg:grid-cols-2" style={{ gap: "0 32px" }}>
+            {catConPct.map((c, i) => (
+              <div key={i} style={{ padding: "8px 0", borderBottom: "1px dashed var(--rule)", display: "grid", gridTemplateColumns: "1fr auto auto", alignItems: "center", gap: "0 10px" }}>
+                <span style={{ fontFamily: "var(--font-serif)", fontSize: 14, color: "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", gridColumn: "1 / -1" }} className="lg:col-span-1">{c.category}</span>
+                <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ink)", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>
+                  {fmtARS(c.total)}
+                </span>
+                <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, textAlign: "right", color: c.pct > 30 ? "var(--brick)" : c.pct > 15 ? "var(--rust)" : "var(--ink3)", fontVariantNumeric: "tabular-nums" }}>
+                  {c.pct.toFixed(0)}%
+                </span>
+              </div>
+            ))}
           </div>
+          {ingresosMes > 0 && (
+            <p style={{ fontFamily: "var(--font-serif)", fontStyle: "italic", fontSize: 12, color: "var(--ink3)", margin: "12px 0 0" }}>
+              Total gastado: {((gastosMes / ingresosMes) * 100).toFixed(0)}% de los ingresos del mes.{" "}
+              {gastosMes / ingresosMes > 0.9 ? "Zona roja." : gastosMes / ingresosMes > 0.7 ? "Margen ajustado." : "Margen saludable."}
+            </p>
+          )}
         </section>
       )}
 
-      {/* ── Últimas transacciones ─────────────────────────────────────────────── */}
+      <WavyRule width={240} />
+
+      {/* ── Últimas transacciones — ledger style ─────────────────── */}
       {recentTransactions.length > 0 && (
-        <section>
-          <div className="rounded-xl bg-neutral-800 p-5">
-            <div className="mb-4 flex items-center justify-between">
-              <p className="text-sm font-medium text-white">Últimas transacciones</p>
-              <Link href="/finanzas/transacciones" className="text-xs text-neutral-500 hover:text-neutral-300 transition-colors">
-                Ver todas →
-              </Link>
-            </div>
-            <div className="flex flex-col divide-y divide-neutral-700">
-              {recentTransactions.map((t) => {
+        <section style={{ marginBottom: 40 }}>
+          <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 16 }}>
+            <SectionHeader num="IV · Asientos" title="Últimos movimientos" />
+            <Link href="/finanzas/transacciones" style={{ fontFamily: "var(--font-serif)", fontStyle: "italic", fontSize: 13, color: "var(--navy)", textDecoration: "none" }}>ver todos →</Link>
+          </div>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontFamily: "var(--font-mono)" }}>
+            <tbody>
+              {recentTransactions.map((t, i) => {
                 const isExpense = t.type === "EXPENSE" || t.type === "STOCK_PURCHASE" || t.type === "CRYPTO_PURCHASE";
                 return (
-                  <div key={t.id} className="flex items-center justify-between py-2.5">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <span className={`flex-shrink-0 ${isExpense ? "text-red-400" : "text-green-400"}`}>
-                        {isExpense ? <LuTrendingDown size={15} /> : <LuTrendingUp size={15} />}
-                      </span>
-                      <div className="min-w-0">
-                        <p className="truncate text-sm text-white">{t.description ?? t.category}</p>
-                        <p className="text-xs text-neutral-500">
-                          {t.category} · {new Intl.DateTimeFormat("es-AR", { day: "2-digit", month: "short" }).format(new Date(t.date))}
-                        </p>
-                      </div>
-                    </div>
-                    <p className={`flex-shrink-0 ml-3 text-sm font-semibold tabular-nums ${isExpense ? "text-red-400" : "text-green-400"}`}>
-                      {isExpense ? "-" : "+"}{t.currency === "USD" ? fmtUSD_(t.amount) : fmtARS(t.amount)}
-                    </p>
-                  </div>
+                  <tr key={t.id} style={{ borderBottom: i === 0 ? "1px solid var(--ink)" : "1px dashed var(--rule)" }}>
+                    <td style={{ padding: "8px 0", fontSize: 10, color: "var(--ink3)", letterSpacing: "0.06em", width: 80 }}>
+                      {new Intl.DateTimeFormat("es-AR", { day: "2-digit", month: "short" }).format(new Date(t.date)).toUpperCase()}
+                    </td>
+                    <td style={{ padding: "8px 0", fontFamily: "var(--font-serif)", fontSize: 14, color: "var(--ink)", flex: 1 }}>
+                      {t.description ?? t.category}
+                    </td>
+                    <td style={{ padding: "8px 0", fontSize: 9, color: "var(--ink3)", letterSpacing: "0.1em", textTransform: "uppercase", width: 120 }}>
+                      {t.category}
+                    </td>
+                    <td style={{ padding: "8px 0", textAlign: "right", fontSize: 14, color: isExpense ? "var(--ink)" : "var(--olive)", fontVariantNumeric: "tabular-nums", width: 140 }}>
+                      {isExpense ? "−" : "+"}{" "}
+                      {t.currency === "USD" ? `${fmtUSD(t.amount)} USD` : `${fmtARS(t.amount)} ARS`}
+                    </td>
+                  </tr>
                 );
               })}
-            </div>
+            </tbody>
+          </table>
+        </section>
+      )}
+
+      {/* ── Gráficos ─────────────────────────────────────────────── */}
+      {(monthlyData.some((m) => m.ingresos > 0 || m.gastos > 0) || wealthData.length >= 2) && (
+        <section style={{ marginBottom: 40 }}>
+          <SectionHeader num="V · Evolución" title="Histórico" />
+          <div style={{ display: "grid", gridTemplateColumns: wealthData.length >= 2 ? "1fr 1fr" : "1fr", gap: 32 }}>
+            {monthlyData.some((m) => m.ingresos > 0 || m.gastos > 0) && (
+              <div>
+                <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ink3)", margin: "0 0 16px", letterSpacing: "0.12em", textTransform: "uppercase" }}>Ingresos vs Gastos · 6 meses · ARS</p>
+                <MonthlyChart data={monthlyData} />
+              </div>
+            )}
+            {wealthData.length >= 2 && (
+              <div>
+                <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ink3)", margin: "0 0 16px", letterSpacing: "0.12em", textTransform: "uppercase" }}>Evolución patrimonial</p>
+                <WealthChart data={wealthData} />
+              </div>
+            )}
           </div>
         </section>
       )}

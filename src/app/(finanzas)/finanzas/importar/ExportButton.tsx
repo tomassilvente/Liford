@@ -27,10 +27,10 @@ export default function ExportButton() {
     <button
       onClick={handleExport}
       disabled={loading}
-      className="flex items-center gap-2 rounded-xl bg-neutral-800 px-5 py-3 text-sm font-medium text-white hover:bg-neutral-700 disabled:opacity-50 transition-colors border border-neutral-700"
+      style={{ display: "flex", alignItems: "center", gap: 8, background: "var(--ink)", color: "var(--paper)", border: "none", padding: "10px 20px", fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: "0.12em", textTransform: "uppercase", cursor: "pointer", opacity: loading ? 0.6 : 1 }}
     >
-      {loading ? <LuLoader size={16} className="animate-spin" /> : <LuDownload size={16} />}
-      {loading ? "Generando archivo..." : "Descargar .xlsx"}
+      {loading ? <LuLoader size={14} className="animate-spin" /> : <LuDownload size={14} />}
+      {loading ? "Generando..." : "Descargar .xlsx"}
     </button>
   );
 }

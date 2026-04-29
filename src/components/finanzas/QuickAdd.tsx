@@ -8,7 +8,7 @@ import { toast } from "sonner";
 const FALLBACK_GASTO = ["Alimentación","Transporte","Entretenimiento","Salud","Servicios","Ropa","Educación","Suscripciones","Otro"];
 const FALLBACK_INGRESO = ["Sueldo","Freelance","Fotografía","Venta","Inversión","Transferencia recibida","Reembolso","Otro"];
 
-const INPUT = "rounded-lg bg-neutral-800 px-3 py-2 text-sm text-white placeholder-neutral-600 outline-none ring-1 ring-neutral-700 focus:ring-blue-500 w-full";
+const INPUT = "w-full";
 
 type TxType = "EXPENSE" | "INCOME" | "TRANSFER";
 type DisplayCurrency = "ARS" | "USD" | "EUR";
@@ -202,90 +202,94 @@ export default function QuickAdd({ wallets, foreignAccounts, categories }: Quick
 
   const canSave = !!amount && (type === "TRANSFER" ? !!accountRaw && !!toAccountRaw : !!category && !!accountRaw);
 
-  const TABS: { key: TxType; label: string; activeClass: string }[] = [
-    { key: "EXPENSE",  label: "Gasto",     activeClass: "bg-red-600 text-white" },
-    { key: "INCOME",   label: "Ingreso",   activeClass: "bg-green-600 text-white" },
-    { key: "TRANSFER", label: "Transfer",  activeClass: "bg-blue-600 text-white" },
+  const inputSt: React.CSSProperties = {
+    width: "100%", boxSizing: "border-box",
+    background: "var(--paper)", border: "1px solid var(--rule2)",
+    padding: "8px 10px", fontFamily: "var(--font-serif)", fontSize: 13,
+    color: "var(--ink)", outline: "none",
+  };
+
+  const TABS = [
+    { key: "EXPENSE"  as TxType, label: "Gasto",    activeBg: "var(--brick)",  activeColor: "var(--paper)" },
+    { key: "INCOME"   as TxType, label: "Ingreso",  activeBg: "var(--olive)",  activeColor: "var(--paper)" },
+    { key: "TRANSFER" as TxType, label: "Transfer", activeBg: "var(--navy)",   activeColor: "var(--paper)" },
   ];
 
   return (
     <>
       <button
         onClick={() => setOpen(true)}
-        className="fixed bottom-20 left-5 z-40 flex items-center justify-center rounded-full bg-blue-600 shadow-lg hover:bg-blue-500 transition-colors lg:left-auto lg:right-5 lg:bottom-6"
-        style={{ width: 52, height: 52 }}
+        style={{ position: "fixed", bottom: 80, left: 20, zIndex: 40, width: 48, height: 48, background: "var(--ink)", border: "none", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", boxShadow: "0 4px 12px rgba(0,0,0,0.15)" }}
+        className="lg:left-auto lg:right-5 lg:bottom-6"
         title="Registrar transacción (⌘⇧G · ⌘⇧I · ⌘⇧T)"
       >
-        <LuPlus size={22} className="text-white" />
+        <LuPlus size={20} style={{ color: "var(--paper)" }} />
       </button>
 
-      {open && <div className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm" onClick={() => setOpen(false)} />}
+      {open && <div className="fixed inset-0 z-40 bg-black/40" onClick={() => setOpen(false)} />}
 
       {open && (
-        <div className="fixed bottom-0 left-0 right-0 z-50 rounded-t-2xl bg-neutral-900 p-5 shadow-2xl lg:bottom-auto lg:left-auto lg:right-6 lg:top-1/2 lg:-translate-y-1/2 lg:w-[340px] lg:rounded-2xl">
-          <div className="mb-4 flex items-center justify-between">
-            <p className="text-sm font-semibold text-white">
-              Registrar {type === "EXPENSE" ? "gasto" : type === "INCOME" ? "ingreso" : "transferencia"}
+        <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 50, background: "var(--paper2)", border: "1px solid var(--rule2)", borderBottom: "none", padding: 20 }} className="lg:bottom-auto lg:left-auto lg:right-6 lg:top-1/2 lg:-translate-y-1/2 lg:w-[340px] lg:border-b">
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+            <p style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ink3)", margin: 0, letterSpacing: "0.12em", textTransform: "uppercase" }}>
+              + Asiento · {type === "EXPENSE" ? "gasto" : type === "INCOME" ? "ingreso" : "transferencia"}
             </p>
-            <button onClick={() => setOpen(false)} className="rounded-lg p-1 text-neutral-500 hover:text-white">
-              <LuX size={16} />
+            <button onClick={() => setOpen(false)} style={{ background: "transparent", border: "none", color: "var(--ink3)", cursor: "pointer" }}>
+              <LuX size={15} />
             </button>
           </div>
 
           {/* Tabs tipo */}
-          <div className="mb-4 flex rounded-lg bg-neutral-800 p-0.5">
+          <div style={{ display: "flex", marginBottom: 14, border: "1px solid var(--rule2)" }}>
             {TABS.map((tab) => (
               <button
                 key={tab.key}
                 onClick={() => setType(tab.key)}
-                className={`flex-1 rounded-md py-1.5 text-xs font-medium transition-colors ${type === tab.key ? tab.activeClass : "text-neutral-400 hover:text-white"}`}
+                style={{ flex: 1, padding: "7px 0", background: type === tab.key ? tab.activeBg : "transparent", color: type === tab.key ? tab.activeColor : "var(--ink3)", border: "none", borderRight: tab.key !== "TRANSFER" ? "1px solid var(--rule2)" : "none", fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer" }}
               >
                 {tab.label}
               </button>
             ))}
           </div>
 
-          <div className="space-y-2">
-            {/* Descripción primero */}
-            <div className="relative">
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <div style={{ position: "relative" }}>
               <input
                 ref={descRef}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder={type === "TRANSFER" ? "Descripción (opcional)" : "Descripción (ej: Carrefour, Netflix…)"}
-                className={INPUT}
+                style={inputSt}
               />
               {loadingSuggestion && (
-                <LuLoader size={12} className="absolute right-3 top-1/2 -translate-y-1/2 animate-spin text-neutral-500" />
+                <LuLoader size={12} style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", color: "var(--ink3)" }} className="animate-spin" />
               )}
             </div>
 
-            {/* Sugerencia */}
             {suggestion && !loadingSuggestion && type !== "TRANSFER" && (
-              <div className="flex items-center gap-2 rounded-lg bg-blue-950/40 px-3 py-2 ring-1 ring-blue-800/30">
-                <LuSparkles size={11} className="flex-shrink-0 text-blue-400" />
-                <p className="text-xs text-blue-300">
-                  Sugerido: <span className="font-medium text-blue-200">{suggestion.category}</span>
-                  {suggestion.confidence === "low" && <span className="ml-1 text-blue-600">(pocas coincidencias)</span>}
+              <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 10px", background: "var(--paper3)", borderLeft: "3px solid var(--navy)" }}>
+                <LuSparkles size={11} style={{ flexShrink: 0, color: "var(--navy)" }} />
+                <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--navy)", margin: 0, letterSpacing: "0.08em" }}>
+                  Sugerido: <span style={{ fontWeight: 600 }}>{suggestion.category}</span>
+                  {suggestion.confidence === "low" && <span style={{ marginLeft: 6, color: "var(--ink3)" }}>(pocas coincidencias)</span>}
                 </p>
               </div>
             )}
 
-            {/* Monto + moneda */}
-            <div className="flex gap-2">
+            <div style={{ display: "flex", gap: 8 }}>
               <input
                 type="number"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 placeholder="Monto"
-                className={`${INPUT} flex-1`}
+                style={{ ...inputSt, flex: 1, minWidth: 0 }}
               />
-              <div className="flex rounded-lg bg-neutral-800 p-0.5 ring-1 ring-neutral-700">
+              <div style={{ display: "flex", border: "1px solid var(--rule2)" }}>
                 {(["ARS", "USD", "EUR"] as DisplayCurrency[]).map((c) => (
                   <button
                     key={c}
                     onClick={() => setDisplayCurrency(c)}
-                    className={`rounded-md px-2 py-1 text-[10px] font-medium transition-colors ${displayCurrency === c ? "bg-neutral-700 text-white" : "text-neutral-500 hover:text-neutral-300"}`}
+                    style={{ padding: "0 8px", background: displayCurrency === c ? "var(--ink)" : "transparent", color: displayCurrency === c ? "var(--paper)" : "var(--ink3)", border: "none", borderRight: c !== "EUR" ? "1px solid var(--rule2)" : "none", fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.06em", cursor: "pointer" }}
                   >
                     {c}
                   </button>
@@ -293,8 +297,7 @@ export default function QuickAdd({ wallets, foreignAccounts, categories }: Quick
               </div>
             </div>
 
-            {/* Cuenta origen */}
-            <select value={accountRaw} onChange={(e) => setAccountRaw(e.target.value)} className={INPUT}>
+            <select value={accountRaw} onChange={(e) => setAccountRaw(e.target.value)} style={inputSt}>
               <option value="">{type === "TRANSFER" ? "Desde (cuenta origen)" : "Cuenta"}</option>
               {wallets.length > 0 && (
                 <optgroup label="Billeteras">
@@ -308,9 +311,8 @@ export default function QuickAdd({ wallets, foreignAccounts, categories }: Quick
               )}
             </select>
 
-            {/* Cuenta destino (solo Transfer) */}
             {type === "TRANSFER" && (
-              <select value={toAccountRaw} onChange={(e) => setToAccountRaw(e.target.value)} className={INPUT}>
+              <select value={toAccountRaw} onChange={(e) => setToAccountRaw(e.target.value)} style={inputSt}>
                 <option value="">Hacia (cuenta destino)</option>
                 {wallets.length > 0 && (
                   <optgroup label="Billeteras">
@@ -325,9 +327,8 @@ export default function QuickAdd({ wallets, foreignAccounts, categories }: Quick
               </select>
             )}
 
-            {/* Categoría (no para Transfer) */}
             {type !== "TRANSFER" && (
-              <select value={category} onChange={(e) => setCategory(e.target.value)} className={INPUT}>
+              <select value={category} onChange={(e) => setCategory(e.target.value)} style={inputSt}>
                 <option value="">Categoría</option>
                 {categorias.map((name) => {
                   const cat = categories.find((c) => c.name === name);
@@ -341,25 +342,25 @@ export default function QuickAdd({ wallets, foreignAccounts, categories }: Quick
             )}
           </div>
 
-          <div className="mt-4 flex gap-2">
+          <div style={{ marginTop: 14, display: "flex", gap: 8 }}>
             <button
               onClick={() => submit(false)}
               disabled={saving || !canSave}
-              className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-blue-600 py-2.5 text-sm font-medium text-white hover:bg-blue-500 disabled:opacity-50 transition-colors"
+              style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, background: "var(--ink)", color: "var(--paper)", border: "none", padding: "10px 0", fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer", opacity: (saving || !canSave) ? 0.5 : 1 }}
             >
-              {saving ? <LuLoader size={15} className="animate-spin" /> : <LuCheck size={15} />}
+              {saving ? <LuLoader size={14} className="animate-spin" /> : <LuCheck size={14} />}
               {saving ? "Guardando…" : "Guardar"}
             </button>
             <button
               onClick={() => submit(true)}
               disabled={saving || !canSave}
               title="Guardar y registrar otro"
-              className="flex items-center gap-1.5 rounded-xl bg-neutral-700 px-3 py-2.5 text-xs font-medium text-neutral-300 hover:bg-neutral-600 disabled:opacity-50 transition-colors"
+              style={{ display: "flex", alignItems: "center", gap: 6, background: "transparent", border: "1px solid var(--rule2)", color: "var(--ink3)", padding: "10px 12px", fontFamily: "var(--font-mono)", fontSize: 10, cursor: "pointer", opacity: (saving || !canSave) ? 0.5 : 1 }}
             >
-              <LuRepeat size={13} /> Otro
+              <LuRepeat size={12} /> Otro
             </button>
           </div>
-          <p className="mt-2 text-center text-[10px] text-neutral-700">⌘⇧G gasto · ⌘⇧I ingreso · ⌘⇧T transfer · ⌘↵ guardar</p>
+          <p style={{ marginTop: 8, textAlign: "center", fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--rule2)", letterSpacing: "0.06em" }}>⌘⇧G gasto · ⌘⇧I ingreso · ⌘⇧T transfer · ⌘↵ guardar</p>
         </div>
       )}
     </>

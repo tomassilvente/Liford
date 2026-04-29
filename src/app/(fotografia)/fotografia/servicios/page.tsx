@@ -192,88 +192,73 @@ const deporteGroups = DEPORTES.reduce<Record<string, typeof DEPORTES>>((acc, d) 
 
 export default function ServiciosPage() {
   return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="text-2xl font-bold text-white">Servicios</h1>
-        <p className="mt-1 text-neutral-400">Precios y mensajes predefinidos</p>
-      </div>
+    <div style={{ display: "flex", flexDirection: "column", gap: 40 }}>
+      <header style={{ borderTop: "4px solid var(--foto-ink)", paddingTop: 14 }}>
+        <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.18em", color: "var(--foto-accent)", margin: 0, textTransform: "uppercase" }}>III · Servicios</p>
+        <h1 style={{ fontFamily: "var(--font-condensed)", fontSize: 48, color: "var(--foto-ink)", margin: "4px 0 0", lineHeight: 0.9, letterSpacing: "0.02em", textTransform: "uppercase" }}>
+          Precios
+        </h1>
+      </header>
 
-      {/* ── Deportes ── */}
+      {/* Deportes */}
       <section>
-        <p className="mb-3 text-sm font-medium uppercase tracking-wider text-neutral-500">Deportes</p>
-        <div className="overflow-hidden rounded-xl bg-neutral-800">
-          {/* Header tabla */}
-          <div className="grid grid-cols-[1fr_1fr_auto_auto] gap-4 border-b border-neutral-700 px-4 py-2.5">
-            <p className="text-xs font-medium text-neutral-500">Deporte / Tipo</p>
-            <p className="text-xs font-medium text-neutral-500">Fotos</p>
-            <p className="text-right text-xs font-medium text-neutral-500">Precio</p>
-            <p className="text-right text-xs font-medium text-neutral-500">Promo</p>
+        <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--foto-accent)", margin: "0 0 12px", letterSpacing: "0.14em", textTransform: "uppercase" }}>Deportes</p>
+        <div style={{ border: "1px solid var(--foto-rule)" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr auto auto", gap: 16, borderBottom: "2px solid var(--foto-ink)", padding: "8px 14px" }}>
+            {["Deporte / Tipo", "Fotos", "Precio", "Promo"].map((h) => (
+              <p key={h} style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--foto-accent)", margin: 0, letterSpacing: "0.1em", textTransform: "uppercase", textAlign: h === "Precio" || h === "Promo" ? "right" : "left" }}>{h}</p>
+            ))}
           </div>
-
-          {Object.entries(deporteGroups).map(([deporte, items]) => (
-            <div key={deporte}>
-              {items.map((item, i) => (
-                <div
-                  key={i}
-                  className="grid grid-cols-[1fr_1fr_auto_auto] items-center gap-4 border-b border-neutral-700/50 px-4 py-3 last:border-0 hover:bg-neutral-700/30 transition-colors"
-                >
-                  <div>
-                    {i === 0 && (
-                      <p className="mb-0.5 text-[10px] font-semibold uppercase tracking-wider text-neutral-500">
-                        {deporte}
-                      </p>
-                    )}
-                    <p className="text-sm text-white">{item.tipo}</p>
-                  </div>
-                  <p className="text-sm text-neutral-400">{item.fotos}</p>
-                  <p className="text-right text-sm font-semibold text-white">{fmtARS(item.precio)}</p>
-                  <p className="text-right text-sm text-neutral-500">
-                    {item.promo ? fmtARS(item.promo) : "—"}
-                  </p>
+          {Object.entries(deporteGroups).map(([deporte, items]) =>
+            items.map((item, i) => (
+              <div key={`${deporte}-${i}`} style={{ display: "grid", gridTemplateColumns: "1fr 1fr auto auto", alignItems: "center", gap: 16, borderBottom: "1px dashed var(--foto-rule)", padding: "10px 14px" }}>
+                <div>
+                  {i === 0 && <p style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--foto-accent)", margin: "0 0 2px", letterSpacing: "0.1em", textTransform: "uppercase" }}>{deporte}</p>}
+                  <p style={{ fontFamily: "var(--font-serif)", fontSize: 14, color: "var(--foto-ink)", margin: 0 }}>{item.tipo}</p>
                 </div>
-              ))}
-            </div>
-          ))}
+                <p style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--foto-ink2)", margin: 0 }}>{item.fotos}</p>
+                <p style={{ fontFamily: "var(--font-mono)", fontSize: 13, color: "var(--foto-ink)", margin: 0, fontVariantNumeric: "tabular-nums", textAlign: "right", fontWeight: 500 }}>{fmtARS(item.precio)}</p>
+                <p style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--foto-accent)", margin: 0, textAlign: "right" }}>{item.promo ? fmtARS(item.promo) : "—"}</p>
+              </div>
+            ))
+          )}
         </div>
-        <p className="mt-2 text-xs text-neutral-600">* Precio promo: cuando ambos equipos coordinan juntos</p>
+        <p style={{ fontFamily: "var(--font-serif)", fontStyle: "italic", fontSize: 12, color: "var(--foto-accent)", margin: "8px 0 0" }}>* Precio promo: cuando ambos equipos coordinan juntos</p>
       </section>
 
-      {/* ── Producto ── */}
+      {/* Producto */}
       <section>
-        <p className="mb-3 text-sm font-medium uppercase tracking-wider text-neutral-500">Producto</p>
-        <div className="grid gap-3 sm:grid-cols-2">
+        <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--foto-accent)", margin: "0 0 12px", letterSpacing: "0.14em", textTransform: "uppercase" }}>Producto</p>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 16 }}>
           {PRODUCTO.map((p) => (
-            <div key={p.tipo} className="rounded-xl bg-neutral-800 p-5">
-              <div className="mb-3 flex items-center gap-2">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-neutral-700">
-                  <LuImage size={15} className="text-neutral-400" />
-                </div>
-                <p className="text-sm font-medium text-white">{p.tipo}</p>
+            <div key={p.tipo} style={{ border: "1px solid var(--foto-rule)", padding: "16px 18px", borderTop: "3px solid var(--foto-ink)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+                <LuImage size={16} style={{ color: "var(--foto-accent)", flexShrink: 0 }} />
+                <p style={{ fontFamily: "var(--font-condensed)", fontSize: 16, color: "var(--foto-ink)", margin: 0, letterSpacing: "0.04em", textTransform: "uppercase" }}>{p.tipo}</p>
               </div>
-              <p className="text-xs text-neutral-500">{p.desc}</p>
-              <p className="mt-4 text-xl font-bold text-white">
-                {fmtARS(p.precio)}
-                <span className="ml-1 text-sm font-normal text-neutral-500">{p.unidad}</span>
+              <p style={{ fontFamily: "var(--font-serif)", fontStyle: "italic", fontSize: 13, color: "var(--foto-ink2)", margin: "0 0 12px", lineHeight: 1.5 }}>{p.desc}</p>
+              <p style={{ fontFamily: "var(--font-mono)", fontSize: 20, color: "var(--foto-ink)", margin: 0, fontVariantNumeric: "tabular-nums", fontWeight: 500 }}>
+                {fmtARS(p.precio)} <span style={{ fontSize: 11, color: "var(--foto-accent)", fontWeight: 400 }}>{p.unidad}</span>
               </p>
             </div>
           ))}
         </div>
       </section>
 
-      {/* ── Mensajes predefinidos ── */}
+      {/* Mensajes predefinidos */}
       <section>
-        <p className="mb-3 text-sm font-medium uppercase tracking-wider text-neutral-500">Mensajes predefinidos</p>
-        <div className="flex flex-col gap-3">
+        <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--foto-accent)", margin: "0 0 12px", letterSpacing: "0.14em", textTransform: "uppercase" }}>Mensajes predefinidos</p>
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           {MENSAJES.map((m, i) => (
-            <div key={i} className="rounded-xl bg-neutral-800 p-4">
-              <div className="mb-3 flex items-center justify-between gap-3">
+            <div key={i} style={{ border: "1px solid var(--foto-rule)", background: "var(--foto-paper)" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "12px 14px", borderBottom: "1px solid var(--foto-rule)", background: "var(--foto-paper2)" }}>
                 <div>
-                  <p className="text-sm font-medium text-white">{m.titulo}</p>
-                  <p className="text-xs text-neutral-500">{m.subtitulo}</p>
+                  <p style={{ fontFamily: "var(--font-condensed)", fontSize: 15, color: "var(--foto-ink)", margin: 0, letterSpacing: "0.04em", textTransform: "uppercase" }}>{m.titulo}</p>
+                  <p style={{ fontFamily: "var(--font-serif)", fontStyle: "italic", fontSize: 12, color: "var(--foto-ink2)", margin: "2px 0 0" }}>{m.subtitulo}</p>
                 </div>
                 <CopyButton text={m.texto} />
               </div>
-              <pre className="whitespace-pre-wrap rounded-lg bg-neutral-900/60 p-3 text-xs leading-relaxed text-neutral-400 font-sans">
+              <pre style={{ whiteSpace: "pre-wrap", padding: "12px 14px", margin: 0, fontFamily: "var(--font-serif)", fontSize: 13, lineHeight: 1.6, color: "var(--foto-ink2)" }}>
                 {m.texto}
               </pre>
             </div>

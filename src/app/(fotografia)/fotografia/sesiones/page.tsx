@@ -54,20 +54,11 @@ export default async function SesionesPage({
 
   const now = new Date();
 
-  // Estadísticas rápidas
-  const byStatus = sessions.reduce<Record<string, number>>((acc, s) => {
-    acc[s.status] = (acc[s.status] ?? 0) + 1;
-    return acc;
-  }, {});
-
-  const pendingPayment  = byStatus["DELIVERED"] ?? 0;
   const pendingDelivery = sessions.filter((s) => {
     if (s.status !== "SHOT") return false;
-    const daysInStatus = Math.floor((now.getTime() - s.updatedAt.getTime()) / 86400000);
-    return daysInStatus > 7;
+    return Math.floor((now.getTime() - s.updatedAt.getTime()) / 86400000) > 7;
   }).length;
 
-  // Datos para Kanban
   const kanbanSessions: KanbanSession[] = sessions.map((s) => ({
     id: s.id,
     clientName: s.client.name,
@@ -92,79 +83,71 @@ export default async function SesionesPage({
 
   return (
     <div>
-      <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-white">Sesiones</h1>
-          <p className="mt-1 text-sm text-neutral-400">
-            {activeView === "kanban" ? "Tu pipeline visual · arrastrá para cambiar de estado" : `${sessions.length} sesiones`}
-            {pendingPayment > 0 && (
-              <span className="ml-2 rounded-full bg-green-900/40 px-2 py-0.5 text-xs text-green-400 ring-1 ring-green-800/40">
-                {pendingPayment} por cobrar
-              </span>
-            )}
-            {pendingDelivery > 0 && (
-              <span className="ml-1 rounded-full bg-orange-900/40 px-2 py-0.5 text-xs text-orange-400 ring-1 ring-orange-800/40">
-                {pendingDelivery} demoradas
-              </span>
-            )}
-          </p>
+      {/* Header */}
+      <header style={{ paddingBottom: 16, borderBottom: "4px double var(--foto-ink)", marginBottom: 24 }}>
+        <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.18em", color: "var(--foto-accent)", margin: 0, textTransform: "uppercase" }}>I · Sesiones — pipeline</p>
+        <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginTop: 4 }}>
+          <h1 style={{ fontFamily: "var(--font-condensed)", fontSize: 52, color: "var(--foto-ink)", margin: 0, lineHeight: 0.9, letterSpacing: "0.02em", textTransform: "uppercase" }}>
+            Mesa de luz
+          </h1>
+          <SessionForm clients={clients} />
         </div>
-        <SessionForm clients={clients} />
-      </div>
+        {pendingDelivery > 0 && (
+          <p style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--rust)", margin: "8px 0 0", letterSpacing: "0.08em" }}>
+            ↑ {pendingDelivery} sesión{pendingDelivery !== 1 ? "es" : ""} demorada{pendingDelivery !== 1 ? "s" : ""}
+          </p>
+        )}
+      </header>
 
-      {/* Controles: vista + filtro mes */}
-      <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-        {/* Toggle de vista */}
-        <div className="flex rounded-lg bg-neutral-800 p-0.5 ring-1 ring-neutral-700">
+      {/* Controls */}
+      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 24 }}>
+        {/* View toggle */}
+        <div style={{ display: "flex", border: "1px solid var(--foto-rule)" }}>
           <Link
             href={buildHref({ view: "kanban" })}
-            className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
-              activeView === "kanban" ? "bg-neutral-700 text-white" : "text-neutral-500 hover:text-neutral-300"
-            }`}
+            style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", background: activeView === "kanban" ? "var(--foto-ink)" : "transparent", color: activeView === "kanban" ? "var(--foto-paper)" : "var(--foto-accent)", textDecoration: "none", fontFamily: "var(--font-condensed)", fontSize: 13, letterSpacing: "0.06em", textTransform: "uppercase", borderRight: "1px solid var(--foto-rule)" }}
           >
             <LuLayoutGrid size={12} /> Tablero
           </Link>
           <Link
             href={buildHref({ view: "list" })}
-            className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
-              activeView === "list" ? "bg-neutral-700 text-white" : "text-neutral-500 hover:text-neutral-300"
-            }`}
+            style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", background: activeView === "list" ? "var(--foto-ink)" : "transparent", color: activeView === "list" ? "var(--foto-paper)" : "var(--foto-accent)", textDecoration: "none", fontFamily: "var(--font-condensed)", fontSize: 13, letterSpacing: "0.06em", textTransform: "uppercase" }}
           >
             <LuList size={12} /> Lista
           </Link>
         </div>
 
-        {/* Filtro mes */}
-        <div className="flex items-center gap-1">
+        {/* Month filter */}
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           {activeMes !== "all" && (
             <>
-              <Link href={buildHref({ mes: addMonths(activeMes, -1) })} className="rounded-lg px-2 py-1 text-neutral-400 hover:bg-neutral-800 hover:text-white transition-colors">‹</Link>
-              <span className="min-w-[140px] text-center text-sm font-medium capitalize text-white">{getLabel(activeMes)}</span>
+              <Link href={buildHref({ mes: addMonths(activeMes, -1) })} style={{ fontFamily: "var(--font-serif)", fontSize: 18, color: "var(--foto-accent)", textDecoration: "none" }}>‹</Link>
+              <span style={{ fontFamily: "var(--font-condensed)", fontSize: 15, color: "var(--foto-ink)", letterSpacing: "0.04em", textTransform: "uppercase", minWidth: 140, textAlign: "center" }}>{getLabel(activeMes)}</span>
               <Link
                 href={buildHref({ mes: addMonths(activeMes, 1) })}
-                className={`rounded-lg px-2 py-1 text-neutral-400 hover:bg-neutral-800 hover:text-white transition-colors ${isCurrentMonth ? "opacity-30 pointer-events-none" : ""}`}
+                style={{ fontFamily: "var(--font-serif)", fontSize: 18, color: "var(--foto-accent)", textDecoration: "none", opacity: isCurrentMonth ? 0.3 : 1, pointerEvents: isCurrentMonth ? "none" : "auto" }}
               >›</Link>
             </>
           )}
           {activeMes === "all" ? (
-            <Link href={buildHref({ mes: currentYM() })} className="rounded-lg px-3 py-1.5 text-xs text-neutral-500 hover:bg-neutral-800 hover:text-neutral-300 transition-colors">
-              Filtrar por mes
+            <Link href={buildHref({ mes: currentYM() })} style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--foto-accent)", textDecoration: "none", letterSpacing: "0.1em", textTransform: "uppercase" }}>
+              filtrar por mes
             </Link>
           ) : (
-            <Link href={buildHref({})} className="ml-1 rounded-lg px-2 py-1 text-xs text-neutral-600 hover:text-neutral-400 transition-colors">
-              Ver todos
+            <Link href={buildHref({})} style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--foto-rule)", textDecoration: "none", letterSpacing: "0.06em" }}>
+              ver todos
             </Link>
           )}
         </div>
       </div>
 
-      {/* Vista */}
+      {/* View */}
       {sessions.length === 0 ? (
-        <p className="text-sm text-neutral-500">No hay sesiones en este período.</p>
+        <p style={{ fontFamily: "var(--font-serif)", fontStyle: "italic", fontSize: 14, color: "var(--foto-accent)" }}>No hay sesiones en este período.</p>
       ) : activeView === "kanban" ? (
         <SessionKanban sessions={kanbanSessions} />
       ) : (
-        <div className="rounded-xl bg-neutral-800 divide-y divide-neutral-700">
+        <div style={{ border: "1px solid var(--foto-rule)", background: "var(--foto-paper)" }}>
           {sessions.map((s) => (
             <SessionRow
               key={s.id}

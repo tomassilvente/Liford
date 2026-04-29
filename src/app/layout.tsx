@@ -1,10 +1,31 @@
 import type { Metadata } from "next";
-import { Geist } from "next/font/google";
+import { Crimson_Pro, DM_Serif_Display, JetBrains_Mono, Bebas_Neue } from "next/font/google";
 import "./globals.css";
 
-const geist = Geist({
-  variable: "--font-geist",
+const crimsonPro = Crimson_Pro({
+  variable: "--font-serif",
   subsets: ["latin"],
+  weight: ["400", "600"],
+  style: ["normal", "italic"],
+});
+
+const dmSerifDisplay = DM_Serif_Display({
+  variable: "--font-display",
+  subsets: ["latin"],
+  weight: "400",
+  style: ["normal", "italic"],
+});
+
+const jetbrainsMono = JetBrains_Mono({
+  variable: "--font-mono",
+  subsets: ["latin"],
+  weight: ["400", "500"],
+});
+
+const bebasNeue = Bebas_Neue({
+  variable: "--font-condensed",
+  subsets: ["latin"],
+  weight: "400",
 });
 
 export const metadata: Metadata = {
@@ -18,8 +39,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es" className={`${geist.variable} h-full antialiased`}>
-      <body className="min-h-full bg-neutral-950 text-neutral-100">
+    <html lang="es" className={`${crimsonPro.variable} ${dmSerifDisplay.variable} ${jetbrainsMono.variable} ${bebasNeue.variable} h-full`}>
+      <body className="min-h-full" style={{ backgroundColor: "#fdf6e3", color: "#1a1a1a" }}>
         {children}
       </body>
     </html>

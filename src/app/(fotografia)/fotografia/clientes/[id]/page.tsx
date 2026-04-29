@@ -16,22 +16,13 @@ function fmtDate(iso: string) {
 
 function fmtPrice(n: number, currency: string) {
   return currency === "ARS"
-    ? new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", maximumFractionDigits: 0 }).format(n)
-    : new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 0 }).format(n);
+    ? new Intl.NumberFormat("es-AR", { maximumFractionDigits: 0 }).format(n)
+    : new Intl.NumberFormat("en-US", { minimumFractionDigits: 0 }).format(n);
 }
 
 const STATUS_LABELS: Record<string, string> = {
   PENDING: "Pendiente", CONFIRMED: "Confirmada", SHOT: "Disparada",
   DELIVERED: "Entregada", PAID: "Pagada", COMPLETED: "Completada",
-};
-
-const STATUS_COLORS: Record<string, string> = {
-  PENDING: "text-yellow-400 bg-yellow-400/10",
-  CONFIRMED: "text-blue-400 bg-blue-400/10",
-  SHOT: "text-purple-400 bg-purple-400/10",
-  DELIVERED: "text-cyan-400 bg-cyan-400/10",
-  PAID: "text-green-400 bg-green-400/10",
-  COMPLETED: "text-neutral-400 bg-neutral-400/10",
 };
 
 export default async function ClientDetailPage({
@@ -52,11 +43,9 @@ export default async function ClientDetailPage({
   const now = new Date();
   const sessions = client.sessions;
 
-  // ── KPIs ─────────────────────────────────────────────────────────────────
   const totalSessions = sessions.length;
   const completedSessions = sessions.filter((s) => s.status === "COMPLETED" || s.status === "PAID").length;
 
-  // LTV — suma de sesiones pagadas/completadas en ARS y USD por separado
   let ltvARS = 0;
   let ltvUSD = 0;
   for (const s of sessions) {
@@ -65,176 +54,148 @@ export default async function ClientDetailPage({
       else ltvUSD += s.price;
     }
   }
-
   const avgARS = completedSessions > 0 ? ltvARS / completedSessions : 0;
   const avgUSD = completedSessions > 0 ? ltvUSD / completedSessions : 0;
 
-  // Próxima sesión
   const nextSession = sessions.find((s) => new Date(s.date) > now && s.status !== "COMPLETED" && s.status !== "PAID");
-
-  // Sesiones pendientes de cobro
   const pendingPayment = sessions.filter((s) => s.status === "DELIVERED").length;
 
-  // WhatsApp link
   const phone = client.phone?.replace(/\D/g, "");
   const whatsappUrl = phone ? `https://wa.me/${phone.startsWith("54") ? phone : `54${phone}`}` : null;
-
-  // Nueva sesión pre-poblada con el cliente
-  const newSessionUrl = `/fotografia/sesiones`;
+  const clientSince = new Date(client.createdAt).toLocaleDateString("es-AR", { month: "short", year: "numeric" });
+  const initials = client.name.split(" ").slice(0, 2).map((w) => w[0]?.toUpperCase() ?? "").join("");
 
   return (
-    <div className="max-w-3xl">
+    <div>
+      {/* Back */}
+      <Link href="/fotografia/clientes" style={{ display: "inline-flex", alignItems: "center", gap: 6, fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--foto-accent)", textDecoration: "none", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 20 }}>
+        <LuArrowLeft size={12} /> Clientes
+      </Link>
+
       {/* Header */}
-      <div className="mb-6">
-        <Link href="/fotografia/clientes" className="mb-4 flex items-center gap-1.5 text-sm text-neutral-500 hover:text-neutral-300 transition-colors">
-          <LuArrowLeft size={14} /> Clientes
-        </Link>
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="flex items-center gap-4">
-            {/* Avatar con iniciales + gradient */}
-            {(() => {
-              const initials = client.name.split(" ").slice(0, 2).map((w) => w[0]?.toUpperCase() ?? "").join("");
-              const GRADIENTS = [
-                "from-blue-600 to-indigo-700",
-                "from-violet-600 to-purple-700",
-                "from-rose-600 to-pink-700",
-                "from-emerald-600 to-teal-700",
-                "from-amber-600 to-orange-700",
-                "from-cyan-600 to-sky-700",
-              ];
-              const gradient = GRADIENTS[client.name.charCodeAt(0) % GRADIENTS.length];
-              const clientSince = new Date(client.createdAt).toLocaleDateString("es-AR", { month: "short", year: "numeric" });
-              return (
-                <>
-                  <div className={`flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br ${gradient} text-lg font-bold text-white select-none`}>
-                    {initials}
-                  </div>
-                  <div>
-                    <h1 className="text-2xl font-bold text-white">{client.name}</h1>
-                    <div className="mt-1.5 flex flex-wrap items-center gap-3">
-                      {client.instagram && (
-                        <a
-                          href={`https://instagram.com/${client.instagram.replace("@", "")}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center gap-1.5 text-sm text-neutral-500 hover:text-pink-400 transition-colors"
-                        >
-                          <LuInstagram size={13} />
-                          {client.instagram}
-                        </a>
-                      )}
-                      {client.phone && (
-                        <span className="flex items-center gap-1.5 text-sm text-neutral-500">
-                          <LuPhone size={13} />
-                          {client.phone}
-                        </span>
-                      )}
-                      <span className="text-xs text-neutral-600">Cliente desde {clientSince}</span>
-                    </div>
-                    {client.notes && <p className="mt-1 text-xs text-neutral-600">{client.notes}</p>}
-                  </div>
-                </>
-              );
-            })()}
+      <div style={{ borderTop: "4px solid var(--foto-ink)", paddingTop: 14, marginBottom: 24 }}>
+        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-start", justifyContent: "space-between", gap: 16 }}>
+          <div style={{ display: "flex", alignItems: "flex-start", gap: 16 }}>
+            {/* Initials stamp — replaces gradient avatar */}
+            <div style={{
+              width: 52, height: 52, flexShrink: 0,
+              border: "2px solid var(--foto-ink)", borderRadius: "50%",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontFamily: "var(--font-condensed)", fontSize: 20, letterSpacing: "0.04em",
+              color: "var(--foto-ink)", textTransform: "uppercase",
+            }}>
+              {initials}
+            </div>
+            <div>
+              <h1 style={{ fontFamily: "var(--font-condensed)", fontSize: 36, color: "var(--foto-ink)", margin: 0, lineHeight: 0.95, letterSpacing: "0.02em", textTransform: "uppercase" }}>{client.name}</h1>
+              <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 12, marginTop: 8 }}>
+                {client.instagram && (
+                  <a href={`https://instagram.com/${client.instagram.replace("@", "")}`} target="_blank" rel="noopener noreferrer" style={{ display: "flex", alignItems: "center", gap: 5, fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--foto-accent)", textDecoration: "none", letterSpacing: "0.06em" }}>
+                    <LuInstagram size={12} /> {client.instagram}
+                  </a>
+                )}
+                {client.phone && (
+                  <span style={{ display: "flex", alignItems: "center", gap: 5, fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--foto-accent)", letterSpacing: "0.06em" }}>
+                    <LuPhone size={12} /> {client.phone}
+                  </span>
+                )}
+                <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--foto-rule)", letterSpacing: "0.08em" }}>Cliente desde {clientSince}</span>
+              </div>
+              {client.notes && <p style={{ fontFamily: "var(--font-serif)", fontStyle: "italic", fontSize: 13, color: "var(--foto-ink2)", margin: "6px 0 0", lineHeight: 1.4 }}>{client.notes}</p>}
+            </div>
           </div>
-          <div className="flex gap-2">
+
+          {/* Action buttons */}
+          <div style={{ display: "flex", gap: 8 }}>
             {whatsappUrl && (
-              <a
-                href={whatsappUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-1.5 rounded-xl bg-green-700 px-4 py-2 text-sm font-medium text-white hover:bg-green-600 transition-colors"
-              >
-                <LuMessageCircle size={14} /> WhatsApp
+              <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" style={{ display: "flex", alignItems: "center", gap: 6, background: "var(--olive)", color: "var(--foto-paper)", border: "none", padding: "8px 14px", fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.1em", textTransform: "uppercase", textDecoration: "none", cursor: "pointer" }}>
+                <LuMessageCircle size={13} /> WA
               </a>
             )}
-            <Link
-              href={newSessionUrl}
-              className="flex items-center gap-1.5 rounded-xl bg-neutral-700 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-600 transition-colors"
-            >
-              <LuCalendarPlus size={14} /> Nueva sesión
+            <Link href="/fotografia/sesiones" style={{ display: "flex", alignItems: "center", gap: 6, background: "var(--foto-ink)", color: "var(--foto-paper)", border: "none", padding: "8px 14px", fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.1em", textTransform: "uppercase", textDecoration: "none" }}>
+              <LuCalendarPlus size={13} /> + Sesión
             </Link>
           </div>
         </div>
       </div>
 
       {/* KPIs */}
-      <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <div className="rounded-xl bg-neutral-800 p-4">
-          <p className="text-xs text-neutral-400">Sesiones</p>
-          <p className="mt-1 text-2xl font-bold text-white">{totalSessions}</p>
-          <p className="mt-0.5 text-xs text-neutral-600">{completedSessions} completadas</p>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 16, marginBottom: 24 }}>
+        <div style={{ borderTop: "2px solid var(--foto-ink)", paddingTop: 10 }}>
+          <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--foto-accent)", margin: 0, letterSpacing: "0.12em", textTransform: "uppercase" }}>Sesiones</p>
+          <p style={{ fontFamily: "var(--font-mono)", fontSize: 28, color: "var(--foto-ink)", margin: "4px 0 0", fontVariantNumeric: "tabular-nums" }}>{totalSessions}</p>
+          <p style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--foto-accent)", margin: "2px 0 0" }}>{completedSessions} completadas</p>
         </div>
         {ltvARS > 0 && (
-          <div className="rounded-xl bg-neutral-800 p-4">
-            <p className="text-xs text-neutral-400">LTV ARS</p>
-            <p className="mt-1 text-2xl font-bold text-white">{fmtPrice(ltvARS, "ARS")}</p>
-            {avgARS > 0 && <p className="mt-0.5 text-xs text-neutral-600">Prom. {fmtPrice(avgARS, "ARS")}</p>}
+          <div style={{ borderTop: "2px solid var(--foto-ink)", paddingTop: 10 }}>
+            <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--foto-accent)", margin: 0, letterSpacing: "0.12em", textTransform: "uppercase" }}>LTV ARS</p>
+            <p style={{ fontFamily: "var(--font-mono)", fontSize: 20, color: "var(--foto-ink)", margin: "4px 0 0", fontVariantNumeric: "tabular-nums", fontWeight: 500 }}>{fmtPrice(ltvARS, "ARS")}</p>
+            {avgARS > 0 && <p style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--foto-accent)", margin: "2px 0 0" }}>Prom. {fmtPrice(avgARS, "ARS")}</p>}
           </div>
         )}
         {ltvUSD > 0 && (
-          <div className="rounded-xl bg-neutral-800 p-4">
-            <p className="text-xs text-neutral-400">LTV USD</p>
-            <p className="mt-1 text-2xl font-bold text-white">{fmtPrice(ltvUSD, "USD")}</p>
-            {avgUSD > 0 && <p className="mt-0.5 text-xs text-neutral-600">Prom. {fmtPrice(avgUSD, "USD")}</p>}
+          <div style={{ borderTop: "2px solid var(--foto-ink)", paddingTop: 10 }}>
+            <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--foto-accent)", margin: 0, letterSpacing: "0.12em", textTransform: "uppercase" }}>LTV USD</p>
+            <p style={{ fontFamily: "var(--font-mono)", fontSize: 20, color: "var(--foto-ink)", margin: "4px 0 0", fontVariantNumeric: "tabular-nums", fontWeight: 500 }}>{fmtPrice(ltvUSD, "USD")}</p>
+            {avgUSD > 0 && <p style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--foto-accent)", margin: "2px 0 0" }}>Prom. {fmtPrice(avgUSD, "USD")}</p>}
           </div>
         )}
         {pendingPayment > 0 && (
-          <div className="rounded-xl bg-green-950 p-4 ring-1 ring-green-900/40">
-            <p className="text-xs text-neutral-400">Por cobrar</p>
-            <p className="mt-1 text-2xl font-bold text-green-400">{pendingPayment}</p>
-            <p className="mt-0.5 text-xs text-green-700">sesión{pendingPayment !== 1 ? "es" : ""} entregada{pendingPayment !== 1 ? "s" : ""}</p>
+          <div style={{ borderTop: `2px solid var(--olive)`, paddingTop: 10 }}>
+            <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--foto-accent)", margin: 0, letterSpacing: "0.12em", textTransform: "uppercase" }}>Por cobrar</p>
+            <p style={{ fontFamily: "var(--font-mono)", fontSize: 28, color: "var(--olive)", margin: "4px 0 0", fontVariantNumeric: "tabular-nums" }}>{pendingPayment}</p>
+            <p style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--olive)", margin: "2px 0 0" }}>sesión{pendingPayment !== 1 ? "es" : ""} disparada{pendingPayment !== 1 ? "s" : ""}</p>
           </div>
         )}
       </div>
 
       {/* Próxima sesión */}
       {nextSession && (
-        <div className="mb-6 rounded-xl bg-blue-950/30 p-4 ring-1 ring-blue-900/30">
-          <p className="mb-1 text-xs font-medium uppercase tracking-wider text-blue-400">Próxima sesión</p>
-          <div className="flex items-center justify-between">
+        <div style={{ padding: "12px 14px", borderLeft: "3px solid var(--navy)", background: "var(--foto-paper2)", marginBottom: 24 }}>
+          <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--navy)", margin: "0 0 6px", letterSpacing: "0.14em", textTransform: "uppercase" }}>Próxima sesión</p>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <div>
-              <p className="text-sm font-medium text-white">{fmtDate(nextSession.date.toISOString())}</p>
-              <p className="text-xs text-neutral-500">
+              <p style={{ fontFamily: "var(--font-condensed)", fontSize: 16, color: "var(--foto-ink)", margin: 0, letterSpacing: "0.02em", textTransform: "uppercase" }}>{fmtDate(nextSession.date.toISOString())}</p>
+              <p style={{ fontFamily: "var(--font-serif)", fontStyle: "italic", fontSize: 12, color: "var(--foto-ink2)", margin: "2px 0 0" }}>
                 {nextSession.type === "SPORT" ? "Deporte" : nextSession.type === "EVENT" ? "Evento" : "Otro"}
                 {nextSession.eventName ? ` — ${nextSession.eventName}` : ""}
-                {" · "}{fmtPrice(nextSession.price, nextSession.currency)}
+                {" · "}{fmtPrice(nextSession.price, nextSession.currency)} {nextSession.currency}
               </p>
             </div>
-            <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_COLORS[nextSession.status]}`}>
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--foto-accent)", border: "1px solid var(--foto-accent)", padding: "2px 8px", letterSpacing: "0.08em", textTransform: "uppercase" }}>
               {STATUS_LABELS[nextSession.status]}
             </span>
           </div>
         </div>
       )}
 
-      {/* Historial de sesiones */}
+      {/* Historial */}
       <div>
-        <p className="mb-3 text-xs font-medium uppercase tracking-wider text-neutral-500">Historial de sesiones</p>
+        <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--foto-accent)", margin: "0 0 12px", letterSpacing: "0.14em", textTransform: "uppercase" }}>Historial de sesiones</p>
         {sessions.length === 0 ? (
-          <p className="text-sm text-neutral-500">Sin sesiones todavía.</p>
+          <p style={{ fontFamily: "var(--font-serif)", fontStyle: "italic", fontSize: 14, color: "var(--foto-rule)" }}>Sin sesiones todavía.</p>
         ) : (
-          <div className="rounded-xl bg-neutral-800 divide-y divide-neutral-700">
-            {sessions.map((s) => (
+          <div style={{ border: "1px solid var(--foto-rule)" }}>
+            {sessions.map((s, i) => (
               <Link
                 key={s.id}
                 href={`/fotografia/sesiones/${s.id}`}
-                className="flex items-center justify-between px-4 py-3 hover:bg-neutral-700/50 transition-colors"
+                style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 14px", borderBottom: i < sessions.length - 1 ? "1px dashed var(--foto-rule)" : "none", textDecoration: "none" }}
               >
-                <div className="min-w-0">
-                  <p className="text-sm text-white capitalize">{fmtDate(s.date.toISOString())}</p>
-                  <p className="text-xs text-neutral-500">
+                <div style={{ minWidth: 0 }}>
+                  <p style={{ fontFamily: "var(--font-condensed)", fontSize: 15, color: "var(--foto-ink)", margin: 0, letterSpacing: "0.02em", textTransform: "uppercase" }}>{fmtDate(s.date.toISOString())}</p>
+                  <p style={{ fontFamily: "var(--font-serif)", fontStyle: "italic", fontSize: 12, color: "var(--foto-ink2)", margin: "2px 0 0" }}>
                     {s.type === "SPORT" ? "Deporte" : s.type === "EVENT" ? "Evento" : "Otro"}
                     {s.eventName ? ` — ${s.eventName}` : ""}
                     {s.photosDelivered ? ` · ${s.photosDelivered} fotos` : ""}
                   </p>
                 </div>
-                <div className="flex items-center gap-3 flex-shrink-0">
-                  <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_COLORS[s.status]}`}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12, flexShrink: 0 }}>
+                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--foto-accent)", border: "1px solid var(--foto-rule)", padding: "2px 8px", letterSpacing: "0.06em", textTransform: "uppercase" }}>
                     {STATUS_LABELS[s.status]}
                   </span>
-                  <span className="text-sm font-semibold text-neutral-300 tabular-nums">
-                    {fmtPrice(s.price, s.currency)}
+                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--foto-ink)", fontVariantNumeric: "tabular-nums" }}>
+                    {fmtPrice(s.price, s.currency)} <span style={{ fontSize: 9, color: "var(--foto-accent)" }}>{s.currency}</span>
                   </span>
                 </div>
               </Link>

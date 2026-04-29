@@ -4,79 +4,54 @@ import { db } from "@/lib/db";
 import { requireSession } from "@/lib/auth";
 import { SessionStatus } from "@/generated/prisma/enums";
 import Link from "next/link";
-import { LuCalendar, LuUsers, LuCircleCheck, LuPlus } from "react-icons/lu";
+import { LuPlus, LuCalendar } from "react-icons/lu";
 
-function fmtARS(n: number) {
-  return new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", maximumFractionDigits: 0 }).format(n);
-}
-function fmtUSD(n: number) {
-  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2 }).format(n);
-}
+const fmtARS = (n: number) => new Intl.NumberFormat("es-AR", { maximumFractionDigits: 0 }).format(n);
+const fmtUSD = (n: number) => new Intl.NumberFormat("en-US", { minimumFractionDigits: 0 }).format(n);
+const fmtMoney = (n: number, cur: string) => cur === "USD" ? `${fmtUSD(n)} USD` : `${fmtARS(n)} ARS`;
 
 const TZ = "America/Argentina/Buenos_Aires";
 
-function fmtDateTime(date: Date) {
-  const time = date.toLocaleTimeString("es-AR", { timeZone: TZ, hour: "2-digit", minute: "2-digit", hour12: false });
-  const hasTime = time !== "00:00";
-  return new Intl.DateTimeFormat("es-AR", {
-    timeZone: TZ,
-    weekday: "short",
-    day: "2-digit",
-    month: "short",
-    ...(hasTime ? { hour: "2-digit", minute: "2-digit" } : {}),
-  }).format(date);
-}
-
-function getDayInfo(date: Date) {
-  const d = new Date(date);
-  return {
-    day: d.toLocaleDateString("es-AR", { timeZone: TZ, day: "2-digit" }),
-    weekday: d.toLocaleDateString("es-AR", { timeZone: TZ, weekday: "short" }).toUpperCase(),
-    month: d.toLocaleDateString("es-AR", { timeZone: TZ, month: "short" }).toUpperCase(),
-    time: d.toLocaleTimeString("es-AR", { timeZone: TZ, hour: "2-digit", minute: "2-digit", hour12: false }),
-  };
-}
-
 function isToday(date: Date) {
   const now = new Date();
-  const d = new Date(date);
-  return (
-    d.toLocaleDateString("es-AR", { timeZone: TZ }) ===
-    now.toLocaleDateString("es-AR", { timeZone: TZ })
-  );
+  return date.toLocaleDateString("es-AR", { timeZone: TZ }) === now.toLocaleDateString("es-AR", { timeZone: TZ });
+}
+
+function isTomorrow(date: Date) {
+  const tom = new Date(); tom.setDate(tom.getDate() + 1);
+  return date.toLocaleDateString("es-AR", { timeZone: TZ }) === tom.toLocaleDateString("es-AR", { timeZone: TZ });
+}
+
+function fmtRelDate(date: Date): string {
+  if (isToday(date))    return "Hoy";
+  if (isTomorrow(date)) return "Mañana";
+  return date.toLocaleDateString("es-AR", { timeZone: TZ, weekday: "short", day: "numeric", month: "short" });
+}
+
+function fmtTime(date: Date): string | null {
+  const t = date.toLocaleTimeString("es-AR", { timeZone: TZ, hour: "2-digit", minute: "2-digit", hour12: false });
+  return t === "00:00" ? null : t;
 }
 
 const STATUS_LABELS: Record<string, string> = {
-  PENDING: "Pendiente",
+  PENDING:   "Pendiente",
   CONFIRMED: "Confirmada",
-  SHOT: "Disparada",
+  SHOT:      "Disparada",
   DELIVERED: "Entregada",
-  PAID: "Pagada",
+  PAID:      "Pagada",
   COMPLETED: "Completada",
 };
 
-const STATUS_COLORS: Record<string, string> = {
-  PENDING: "text-yellow-400 bg-yellow-400/10",
-  CONFIRMED: "text-blue-400 bg-blue-400/10",
-  SHOT: "text-purple-400 bg-purple-400/10",
-  DELIVERED: "text-cyan-400 bg-cyan-400/10",
-  PAID: "text-green-400 bg-green-400/10",
-  COMPLETED: "text-neutral-400 bg-neutral-400/10",
-};
-
 const TYPE_LABELS: Record<string, string> = {
-  SPORT: "Deporte",
-  EVENT: "Evento",
-  OTHER: "Otro",
+  SPORT: "Deporte", EVENT: "Evento", OTHER: "Otro",
 };
 
 export default async function FotografiaDashboard() {
-  const session = await requireSession();
-  const userId = session.userId;
+  const { userId } = await requireSession();
 
   const now = new Date();
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-  const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+  const endOfMonth   = new Date(now.getFullYear(), now.getMonth() + 1, 1);
 
   const [allSessions, clients] = await Promise.all([
     db.session.findMany({
@@ -87,222 +62,194 @@ export default async function FotografiaDashboard() {
     db.client.findMany({ where: { userId } }),
   ]);
 
-  const thisMes = allSessions.filter((s) => s.date >= startOfMonth && s.date < endOfMonth);
+  const thisMes       = allSessions.filter((s) => s.date >= startOfMonth && s.date < endOfMonth);
   const revenueMesARS = thisMes.filter((s) => s.currency === "ARS").reduce((sum, s) => sum + s.price, 0);
   const revenueMesUSD = thisMes.filter((s) => s.currency === "USD").reduce((sum, s) => sum + s.price, 0);
 
   const upcoming = allSessions
     .filter((s) => s.date >= now && (s.status === SessionStatus.PENDING || s.status === SessionStatus.CONFIRMED))
-    .slice(0, 6);
+    .slice(0, 5);
 
-  const byStatus: Record<string, number> = {};
-  for (const s of allSessions) {
-    byStatus[s.status] = (byStatus[s.status] ?? 0) + 1;
-  }
+  const pendingEdit    = allSessions.filter((s) => s.status === SessionStatus.SHOT).length;
+  const pendingPayment = allSessions.filter((s) => s.status === SessionStatus.DELIVERED).length;
 
   const recent = [...allSessions]
-    .filter((s) => s.date < now || (s.status !== SessionStatus.PENDING && s.status !== SessionStatus.CONFIRMED))
-    .sort((a, b) => b.date.getTime() - a.date.getTime())
+    .filter((s) => s.date < now || s.status === SessionStatus.SHOT || s.status === SessionStatus.DELIVERED)
+    .sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime())
     .slice(0, 4);
 
   const mesLabel = now.toLocaleDateString("es-AR", { month: "long", year: "numeric" });
 
   return (
-    <div className="space-y-5">
-      {/* ── Header ── */}
-      <div className="flex items-start justify-between gap-4">
+    <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
+
+      {/* ── Header ───────────────────────────────────────────────── */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
         <div>
-          <h1 className="text-2xl font-bold text-white">Fotografía</h1>
-          <p className="mt-1 text-neutral-400 capitalize">
+          <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--foto-accent)", margin: 0, letterSpacing: "0.16em", textTransform: "uppercase" }}>
             {now.toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long" })}
           </p>
+          <h1 style={{ fontFamily: "var(--font-display)", fontSize: 32, fontStyle: "italic", color: "var(--foto-ink)", margin: "2px 0 0", lineHeight: 1, letterSpacing: "-0.01em" }}>
+            Fotografía
+          </h1>
         </div>
-        <Link
-          href="/fotografia/sesiones"
-          className="flex flex-shrink-0 items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-500 transition-colors"
-        >
-          <LuPlus size={15} />
-          Nueva sesión
+        <Link href="/fotografia/sesiones" style={{ display: "flex", alignItems: "center", gap: 6, background: "var(--foto-ink)", color: "var(--foto-paper)", padding: "9px 16px", fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.1em", textTransform: "uppercase", textDecoration: "none", flexShrink: 0 }}>
+          <LuPlus size={14} /> Sesión
         </Link>
       </div>
 
-      {/* ── PRÓXIMAS SESIONES — destacado ── */}
-      <section>
-        <div className="rounded-2xl bg-neutral-800 p-5">
-          <div className="mb-4 flex items-center justify-between">
-            <div>
-              <p className="font-semibold text-white">Próximas sesiones</p>
-              {upcoming.length > 0 && (
-                <p className="mt-0.5 text-xs text-neutral-500">
-                  {upcoming.length} {upcoming.length === 1 ? "sesión pactada" : "sesiones pactadas"}
-                </p>
-              )}
-            </div>
-            <Link href="/fotografia/sesiones" className="text-sm text-neutral-500 hover:text-neutral-300">
-              ver todas →
+      {/* ── Alertas operativas ───────────────────────────────────── */}
+      {(pendingEdit > 0 || pendingPayment > 0) && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {pendingEdit > 0 && (
+            <Link href="/fotografia/sesiones" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", background: "var(--foto-paper2)", borderLeft: "4px solid var(--foto-ink)", textDecoration: "none" }}>
+              <span style={{ fontFamily: "var(--font-serif)", fontSize: 15, color: "var(--foto-ink)" }}>
+                {pendingEdit} sesión{pendingEdit !== 1 ? "es" : ""} por editar
+              </span>
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--foto-accent)" }}>→</span>
             </Link>
-          </div>
-
-          {upcoming.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-10 text-center">
-              <LuCalendar size={28} className="text-neutral-600" />
-              <p className="mt-3 text-sm text-neutral-500">No hay sesiones pactadas</p>
-              <Link
-                href="/fotografia/sesiones"
-                className="mt-3 flex items-center gap-1.5 rounded-lg bg-neutral-700 px-3 py-1.5 text-sm text-neutral-300 hover:bg-neutral-600 transition-colors"
-              >
-                <LuPlus size={13} />
-                Crear sesión
-              </Link>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-2">
-              {upcoming.map((s) => {
-                const { day, weekday, month, time } = getDayInfo(s.date);
-                const today = isToday(s.date);
-                return (
-                  <div
-                    key={s.id}
-                    className={`flex items-center gap-3 rounded-xl p-3 ${
-                      today
-                        ? "bg-blue-500/10 ring-1 ring-blue-500/30"
-                        : "bg-neutral-900/70"
-                    }`}
-                  >
-                    {/* Chip de fecha + hora */}
-                    <div className={`flex w-14 flex-shrink-0 flex-col items-center rounded-lg py-2 ${
-                      today ? "bg-blue-500/20" : "bg-neutral-800"
-                    }`}>
-                      <span className={`text-[10px] font-semibold tracking-wide ${today ? "text-blue-400" : "text-neutral-500"}`}>
-                        {weekday}
-                      </span>
-                      <span className={`text-xl font-bold leading-tight ${today ? "text-blue-300" : "text-white"}`}>
-                        {day}
-                      </span>
-                      <span className={`text-[10px] ${today ? "text-blue-400" : "text-neutral-500"}`}>
-                        {month}
-                      </span>
-                      {time !== "00:00" && (
-                        <>
-                          <div className={`my-1.5 h-px w-6 ${today ? "bg-blue-500/40" : "bg-neutral-700"}`} />
-                          <span className={`text-xs font-semibold tabular-nums ${today ? "text-blue-300" : "text-neutral-300"}`}>
-                            {time}
-                          </span>
-                        </>
-                      )}
-                    </div>
-
-                    {/* Info */}
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium text-white">{s.client.name}</p>
-                      <p className="truncate text-xs text-neutral-500">
-                        {TYPE_LABELS[s.type]}
-                        {s.eventName ? ` — ${s.eventName}` : ""}
-                      </p>
-                    </div>
-
-                    {/* Estado + precio */}
-                    <div className="flex flex-shrink-0 flex-col items-end gap-1">
-                      <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_COLORS[s.status]}`}>
-                        {STATUS_LABELS[s.status]}
-                      </span>
-                      <p className="text-xs text-neutral-500">
-                        {s.currency === "ARS" ? fmtARS(s.price) : fmtUSD(s.price)}
-                      </p>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+          )}
+          {pendingPayment > 0 && (
+            <Link href="/fotografia/sesiones" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", background: "var(--foto-paper2)", borderLeft: "4px solid var(--olive)", textDecoration: "none" }}>
+              <span style={{ fontFamily: "var(--font-serif)", fontSize: 15, color: "var(--foto-ink)" }}>
+                {pendingPayment} sesión{pendingPayment !== 1 ? "es" : ""} por cobrar
+              </span>
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--foto-accent)" }}>→</span>
+            </Link>
           )}
         </div>
+      )}
+
+      {/* ── Próximas sesiones ─────────────────────────────────────── */}
+      <section>
+        <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 12 }}>
+          <p style={{ fontFamily: "var(--font-serif)", fontSize: 17, fontWeight: 600, color: "var(--foto-ink)", margin: 0 }}>
+            Próximas
+          </p>
+          <Link href="/fotografia/sesiones" style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--foto-accent)", textDecoration: "none", letterSpacing: "0.06em" }}>
+            ver todas →
+          </Link>
+        </div>
+
+        {upcoming.length === 0 ? (
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10, padding: "28px 0", textAlign: "center", border: "1px dashed var(--foto-rule)" }}>
+            <LuCalendar size={20} style={{ color: "var(--foto-rule)" }} />
+            <p style={{ fontFamily: "var(--font-serif)", fontStyle: "italic", fontSize: 14, color: "var(--foto-rule)", margin: 0 }}>No hay sesiones pactadas</p>
+          </div>
+        ) : (
+          <div style={{ border: "1px solid var(--foto-rule)" }}>
+            {upcoming.map((s, i) => {
+              const today    = isToday(s.date);
+              const tomorrow = isTomorrow(s.date);
+              const time     = fmtTime(s.date);
+              return (
+                <Link
+                  key={s.id}
+                  href={`/fotografia/sesiones/${s.id}`}
+                  style={{
+                    display: "flex", alignItems: "center", gap: 14,
+                    padding: "14px 16px",
+                    borderBottom: i < upcoming.length - 1 ? "1px solid var(--foto-rule)" : "none",
+                    background: today ? "var(--foto-paper2)" : "var(--foto-paper)",
+                    textDecoration: "none",
+                  }}
+                >
+                  {/* Date pill */}
+                  <div style={{
+                    flexShrink: 0, width: 44, textAlign: "center",
+                    padding: "6px 0",
+                    background: today ? "var(--foto-ink)" : "transparent",
+                    border: `1px solid ${today ? "var(--foto-ink)" : "var(--foto-rule)"}`,
+                  }}>
+                    <p style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: today ? "var(--foto-paper)" : "var(--foto-accent)", margin: 0, letterSpacing: "0.1em", textTransform: "uppercase" }}>
+                      {s.date.toLocaleDateString("es-AR", { timeZone: TZ, weekday: "short" }).toUpperCase()}
+                    </p>
+                    <p style={{ fontFamily: "var(--font-condensed)", fontSize: 20, color: today ? "var(--foto-paper)" : "var(--foto-ink)", margin: 0, lineHeight: 1.1 }}>
+                      {s.date.toLocaleDateString("es-AR", { timeZone: TZ, day: "numeric" })}
+                    </p>
+                    <p style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: today ? "var(--foto-paper2)" : "var(--foto-accent)", margin: 0, letterSpacing: "0.06em", textTransform: "uppercase" }}>
+                      {s.date.toLocaleDateString("es-AR", { timeZone: TZ, month: "short" }).toUpperCase()}
+                    </p>
+                  </div>
+
+                  {/* Client info */}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ fontFamily: "var(--font-serif)", fontSize: 16, fontWeight: 600, color: "var(--foto-ink)", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {s.client.name}
+                    </p>
+                    <p style={{ fontFamily: "var(--font-serif)", fontStyle: "italic", fontSize: 13, color: "var(--foto-ink2)", margin: "2px 0 0" }}>
+                      {TYPE_LABELS[s.type]}{s.eventName ? ` — ${s.eventName}` : ""}
+                      {time ? ` · ${time}` : ""}
+                    </p>
+                    <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: today ? "var(--foto-ink)" : tomorrow ? "var(--rust)" : "var(--foto-accent)", margin: "4px 0 0", letterSpacing: "0.06em", textTransform: "uppercase" }}>
+                      {fmtRelDate(s.date)}
+                    </p>
+                  </div>
+
+                  {/* Price */}
+                  <p style={{ fontFamily: "var(--font-mono)", fontSize: 13, color: "var(--foto-ink)", fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>
+                    {fmtMoney(s.price, s.currency)}
+                  </p>
+                </Link>
+              );
+            })}
+          </div>
+        )}
       </section>
 
-      {/* ── Stats del mes ── */}
+      {/* ── KPIs del mes ─────────────────────────────────────────── */}
       <section>
-        <p className="mb-2.5 text-xs font-medium uppercase tracking-wider text-neutral-600 capitalize">{mesLabel}</p>
-        <div className="grid grid-cols-2 gap-2.5 lg:grid-cols-4">
-          <div className="rounded-xl bg-neutral-800/60 p-4">
-            <p className="text-xs text-neutral-500">Sesiones</p>
-            <p className="mt-1.5 text-xl font-bold text-white">{thisMes.length}</p>
-          </div>
-          <div className="rounded-xl bg-neutral-800/60 p-4">
-            <p className="text-xs text-neutral-500">Revenue ARS</p>
-            <p className="mt-1.5 truncate text-lg font-bold text-white">
-              {revenueMesARS > 0 ? fmtARS(revenueMesARS) : "—"}
-            </p>
-          </div>
-          <div className="rounded-xl bg-neutral-800/60 p-4">
-            <p className="text-xs text-neutral-500">Revenue USD</p>
-            <p className="mt-1.5 truncate text-lg font-bold text-white">
-              {revenueMesUSD > 0 ? fmtUSD(revenueMesUSD) : "—"}
-            </p>
-          </div>
-          <div className="rounded-xl bg-neutral-800/60 p-4">
-            <p className="text-xs text-neutral-500">Clientes</p>
-            <p className="mt-1.5 text-xl font-bold text-white">{clients.length}</p>
-          </div>
+        <p style={{ fontFamily: "var(--font-serif)", fontSize: 17, fontWeight: 600, color: "var(--foto-ink)", margin: "0 0 12px" }}>
+          {mesLabel.charAt(0).toUpperCase() + mesLabel.slice(1)}
+        </p>
+        <div className="grid grid-cols-2 lg:grid-cols-4" style={{ gap: 12 }}>
+          {[
+            { label: "Sesiones",    value: thisMes.length,    unit: "" },
+            { label: "Revenue ARS", value: revenueMesARS || null, formatted: revenueMesARS > 0 ? fmtARS(revenueMesARS) : "—", unit: revenueMesARS > 0 ? " ARS" : "" },
+            { label: "Revenue USD", value: revenueMesUSD || null, formatted: revenueMesUSD > 0 ? fmtUSD(revenueMesUSD) : "—", unit: revenueMesUSD > 0 ? " USD" : "" },
+            { label: "Clientes",    value: clients.length,    unit: "" },
+          ].map((k) => (
+            <div key={k.label} style={{ padding: "14px 16px", background: "var(--foto-paper2)", border: "1px solid var(--foto-rule)" }}>
+              <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--foto-accent)", margin: 0, letterSpacing: "0.12em", textTransform: "uppercase" }}>{k.label}</p>
+              <p style={{ fontFamily: "var(--font-mono)", fontSize: 22, color: "var(--foto-ink)", margin: "6px 0 0", fontVariantNumeric: "tabular-nums", fontWeight: 500, lineHeight: 1 }}>
+                {"formatted" in k ? k.formatted : k.value}
+                {"unit" in k && k.unit && <span style={{ fontSize: 10, color: "var(--foto-accent)", fontWeight: 400 }}>{k.unit}</span>}
+              </p>
+            </div>
+          ))}
         </div>
       </section>
 
-      {/* ── Estados + Últimas ── */}
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+      {/* ── Historial reciente ────────────────────────────────────── */}
+      {recent.length > 0 && (
         <section>
-          <div className="rounded-xl bg-neutral-800 p-4 sm:p-5">
-            <p className="mb-3 text-sm font-medium text-white">Por estado</p>
-            {allSessions.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-4 text-center">
-                <LuCircleCheck size={20} className="text-neutral-600" />
-                <p className="mt-2 text-sm text-neutral-600">Todavía no hay sesiones</p>
-              </div>
-            ) : (
-              <div className="flex flex-col gap-2">
-                {Object.entries(STATUS_LABELS).map(([status, label]) => {
-                  const count = byStatus[status] ?? 0;
-                  if (count === 0) return null;
-                  return (
-                    <div key={status} className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className={`h-2 w-2 rounded-full ${STATUS_COLORS[status].split(" ")[0].replace("text-", "bg-")}`} />
-                        <p className="text-sm text-neutral-400">{label}</p>
-                      </div>
-                      <p className="text-sm font-medium text-white">{count}</p>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+          <p style={{ fontFamily: "var(--font-serif)", fontSize: 17, fontWeight: 600, color: "var(--foto-ink)", margin: "0 0 12px" }}>
+            Recientes
+          </p>
+          <div style={{ border: "1px solid var(--foto-rule)" }}>
+            {recent.map((s, i) => (
+              <Link key={s.id} href={`/fotografia/sesiones/${s.id}`} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", borderBottom: i < recent.length - 1 ? "1px solid var(--foto-rule)" : "none", textDecoration: "none" }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ fontFamily: "var(--font-serif)", fontSize: 15, fontWeight: 600, color: "var(--foto-ink)", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {s.client.name}
+                  </p>
+                  <p style={{ fontFamily: "var(--font-serif)", fontStyle: "italic", fontSize: 12, color: "var(--foto-ink2)", margin: "2px 0 0" }}>
+                    {TYPE_LABELS[s.type]}{s.eventName ? ` — ${s.eventName}` : ""} · {s.date.toLocaleDateString("es-AR", { timeZone: TZ, day: "numeric", month: "short" })}
+                  </p>
+                </div>
+                <div style={{ flexShrink: 0, textAlign: "right" }}>
+                  <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--foto-accent)", margin: 0, letterSpacing: "0.06em", textTransform: "uppercase" }}>
+                    {STATUS_LABELS[s.status]}
+                  </p>
+                  <p style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--foto-ink)", margin: "3px 0 0", fontVariantNumeric: "tabular-nums" }}>
+                    {fmtMoney(s.price, s.currency)}
+                  </p>
+                </div>
+              </Link>
+            ))}
           </div>
         </section>
-
-        <section>
-          <div className="rounded-xl bg-neutral-800 p-4 sm:p-5">
-            <p className="mb-3 text-sm font-medium text-white">Historial reciente</p>
-            {recent.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-4 text-center">
-                <LuUsers size={20} className="text-neutral-600" />
-                <p className="mt-2 text-sm text-neutral-600">Sin historial aún</p>
-              </div>
-            ) : (
-              <div className="flex flex-col divide-y divide-neutral-700">
-                {recent.map((s) => (
-                  <div key={s.id} className="flex items-center gap-3 py-2.5">
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm text-white">{s.client.name}</p>
-                      <p className="truncate text-xs text-neutral-500">
-                        {TYPE_LABELS[s.type]} · {fmtDateTime(s.date)}
-                      </p>
-                    </div>
-                    <span className={`flex-shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_COLORS[s.status]}`}>
-                      {STATUS_LABELS[s.status]}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </section>
-      </div>
+      )}
     </div>
   );
 }

@@ -74,31 +74,27 @@ export default function LoginPage() {
   const isLogin = mode === "login";
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-neutral-950 px-4">
-      <div className="w-full max-w-sm">
+    <div style={{ display: "flex", minHeight: "100vh", alignItems: "center", justifyContent: "center", background: "var(--paper)", padding: "0 16px" }}>
+      <div style={{ width: "100%", maxWidth: 360 }}>
 
-        <div className="mb-8 text-center">
-          <h1 className="text-2xl font-bold text-white">Liford</h1>
-          <p className="mt-1 text-sm text-neutral-400">Tu gestor personal</p>
+        <div style={{ marginBottom: 32, textAlign: "center" }}>
+          <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.18em", color: "var(--ink3)", margin: "0 0 4px", textTransform: "uppercase" }}>Almanaque · MMXXVI</p>
+          <h1 style={{ fontFamily: "var(--font-display)", fontSize: 40, fontStyle: "italic", color: "var(--ink)", margin: 0, lineHeight: 0.9, letterSpacing: "-0.02em" }}>Liford</h1>
         </div>
 
         {/* Toggle login / register */}
-        <div className="mb-4 flex rounded-xl bg-neutral-900 p-1 ring-1 ring-neutral-800">
+        <div style={{ marginBottom: 16, display: "flex", border: "1px solid var(--ink)" }}>
           <button
             type="button"
             onClick={() => switchMode("login")}
-            className={`flex-1 rounded-lg py-2 text-sm font-medium transition-colors ${
-              isLogin ? "bg-neutral-700 text-white" : "text-neutral-500 hover:text-neutral-300"
-            }`}
+            style={{ flex: 1, padding: "8px 0", background: isLogin ? "var(--ink)" : "transparent", color: isLogin ? "var(--paper)" : "var(--ink3)", border: "none", fontFamily: "var(--font-serif)", fontSize: 13, fontStyle: isLogin ? "normal" : "italic", cursor: "pointer", borderRight: "1px solid var(--ink)" }}
           >
             Iniciar sesión
           </button>
           <button
             type="button"
             onClick={() => switchMode("register")}
-            className={`flex-1 rounded-lg py-2 text-sm font-medium transition-colors ${
-              !isLogin ? "bg-neutral-700 text-white" : "text-neutral-500 hover:text-neutral-300"
-            }`}
+            style={{ flex: 1, padding: "8px 0", background: !isLogin ? "var(--ink)" : "transparent", color: !isLogin ? "var(--paper)" : "var(--ink3)", border: "none", fontFamily: "var(--font-serif)", fontSize: 13, fontStyle: !isLogin ? "normal" : "italic", cursor: "pointer" }}
           >
             Crear cuenta
           </button>
@@ -106,91 +102,73 @@ export default function LoginPage() {
 
         <form
           onSubmit={handleSubmit}
-          className="rounded-xl bg-neutral-900 p-6 ring-1 ring-neutral-800"
+          style={{ background: "var(--paper2)", border: "1px solid var(--rule2)", padding: 24 }}
         >
-          <div className="space-y-4">
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
 
-            {/* Nombre (solo register) */}
             {!isLogin && (
               <div>
-                <label className="mb-1.5 block text-xs font-medium text-neutral-400">
-                  Nombre <span className="text-neutral-600">(opcional)</span>
+                <label style={{ display: "block", fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--ink3)", marginBottom: 6 }}>
+                  Nombre <span style={{ color: "var(--rule2)" }}>(opcional)</span>
                 </label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500">
-                    <LuUserPlus size={15} />
-                  </span>
+                <div style={{ position: "relative" }}>
+                  <span style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "var(--ink3)" }}><LuUserPlus size={14} /></span>
                   <input
                     type="text"
                     value={displayName}
                     onChange={(e) => setDisplayName(e.target.value)}
                     autoComplete="name"
-                    className="w-full rounded-lg bg-neutral-800 py-2.5 pl-9 pr-3 text-sm text-white placeholder-neutral-600 ring-1 ring-neutral-700 outline-none focus:ring-blue-500"
+                    style={{ width: "100%", background: "var(--paper)", border: "1px solid var(--rule2)", padding: "9px 10px 9px 32px", fontFamily: "var(--font-serif)", fontSize: 14, color: "var(--ink)", outline: "none", boxSizing: "border-box" }}
                     placeholder="Tu nombre"
                   />
                 </div>
               </div>
             )}
 
-            {/* Usuario */}
             <div>
-              <label className="mb-1.5 block text-xs font-medium text-neutral-400">
-                Usuario
-              </label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500">
-                  <LuUser size={15} />
-                </span>
+              <label style={{ display: "block", fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--ink3)", marginBottom: 6 }}>Usuario</label>
+              <div style={{ position: "relative" }}>
+                <span style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "var(--ink3)" }}><LuUser size={14} /></span>
                 <input
                   type="text"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   required
                   autoComplete="username"
-                  className="w-full rounded-lg bg-neutral-800 py-2.5 pl-9 pr-3 text-sm text-white placeholder-neutral-600 ring-1 ring-neutral-700 outline-none focus:ring-blue-500"
+                  style={{ width: "100%", background: "var(--paper)", border: "1px solid var(--rule2)", padding: "9px 10px 9px 32px", fontFamily: "var(--font-serif)", fontSize: 14, color: "var(--ink)", outline: "none", boxSizing: "border-box" }}
                   placeholder={isLogin ? "tu usuario" : "elige un usuario"}
                 />
               </div>
             </div>
 
-            {/* Contraseña */}
             <div>
-              <label className="mb-1.5 block text-xs font-medium text-neutral-400">
-                Contraseña
-              </label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500">
-                  <LuLock size={15} />
-                </span>
+              <label style={{ display: "block", fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--ink3)", marginBottom: 6 }}>Contraseña</label>
+              <div style={{ position: "relative" }}>
+                <span style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "var(--ink3)" }}><LuLock size={14} /></span>
                 <input
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   autoComplete={isLogin ? "current-password" : "new-password"}
-                  className="w-full rounded-lg bg-neutral-800 py-2.5 pl-9 pr-3 text-sm text-white placeholder-neutral-600 ring-1 ring-neutral-700 outline-none focus:ring-blue-500"
+                  style={{ width: "100%", background: "var(--paper)", border: "1px solid var(--rule2)", padding: "9px 10px 9px 32px", fontFamily: "var(--font-serif)", fontSize: 14, color: "var(--ink)", outline: "none", boxSizing: "border-box" }}
                   placeholder="••••••••"
                 />
               </div>
             </div>
 
-            {/* Confirmar contraseña (solo register) */}
             {!isLogin && (
               <div>
-                <label className="mb-1.5 block text-xs font-medium text-neutral-400">
-                  Confirmar contraseña
-                </label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500">
-                    <LuLock size={15} />
-                  </span>
+                <label style={{ display: "block", fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--ink3)", marginBottom: 6 }}>Confirmar contraseña</label>
+                <div style={{ position: "relative" }}>
+                  <span style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "var(--ink3)" }}><LuLock size={14} /></span>
                   <input
                     type="password"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     required
                     autoComplete="new-password"
-                    className="w-full rounded-lg bg-neutral-800 py-2.5 pl-9 pr-3 text-sm text-white placeholder-neutral-600 ring-1 ring-neutral-700 outline-none focus:ring-blue-500"
+                    style={{ width: "100%", background: "var(--paper)", border: "1px solid var(--rule2)", padding: "9px 10px 9px 32px", fontFamily: "var(--font-serif)", fontSize: 14, color: "var(--ink)", outline: "none", boxSizing: "border-box" }}
                     placeholder="••••••••"
                   />
                 </div>
@@ -199,7 +177,7 @@ export default function LoginPage() {
           </div>
 
           {error && (
-            <p className="mt-4 rounded-lg bg-red-950 px-3 py-2 text-sm text-red-400">
+            <p style={{ marginTop: 14, padding: "8px 12px", border: "1px solid var(--brick)", fontFamily: "var(--font-serif)", fontStyle: "italic", fontSize: 13, color: "var(--brick)" }}>
               {error}
             </p>
           )}
@@ -207,7 +185,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="mt-6 w-full rounded-lg bg-blue-600 py-2.5 text-sm font-medium text-white hover:bg-blue-500 disabled:opacity-50 transition-colors"
+            style={{ marginTop: 20, width: "100%", background: "var(--ink)", color: "var(--paper)", border: "none", padding: "11px 0", fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: "0.12em", textTransform: "uppercase", cursor: "pointer", opacity: loading ? 0.6 : 1 }}
           >
             {loading
               ? isLogin ? "Ingresando..." : "Creando cuenta..."
@@ -216,8 +194,8 @@ export default function LoginPage() {
           </button>
 
           {isLogin && (
-            <div className="mt-4 text-center">
-              <Link href="/forgot-password" className="text-xs text-neutral-500 hover:text-neutral-300 transition-colors">
+            <div style={{ marginTop: 14, textAlign: "center" }}>
+              <Link href="/forgot-password" style={{ fontFamily: "var(--font-serif)", fontStyle: "italic", fontSize: 12, color: "var(--ink3)", textDecoration: "none" }}>
                 ¿Olvidaste tu contraseña?
               </Link>
             </div>
@@ -228,3 +206,4 @@ export default function LoginPage() {
     </div>
   );
 }
+

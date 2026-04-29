@@ -15,6 +15,13 @@ interface ClientRowProps {
   sessionCount: number;
 }
 
+const inputSt: React.CSSProperties = {
+  width: "100%", boxSizing: "border-box",
+  background: "var(--foto-paper)", border: "1px solid var(--foto-rule)",
+  padding: "7px 10px", fontFamily: "var(--font-serif)", fontSize: 13,
+  color: "var(--foto-ink)", outline: "none",
+};
+
 export default function ClientRow(props: ClientRowProps) {
   const router = useRouter();
   const [editing, setEditing] = useState(false);
@@ -28,10 +35,8 @@ export default function ClientRow(props: ClientRowProps) {
   const [notes, setNotes] = useState(props.notes ?? "");
 
   function resetEdit() {
-    setName(props.name);
-    setInstagram(props.instagram ?? "");
-    setPhone(props.phone ?? "");
-    setNotes(props.notes ?? "");
+    setName(props.name); setInstagram(props.instagram ?? "");
+    setPhone(props.phone ?? ""); setNotes(props.notes ?? "");
     setEditing(false);
   }
 
@@ -43,83 +48,43 @@ export default function ClientRow(props: ClientRowProps) {
       body: JSON.stringify({ name, instagram, phone, notes }),
     });
     setLoading(false);
-    if (res.ok) {
-      toast.success("Cliente actualizado");
-      setEditing(false);
-      router.refresh();
-    } else {
-      toast.error("No se pudo actualizar");
-    }
+    if (res.ok) { toast.success("Cliente actualizado"); setEditing(false); router.refresh(); }
+    else toast.error("No se pudo actualizar");
   }
 
   async function handleDelete() {
     const res = await fetch(`/api/fotografia/clients/${props.id}`, { method: "DELETE" });
-    if (res.ok) {
-      toast.success("Cliente eliminado");
-      router.refresh();
-    } else {
-      toast.error("No se pudo eliminar");
-    }
+    if (res.ok) { toast.success("Cliente eliminado"); router.refresh(); }
+    else toast.error("No se pudo eliminar");
   }
 
   if (editing) {
     return (
-      <div className="flex flex-col gap-3 px-4 py-4">
-        <div className="grid grid-cols-2 gap-2">
-          <div className="col-span-2">
-            <p className="mb-1 text-xs text-neutral-500">Nombre</p>
-            <input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="w-full rounded-lg bg-neutral-900 px-2 py-1.5 text-sm text-white outline-none ring-1 ring-neutral-700 focus:ring-blue-500"
-            />
+      <div style={{ padding: "14px 16px", borderBottom: "1px dashed var(--foto-rule)" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
+          <div style={{ gridColumn: "1 / -1" }}>
+            <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--foto-accent)", margin: "0 0 4px", letterSpacing: "0.1em", textTransform: "uppercase" }}>Nombre</p>
+            <input value={name} onChange={(e) => setName(e.target.value)} style={inputSt} />
           </div>
           <div>
-            <p className="mb-1 text-xs text-neutral-500">Instagram</p>
-            <div className="relative">
-              <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-neutral-500">@</span>
-              <input
-                value={instagram}
-                onChange={(e) => setInstagram(e.target.value)}
-                placeholder="usuario"
-                className="w-full rounded-lg bg-neutral-900 py-1.5 pl-6 pr-2 text-sm text-white placeholder-neutral-600 outline-none ring-1 ring-neutral-700 focus:ring-blue-500"
-              />
-            </div>
+            <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--foto-accent)", margin: "0 0 4px", letterSpacing: "0.1em", textTransform: "uppercase" }}>Instagram</p>
+            <input value={instagram} onChange={(e) => setInstagram(e.target.value)} placeholder="@usuario" style={inputSt} />
           </div>
           <div>
-            <p className="mb-1 text-xs text-neutral-500">Teléfono</p>
-            <input
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              placeholder="+54 9 11..."
-              className="w-full rounded-lg bg-neutral-900 px-2 py-1.5 text-sm text-white placeholder-neutral-600 outline-none ring-1 ring-neutral-700 focus:ring-blue-500"
-            />
+            <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--foto-accent)", margin: "0 0 4px", letterSpacing: "0.1em", textTransform: "uppercase" }}>Teléfono</p>
+            <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+54 9 11..." style={inputSt} />
           </div>
-          <div className="col-span-2">
-            <p className="mb-1 text-xs text-neutral-500">Notas</p>
-            <textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              rows={2}
-              className="w-full rounded-lg bg-neutral-900 px-2 py-1.5 text-sm text-white outline-none ring-1 ring-neutral-700 focus:ring-blue-500 resize-none"
-            />
+          <div style={{ gridColumn: "1 / -1" }}>
+            <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--foto-accent)", margin: "0 0 4px", letterSpacing: "0.1em", textTransform: "uppercase" }}>Notas</p>
+            <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} style={{ ...inputSt, resize: "none" }} />
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={handleSave}
-            disabled={loading}
-            className="flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-500 disabled:opacity-50"
-          >
-            <LuCheck size={13} />
-            {loading ? "Guardando..." : "Guardar"}
+        <div style={{ display: "flex", gap: 8 }}>
+          <button onClick={handleSave} disabled={loading} style={{ display: "flex", alignItems: "center", gap: 6, background: "var(--foto-ink)", color: "var(--foto-paper)", border: "none", padding: "7px 14px", fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer", opacity: loading ? 0.6 : 1 }}>
+            <LuCheck size={12} /> {loading ? "Guardando..." : "Guardar"}
           </button>
-          <button
-            onClick={resetEdit}
-            className="flex items-center gap-1.5 rounded-lg bg-neutral-700 px-3 py-1.5 text-sm text-neutral-200 hover:bg-neutral-600"
-          >
-            <LuX size={13} />
-            Cancelar
+          <button onClick={resetEdit} style={{ display: "flex", alignItems: "center", gap: 6, background: "transparent", border: "1px solid var(--foto-rule)", color: "var(--foto-accent)", padding: "7px 12px", fontFamily: "var(--font-mono)", fontSize: 10, cursor: "pointer" }}>
+            <LuX size={12} /> Cancelar
           </button>
         </div>
       </div>
@@ -130,10 +95,10 @@ export default function ClientRow(props: ClientRowProps) {
   const whatsappUrl = rawPhone ? `https://wa.me/${rawPhone.startsWith("54") ? rawPhone : `54${rawPhone}`}` : null;
 
   return (
-    <div className="flex items-center gap-3 px-4 py-3">
-      <Link href={`/fotografia/clientes/${props.id}`} className="min-w-0 flex-1 group">
-        <p className="truncate text-sm font-medium text-white group-hover:text-blue-400 transition-colors">{props.name}</p>
-        <p className="truncate text-xs text-neutral-500">
+    <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderBottom: "1px dashed var(--foto-rule)" }}>
+      <Link href={`/fotografia/clientes/${props.id}`} style={{ minWidth: 0, flex: 1, textDecoration: "none" }}>
+        <p style={{ fontFamily: "var(--font-condensed)", fontSize: 17, color: "var(--foto-ink)", margin: 0, letterSpacing: "0.02em", textTransform: "uppercase", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{props.name}</p>
+        <p style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--foto-accent)", margin: "2px 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           {props.instagram ? `@${props.instagram}` : ""}
           {props.instagram && props.phone ? " · " : ""}
           {props.phone ?? ""}
@@ -141,64 +106,42 @@ export default function ClientRow(props: ClientRowProps) {
         </p>
       </Link>
 
-      <p className="flex-shrink-0 text-xs text-neutral-500">
+      <p style={{ flexShrink: 0, fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--foto-accent)", letterSpacing: "0.06em" }}>
         {props.sessionCount} {props.sessionCount === 1 ? "sesión" : "sesiones"}
       </p>
 
       {whatsappUrl && (
-        <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="flex-shrink-0 rounded-lg p-1.5 text-neutral-600 hover:bg-neutral-700 hover:text-green-400 transition-colors" title="WhatsApp">
-          <LuMessageCircle size={14} />
+        <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" style={{ flexShrink: 0, color: "var(--olive)", lineHeight: 1 }} title="WhatsApp">
+          <LuMessageCircle size={15} />
         </a>
       )}
 
-      <Link href={`/fotografia/clientes/${props.id}`} className="flex-shrink-0 text-neutral-700 hover:text-neutral-400 transition-colors">
+      <Link href={`/fotografia/clientes/${props.id}`} style={{ flexShrink: 0, color: "var(--foto-rule)", lineHeight: 1 }}>
         <LuChevronRight size={15} />
       </Link>
 
-      <div className="relative flex-shrink-0">
-        <button
-          onClick={() => setMenuOpen((v) => !v)}
-          className="rounded-lg p-1 text-neutral-600 hover:bg-neutral-700 hover:text-neutral-300 transition-colors"
-        >
+      <div style={{ position: "relative", flexShrink: 0 }}>
+        <button onClick={() => setMenuOpen((v) => !v)} style={{ background: "transparent", border: "none", color: "var(--foto-rule)", cursor: "pointer", lineHeight: 1 }}>
           <LuEllipsis size={15} />
         </button>
-
         {menuOpen && (
           <>
             <div className="fixed inset-0 z-10" onClick={() => { setMenuOpen(false); setConfirmingDelete(false); }} />
-            <div className="absolute right-0 bottom-full z-20 mb-1 flex flex-col overflow-hidden rounded-lg bg-neutral-700 shadow-lg">
+            <div style={{ position: "absolute", right: 0, bottom: "100%", zIndex: 20, marginBottom: 4, background: "var(--foto-paper2)", border: "1px solid var(--foto-rule)", minWidth: 130 }}>
               {!confirmingDelete ? (
                 <>
-                  <button
-                    onClick={() => { setMenuOpen(false); setEditing(true); }}
-                    className="flex items-center gap-2 px-4 py-2.5 text-sm text-neutral-200 hover:bg-neutral-600"
-                  >
-                    <LuPencil size={13} />
-                    Editar
+                  <button onClick={() => { setMenuOpen(false); setEditing(true); }} style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "10px 14px", background: "transparent", border: "none", fontFamily: "var(--font-serif)", fontSize: 13, color: "var(--foto-ink)", cursor: "pointer", textAlign: "left" }}>
+                    <LuPencil size={12} /> Editar
                   </button>
-                  <button
-                    onClick={() => setConfirmingDelete(true)}
-                    className="flex items-center gap-2 px-4 py-2.5 text-sm text-red-400 hover:bg-neutral-600"
-                  >
-                    <LuTrash2 size={13} />
-                    Eliminar
+                  <button onClick={() => setConfirmingDelete(true)} style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "10px 14px", background: "transparent", border: "none", borderTop: "1px solid var(--foto-rule)", fontFamily: "var(--font-serif)", fontSize: 13, color: "var(--brick)", cursor: "pointer", textAlign: "left" }}>
+                    <LuTrash2 size={12} /> Eliminar
                   </button>
                 </>
               ) : (
-                <div className="flex flex-col gap-1 p-2 w-48">
-                  <p className="px-2 py-1 text-xs text-neutral-400">¿Eliminar a {props.name}?</p>
-                  <button
-                    onClick={() => { setMenuOpen(false); setConfirmingDelete(false); handleDelete(); }}
-                    className="rounded-md bg-red-600 px-3 py-2 text-sm font-medium text-white hover:bg-red-500"
-                  >
-                    Sí, eliminar
-                  </button>
-                  <button
-                    onClick={() => setConfirmingDelete(false)}
-                    className="rounded-md bg-neutral-600 px-3 py-2 text-sm font-medium text-neutral-200 hover:bg-neutral-500"
-                  >
-                    Cancelar
-                  </button>
+                <div style={{ padding: 10 }}>
+                  <p style={{ fontFamily: "var(--font-serif)", fontStyle: "italic", fontSize: 12, color: "var(--foto-ink2)", margin: "0 0 8px" }}>¿Eliminar a {props.name}?</p>
+                  <button onClick={() => { setMenuOpen(false); setConfirmingDelete(false); handleDelete(); }} style={{ display: "block", width: "100%", background: "var(--brick)", color: "var(--foto-paper)", border: "none", padding: "7px 0", fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.06em", cursor: "pointer", marginBottom: 4 }}>Sí</button>
+                  <button onClick={() => setConfirmingDelete(false)} style={{ display: "block", width: "100%", background: "transparent", border: "1px solid var(--foto-rule)", color: "var(--foto-accent)", padding: "7px 0", fontFamily: "var(--font-mono)", fontSize: 10, cursor: "pointer" }}>No</button>
                 </div>
               )}
             </div>

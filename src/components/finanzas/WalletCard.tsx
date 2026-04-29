@@ -71,7 +71,7 @@ export default function WalletCard({ wallet }: { wallet: Wallet }) {
   }
 
   return (
-    <div className="group relative rounded-xl bg-neutral-800 p-5">
+    <div className="group relative" style={{ background: "var(--paper2)", border: "1px solid var(--rule2)", padding: 20 }}>
 
       {/* Fila superior: nombre + botón eliminar */}
       <div className="flex items-start justify-between gap-2 mb-3">
@@ -82,15 +82,15 @@ export default function WalletCard({ wallet }: { wallet: Wallet }) {
               onChange={(e) => setName(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter") saveName(); if (e.key === "Escape") { setName(wallet.name); setEditingName(false); } }}
               autoFocus
-              className="rounded-lg bg-neutral-900 px-2 py-1 text-sm text-white outline-none ring-1 ring-blue-500 w-full"
+              style={{ background: "var(--paper)", border: "1px solid var(--ink)", fontFamily: "var(--font-serif)", fontSize: 13, color: "var(--ink)", padding: "4px 8px", outline: "none", flex: 1 }}
             />
-            <button onClick={saveName} disabled={loading} className="text-green-400 hover:text-green-300 flex-shrink-0"><LuCheck size={15} /></button>
-            <button onClick={() => { setName(wallet.name); setEditingName(false); }} className="text-neutral-500 hover:text-neutral-300 flex-shrink-0"><LuX size={15} /></button>
+            <button onClick={saveName} disabled={loading} style={{ color: "var(--olive)", flexShrink: 0 }}><LuCheck size={15} /></button>
+            <button onClick={() => { setName(wallet.name); setEditingName(false); }} style={{ color: "var(--ink3)", flexShrink: 0 }}><LuX size={15} /></button>
           </div>
         ) : (
           <button
             onClick={() => setEditingName(true)}
-            className="text-sm text-neutral-400 hover:text-neutral-200 transition-colors text-left"
+            style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ink2)", background: "none", border: "none", cursor: "pointer", textAlign: "left", padding: 0 }}
           >
             {wallet.name}
           </button>
@@ -98,14 +98,15 @@ export default function WalletCard({ wallet }: { wallet: Wallet }) {
 
         <button
           onClick={handleDelete}
-          className="rounded-lg p-1.5 text-neutral-600 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-neutral-700 hover:text-red-400 flex-shrink-0"
+          className="opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
+          style={{ color: "var(--ink3)", background: "none", border: "none", cursor: "pointer", padding: 4 }}
           title="Eliminar billetera"
         >
           <LuTrash2 size={14} />
         </button>
       </div>
 
-      {/* Monto — ocupa todo el ancho */}
+      {/* Monto */}
       {editingBalance ? (
         <input
           ref={balanceInputRef}
@@ -115,28 +116,27 @@ export default function WalletCard({ wallet }: { wallet: Wallet }) {
           onKeyDown={(e) => { if (e.key === "Enter") saveBalance(); if (e.key === "Escape") { setBalance(String(wallet.balance)); setEditingBalance(false); } }}
           onBlur={saveBalance}
           step="0.01"
-          className="w-full rounded-lg bg-neutral-900 px-3 py-1.5 text-2xl font-bold text-white outline-none ring-1 ring-blue-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+          style={{ width: "100%", background: "var(--paper)", border: "1px solid var(--ink)", fontFamily: "var(--font-mono)", fontSize: 22, fontWeight: 700, color: "var(--ink)", padding: "4px 8px", outline: "none" }}
+          className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
         />
       ) : (
         <button
           onClick={() => { setBalance(String(wallet.balance)); setEditingBalance(true); }}
           title="Tocar para editar el saldo"
-          className={`text-left text-2xl font-bold tabular-nums transition-colors hover:opacity-70 ${
-            wallet.balance < 0 ? "text-red-400" : "text-white"
-          }`}
+          style={{ fontFamily: "var(--font-mono)", fontSize: 22, fontWeight: 700, color: wallet.balance < 0 ? "var(--brick)" : "var(--ink)", background: "none", border: "none", cursor: "pointer", padding: 0, textAlign: "left" }}
         >
           {formatCurrency(wallet.balance, wallet.currency)}
         </button>
       )}
 
       {/* Badge moneda */}
-      <span className="mt-2 inline-block rounded-full bg-neutral-700 px-2 py-0.5 text-xs text-neutral-300">
+      <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--ink3)", background: "var(--paper3)", padding: "2px 6px", display: "inline-block", marginTop: 8 }}>
         {wallet.currency}
       </span>
 
       {/* Hint */}
       {!editingBalance && !editingName && (
-        <p className="mt-2 flex items-center gap-1 text-xs text-neutral-700">
+        <p style={{ fontFamily: "var(--font-serif)", fontSize: 10, fontStyle: "italic", color: "var(--ink3)", marginTop: 8, display: "flex", alignItems: "center", gap: 4 }}>
           <LuPencil size={10} />
           Tocá el saldo o el nombre para editar
         </p>

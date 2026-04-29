@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import Link from "next/link";
-import { LuTriangleAlert, LuImages, LuDollarSign } from "react-icons/lu";
+import { LuTriangleAlert, LuImages } from "react-icons/lu";
 import {
   DndContext,
   DragOverlay,
@@ -34,78 +34,89 @@ export interface KanbanSession {
 }
 
 const COLUMNS = [
-  { key: "PENDING",   label: "Pendiente",  color: "border-yellow-800/40 bg-yellow-950/10" },
-  { key: "CONFIRMED", label: "Confirmada", color: "border-blue-800/40 bg-blue-950/10" },
-  { key: "SHOT",      label: "Disparada",  color: "border-purple-800/40 bg-purple-950/10" },
-  { key: "DELIVERED", label: "Entregada",  color: "border-cyan-800/40 bg-cyan-950/10" },
-  { key: "PAID",      label: "Pagada",     color: "border-green-800/40 bg-green-950/10" },
-  { key: "COMPLETED", label: "Completada", color: "border-neutral-700/40 bg-neutral-800/10" },
+  { key: "PENDING", label: "Pendiente", sub: "a confirmar",     stampColor: "var(--rust)" },
+  { key: "SHOT",    label: "Disparada", sub: "sesión tomada",   stampColor: "var(--navy)" },
+  { key: "PAID",    label: "Cerrada",   sub: "pago registrado", stampColor: "var(--olive)" },
 ];
+
+function mapStatus(status: string): string {
+  if (status === "SHOT" || status === "DELIVERED") return "SHOT";
+  if (status === "PAID" || status === "COMPLETED") return "PAID";
+  return "PENDING";
+}
 
 const TZ = "America/Argentina/Buenos_Aires";
 
 function fmtDate(iso: string) {
   return new Intl.DateTimeFormat("es-AR", {
     timeZone: TZ, day: "2-digit", month: "short",
-  }).format(new Date(iso));
+  }).format(new Date(iso)).toUpperCase();
 }
 
 function fmtPrice(n: number, currency: string) {
   return currency === "ARS"
-    ? new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", maximumFractionDigits: 0 }).format(n)
-    : new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 0 }).format(n);
+    ? new Intl.NumberFormat("es-AR", { maximumFractionDigits: 0 }).format(n)
+    : new Intl.NumberFormat("en-US", { minimumFractionDigits: 0 }).format(n);
 }
 
 function SessionCard({ session, isDragging = false }: { session: KanbanSession; isDragging?: boolean }) {
-  const needsDelivery = session.status === "SHOT" && session.daysInStatus > 7;
-  const needsPayment  = session.status === "DELIVERED";
+  const isLate = mapStatus(session.status) === "SHOT" && session.daysInStatus > 7;
 
   return (
-    <div className={`rounded-xl bg-neutral-800 p-3 ring-1 ring-neutral-700 transition-all select-none ${isDragging ? "opacity-50 shadow-xl scale-105" : "hover:ring-neutral-600 cursor-grab active:cursor-grabbing"}`}>
-      <div className="flex items-start justify-between gap-2 mb-2">
-        <Link
-          href={`/fotografia/sesiones/${session.id}`}
-          onClick={(e) => e.stopPropagation()}
-          className="text-sm font-medium text-white hover:text-blue-400 transition-colors truncate"
-        >
-          {session.clientName}
-        </Link>
-        {session.driveUrl && (
-          <a
-            href={session.driveUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={(e) => e.stopPropagation()}
-            className="text-neutral-500 hover:text-cyan-400 transition-colors flex-shrink-0"
-            title="Ver fotos"
-          >
-            <LuImages size={13} />
+    <div style={{
+      background: "var(--foto-paper)",
+      border: "1px solid var(--foto-rule)",
+      padding: "10px 10px 8px",
+      marginBottom: 8,
+      position: "relative",
+      opacity: isDragging ? 0.5 : 1,
+      cursor: isDragging ? "grabbing" : "grab",
+      userSelect: "none",
+    }}>
+      {/* Dot-grid header strip */}
+      <div style={{
+        height: 44,
+        margin: "-10px -10px 8px",
+        backgroundImage: "radial-gradient(var(--foto-rule) 1px, transparent 1px)",
+        backgroundSize: "7px 7px",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        color: "var(--foto-rule)",
+      }}>
+        {session.driveUrl ? (
+          <a href={session.driveUrl} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} style={{ color: "var(--foto-accent)" }}>
+            <LuImages size={16} />
           </a>
+        ) : (
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="2" y="6" width="20" height="14" rx="2"/><circle cx="12" cy="13" r="4"/><path d="M7 6l2-3h6l2 3"/>
+          </svg>
         )}
       </div>
 
-      <p className="text-xs text-neutral-500 mb-2">
-        {session.type === "SPORT" ? "Deporte" : session.type === "EVENT" ? "Evento" : "Otro"}
-        {session.eventName ? ` — ${session.eventName}` : ""}
-        {" · "}{fmtDate(session.date)}
-      </p>
+      <Link
+        href={`/fotografia/sesiones/${session.id}`}
+        onClick={(e) => e.stopPropagation()}
+        style={{ fontFamily: "var(--font-condensed)", fontSize: 16, color: "var(--foto-ink)", textDecoration: "none", display: "block", letterSpacing: "0.02em", textTransform: "uppercase", lineHeight: 1.1, marginBottom: 3 }}
+      >
+        {session.clientName}
+      </Link>
 
-      <div className="flex items-center justify-between mt-2">
-        <span className="text-xs font-semibold text-neutral-300">
-          {fmtPrice(session.price, session.currency)}
+      {session.eventName && (
+        <p style={{ fontFamily: "var(--font-serif)", fontStyle: "italic", fontSize: 11, color: "var(--foto-ink2)", margin: "0 0 6px", lineHeight: 1.3 }}>
+          {session.eventName}
+        </p>
+      )}
+
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--foto-accent)", letterSpacing: "0.08em" }}>
+        <span>{fmtDate(session.date)}</span>
+        <span style={{ color: "var(--foto-ink)", fontSize: 11, fontVariantNumeric: "tabular-nums" }}>
+          {fmtPrice(session.price, session.currency)} <span style={{ color: "var(--foto-accent)", fontSize: 9 }}>{session.currency}</span>
         </span>
       </div>
 
-      {needsDelivery && (
-        <div className="mt-2 flex items-center gap-1.5 rounded-lg bg-orange-950/30 px-2 py-1.5 text-xs text-orange-400 ring-1 ring-orange-800/30">
-          <LuTriangleAlert size={11} />
-          Falta entregar ({session.daysInStatus}d)
-        </div>
-      )}
-      {needsPayment && (
-        <div className="mt-2 flex items-center gap-1.5 rounded-lg bg-green-950/30 px-2 py-1.5 text-xs text-green-400 ring-1 ring-green-800/30">
-          <LuDollarSign size={11} />
-          Falta cobrar
+      {isLate && (
+        <div style={{ marginTop: 6, display: "flex", alignItems: "center", gap: 4, color: "var(--rust)", fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.06em" }}>
+          <LuTriangleAlert size={10} /> {session.daysInStatus}d sin entregar
         </div>
       )}
     </div>
@@ -144,22 +155,27 @@ function DroppableColumn({
   return (
     <div
       ref={setNodeRef}
-      className={`flex w-64 flex-col rounded-2xl border p-3 transition-colors ${column.color} ${isOver ? "ring-2 ring-blue-500/40" : ""}`}
+      style={{
+        flex: 1,
+        minWidth: 220,
+        maxWidth: 320,
+        background: isOver ? "var(--foto-paper2)" : "transparent",
+        outline: isOver ? `2px solid var(--foto-accent)` : "none",
+        transition: "background 0.15s",
+      }}
     >
-      <div className="mb-3 flex items-center justify-between">
-        <p className="text-xs font-semibold uppercase tracking-wider text-neutral-400">
+      <div style={{ paddingBottom: 10, borderBottom: "2px solid var(--foto-ink)", marginBottom: 12 }}>
+        <p style={{ fontFamily: "var(--font-condensed)", fontSize: 18, color: "var(--foto-ink)", margin: 0, letterSpacing: "0.04em", textTransform: "uppercase", display: "flex", alignItems: "center", gap: 8 }}>
           {column.label}
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--foto-accent)" }}>· {sessions.length}</span>
         </p>
-        {sessions.length > 0 && (
-          <span className="rounded-full bg-neutral-700 px-2 py-0.5 text-[10px] font-medium text-neutral-300">
-            {sessions.length}
-          </span>
-        )}
+        <p style={{ fontFamily: "var(--font-serif)", fontStyle: "italic", fontSize: 11, color: "var(--foto-accent)", margin: "2px 0 0" }}>{column.sub}</p>
       </div>
-      <div className="flex flex-col gap-2 min-h-[80px]">
+
+      <div style={{ minHeight: 80 }}>
         {sessions.length === 0 ? (
-          <div className="flex flex-1 items-center justify-center py-6">
-            <p className="text-xs text-neutral-700">Sin sesiones</p>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: 60, borderBottom: "1px dashed var(--foto-rule)" }}>
+            <p style={{ fontFamily: "var(--font-serif)", fontStyle: "italic", fontSize: 12, color: "var(--foto-rule)" }}>sin sesiones</p>
           </div>
         ) : (
           sessions.map((s) => <DraggableCard key={s.id} session={s} />)
@@ -183,9 +199,10 @@ export default function SessionKanban({ sessions: initialSessions }: Props) {
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
   );
 
-  const grouped = Object.fromEntries(
-    COLUMNS.map((col) => [col.key, sessions.filter((s) => s.status === col.key)])
-  );
+  const grouped: Record<string, KanbanSession[]> = { PENDING: [], SHOT: [], PAID: [] };
+  for (const s of sessions) {
+    grouped[mapStatus(s.status)].push(s);
+  }
 
   function handleDragStart({ active }: DragStartEvent) {
     const s = sessions.find((s) => s.id === active.id);
@@ -197,25 +214,31 @@ export default function SessionKanban({ sessions: initialSessions }: Props) {
     setOverColumn(null);
 
     if (!over) return;
-    const newStatus = over.id as string;
+    const targetDisplay = over.id as string;
     const session = sessions.find((s) => s.id === active.id);
-    if (!session || session.status === newStatus) return;
+    if (!session) return;
 
-    // Optimistic update
+    if (mapStatus(session.status) === targetDisplay) return;
+
+    const dbStatus = targetDisplay === "PAID" ? "PAID" : targetDisplay === "SHOT" ? "SHOT" : "PENDING";
+
     setSessions((prev) =>
-      prev.map((s) => s.id === session.id ? { ...s, status: newStatus } : s)
+      prev.map((s) => s.id === session.id ? { ...s, status: dbStatus } : s)
     );
 
     const res = await fetch(`/api/fotografia/sessions/${session.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status: newStatus }),
+      body: JSON.stringify({ status: dbStatus }),
     });
 
     if (!res.ok) {
       toast.error("No se pudo cambiar el estado");
-      setSessions(initialSessions); // revert
+      setSessions(initialSessions);
     } else {
+      if (dbStatus === "PAID") {
+        toast.success("Sesión cerrada · pago registrado en tu cartera");
+      }
       router.refresh();
     }
   }
@@ -231,8 +254,8 @@ export default function SessionKanban({ sessions: initialSessions }: Props) {
       onDragEnd={handleDragEnd}
       onDragOver={handleDragOver as () => void}
     >
-      <div className="overflow-x-auto pb-4">
-        <div className="flex gap-3 min-w-max">
+      <div style={{ overflowX: "auto", paddingBottom: 16 }}>
+        <div style={{ display: "flex", gap: 20, minWidth: "max-content" }}>
           {COLUMNS.map((col) => (
             <DroppableColumn
               key={col.key}
@@ -245,7 +268,7 @@ export default function SessionKanban({ sessions: initialSessions }: Props) {
       </div>
 
       <DragOverlay>
-        {activeSession && <SessionCard session={activeSession} isDragging={false} />}
+        {activeSession && <SessionCard session={activeSession} />}
       </DragOverlay>
     </DndContext>
   );

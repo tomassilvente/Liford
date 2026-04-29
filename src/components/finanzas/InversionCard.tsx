@@ -35,6 +35,17 @@ const MARKET_STATE_LABEL: Record<string, string> = {
   CLOSED: "Mercado cerrado",
 };
 
+const inputStyle: React.CSSProperties = {
+  background: "var(--paper)",
+  border: "1px solid var(--rule2)",
+  fontFamily: "var(--font-serif)",
+  fontSize: 14,
+  color: "var(--ink)",
+  padding: "6px 10px",
+  outline: "none",
+  width: "100%",
+};
+
 export default function InversionCard({ investment, cotizacion }: InversionCardProps) {
   const router = useRouter();
   const [editing, setEditing] = useState(false);
@@ -70,34 +81,31 @@ export default function InversionCard({ investment, cotizacion }: InversionCardP
 
   if (editing) {
     return (
-      <div className="rounded-xl bg-neutral-800 p-5 ring-1 ring-blue-500">
+      <div style={{ background: "var(--paper2)", border: "1px solid var(--ink)", padding: 20 }}>
         <div className="mb-3 flex items-center gap-2">
-          {investment.type === "STOCK" ? <LuTrendingUp size={14} className="text-neutral-500" /> : <LuCoins size={14} className="text-neutral-500" />}
-          <p className="font-bold text-white">{investment.ticker}</p>
+          {investment.type === "STOCK" ? <LuTrendingUp size={14} style={{ color: "var(--ink3)" }} /> : <LuCoins size={14} style={{ color: "var(--ink3)" }} />}
+          <p style={{ fontFamily: "var(--font-mono)", fontWeight: 700, color: "var(--ink)", fontSize: 13 }}>{investment.ticker}</p>
         </div>
         <div className="flex flex-col gap-3">
           <div>
-            <label className="mb-1 block text-xs text-neutral-400">Nombre</label>
-            <input value={name} onChange={(e) => setName(e.target.value)} placeholder="ej: Coca-Cola"
-              className="w-full rounded-lg bg-neutral-900 px-3 py-2 text-sm text-white outline-none ring-1 ring-neutral-700 focus:ring-blue-500" />
+            <label style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--ink3)", display: "block", marginBottom: 4 }}>Nombre</label>
+            <input value={name} onChange={(e) => setName(e.target.value)} placeholder="ej: Coca-Cola" style={inputStyle} />
           </div>
           <div>
-            <label className="mb-1 block text-xs text-neutral-400">Cantidad</label>
-            <input type="number" value={quantity} onChange={(e) => setQuantity(e.target.value)} min="0.000001" step="any"
-              className="w-full rounded-lg bg-neutral-900 px-3 py-2 text-sm text-white outline-none ring-1 ring-neutral-700 focus:ring-blue-500" />
+            <label style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--ink3)", display: "block", marginBottom: 4 }}>Cantidad</label>
+            <input type="number" value={quantity} onChange={(e) => setQuantity(e.target.value)} min="0.000001" step="any" style={inputStyle} />
           </div>
           <div>
-            <label className="mb-1 block text-xs text-neutral-400">Precio promedio de compra (USD)</label>
-            <input type="number" value={avgBuyPrice} onChange={(e) => setAvgBuyPrice(e.target.value)} min="0.000001" step="any"
-              className="w-full rounded-lg bg-neutral-900 px-3 py-2 text-sm text-white outline-none ring-1 ring-neutral-700 focus:ring-blue-500" />
+            <label style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--ink3)", display: "block", marginBottom: 4 }}>Precio promedio de compra (USD)</label>
+            <input type="number" value={avgBuyPrice} onChange={(e) => setAvgBuyPrice(e.target.value)} min="0.000001" step="any" style={inputStyle} />
           </div>
           <div className="flex gap-2">
             <button onClick={handleSave} disabled={loading}
-              className="rounded-lg bg-blue-600 px-4 py-1.5 text-xs font-medium text-white hover:bg-blue-500 disabled:opacity-50">
+              style={{ background: "var(--ink)", color: "var(--paper)", border: "none", padding: "8px 16px", fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: "0.1em", textTransform: "uppercase", cursor: "pointer", opacity: loading ? 0.5 : 1 }}>
               Guardar
             </button>
             <button onClick={() => setEditing(false)}
-              className="rounded-lg bg-neutral-700 px-4 py-1.5 text-xs font-medium text-white hover:bg-neutral-600">
+              style={{ background: "var(--paper3)", color: "var(--ink2)", border: "1px solid var(--rule2)", padding: "8px 16px", fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: "0.1em", textTransform: "uppercase", cursor: "pointer" }}>
               Cancelar
             </button>
           </div>
@@ -107,56 +115,60 @@ export default function InversionCard({ investment, cotizacion }: InversionCardP
   }
 
   return (
-    <div className="rounded-xl bg-neutral-800">
+    <div style={{ background: "var(--paper2)", border: "1px solid var(--rule2)" }}>
       <div className="group p-5">
         <div className="flex items-start justify-between">
           <div className="flex-1">
             <div className="flex items-center gap-2">
               {investment.type === "STOCK"
-                ? <LuTrendingUp size={14} className="text-neutral-500" />
-                : <LuCoins size={14} className="text-neutral-500" />
+                ? <LuTrendingUp size={14} style={{ color: "var(--ink3)" }} />
+                : <LuCoins size={14} style={{ color: "var(--ink3)" }} />
               }
-              <p className="font-bold text-white">{investment.ticker}</p>
-              {investment.name && <span className="text-xs text-neutral-500">{investment.name}</span>}
+              <p style={{ fontFamily: "var(--font-mono)", fontWeight: 700, color: "var(--ink)", fontSize: 13 }}>{investment.ticker}</p>
+              {investment.name && <span style={{ fontFamily: "var(--font-serif)", fontSize: 11, color: "var(--ink3)" }}>{investment.name}</span>}
               {cotizacion?.marketState && (
-                <span className={`rounded-full px-1.5 py-0.5 text-xs ${
-                  cotizacion.marketState === "REGULAR" ? "bg-green-900 text-green-400" : "bg-neutral-700 text-neutral-400"
-                }`}>
+                <span style={{
+                  fontFamily: "var(--font-mono)",
+                  fontSize: 9,
+                  letterSpacing: "0.08em",
+                  textTransform: "uppercase",
+                  padding: "2px 6px",
+                  background: cotizacion.marketState === "REGULAR" ? "var(--olive)" : "var(--paper3)",
+                  color: cotizacion.marketState === "REGULAR" ? "var(--paper)" : "var(--ink3)",
+                }}>
                   {MARKET_STATE_LABEL[cotizacion.marketState] ?? cotizacion.marketState}
                 </span>
               )}
             </div>
-            <p className="mt-1 text-xs text-neutral-500">
+            <p style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ink3)", marginTop: 4 }}>
               {fmtNum(investment.quantity, 6)} u. · Compra prom: {fmt(investment.avgBuyPrice)}
             </p>
           </div>
-          <div className="flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
             <button onClick={() => setEditing(true)}
-              className="rounded-lg p-1.5 text-neutral-400 hover:bg-neutral-700 hover:text-white" title="Editar">
+              style={{ color: "var(--ink3)", background: "none", border: "none", cursor: "pointer", padding: 4 }} title="Editar">
               <LuPencil size={14} />
             </button>
             <button onClick={handleDelete}
-              className="rounded-lg p-1.5 text-neutral-400 hover:bg-neutral-700 hover:text-red-400" title="Eliminar">
+              style={{ color: "var(--ink3)", background: "none", border: "none", cursor: "pointer", padding: 4 }} title="Eliminar">
               <LuTrash2 size={14} />
             </button>
           </div>
         </div>
 
         <div className="mt-3 flex items-end gap-3">
-          <p className="text-2xl font-bold text-white">
+          <p style={{ fontFamily: "var(--font-mono)", fontSize: 22, fontWeight: 700, color: "var(--ink)" }}>
             {valorActual !== null ? fmt(valorActual) : "—"}
           </p>
           {cotizacion?.changePct !== null && cotizacion?.changePct !== undefined && (
-            <div className={`mb-0.5 flex items-center gap-1 text-sm font-medium ${
-              cotizacion.changePct >= 0 ? "text-green-400" : "text-red-400"
-            }`}>
+            <div className="mb-0.5 flex items-center gap-1" style={{ color: cotizacion.changePct >= 0 ? "var(--olive)" : "var(--brick)", fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 600 }}>
               {cotizacion.changePct >= 0
                 ? <LuArrowUp size={13} />
                 : <LuArrowDown size={13} />
               }
               <span>{cotizacion.changePct >= 0 ? "+" : ""}{cotizacion.changePct.toFixed(2)}%</span>
               {cotizacion.changeAmount !== null && (
-                <span className="text-xs text-neutral-500">
+                <span style={{ fontSize: 10, color: "var(--ink3)", fontWeight: 400 }}>
                   ({cotizacion.changeAmount >= 0 ? "+" : ""}{fmt(cotizacion.changeAmount)})
                 </span>
               )}
@@ -165,25 +177,25 @@ export default function InversionCard({ investment, cotizacion }: InversionCardP
         </div>
 
         <div className="mt-3 grid grid-cols-2 gap-2">
-          <div className="rounded-lg bg-neutral-900 px-3 py-2">
-            <p className="text-xs text-neutral-500">Valor actual</p>
-            <p className="mt-0.5 text-sm font-semibold text-white">
+          <div style={{ background: "var(--paper3)", padding: "8px 12px" }}>
+            <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ink3)" }}>Valor actual</p>
+            <p style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 600, color: "var(--ink)", marginTop: 2 }}>
               {cp !== null ? fmt(cp) : "—"}
             </p>
           </div>
-          <div className="rounded-lg bg-neutral-900 px-3 py-2">
-            <p className="text-xs text-neutral-500">Invertido</p>
-            <p className="mt-0.5 text-sm text-neutral-300">{fmt(costoBasis)}</p>
+          <div style={{ background: "var(--paper3)", padding: "8px 12px" }}>
+            <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ink3)" }}>Invertido</p>
+            <p style={{ fontFamily: "var(--font-mono)", fontSize: 13, color: "var(--ink2)", marginTop: 2 }}>{fmt(costoBasis)}</p>
           </div>
-          <div className="col-span-2 rounded-lg bg-neutral-900 px-3 py-2">
-            <p className="text-xs text-neutral-500">P&L de tu posición</p>
+          <div className="col-span-2" style={{ background: "var(--paper3)", padding: "8px 12px" }}>
+            <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ink3)" }}>P&L de tu posición</p>
             {pnl !== null ? (
-              <p className={`mt-0.5 text-sm font-bold ${pnl >= 0 ? "text-green-400" : "text-red-400"}`}>
+              <p style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color: pnl >= 0 ? "var(--olive)" : "var(--brick)", marginTop: 2 }}>
                 {pnl >= 0 ? "+" : ""}{fmt(pnl)}{" "}
-                <span className="font-normal">({pnlPct! >= 0 ? "+" : ""}{pnlPct!.toFixed(2)}%)</span>
+                <span style={{ fontWeight: 400, color: "var(--ink3)" }}>({pnlPct! >= 0 ? "+" : ""}{pnlPct!.toFixed(2)}%)</span>
               </p>
             ) : (
-              <p className="mt-0.5 text-sm text-neutral-500">—</p>
+              <p style={{ fontFamily: "var(--font-mono)", fontSize: 13, color: "var(--ink3)", marginTop: 2 }}>—</p>
             )}
           </div>
         </div>
@@ -191,7 +203,7 @@ export default function InversionCard({ investment, cotizacion }: InversionCardP
         {!cotizacion?.error && cp !== null && (
           <button
             onClick={() => setExpanded(!expanded)}
-            className="mt-3 w-full rounded-lg py-1.5 text-xs text-neutral-500 hover:text-neutral-300 transition-colors"
+            style={{ marginTop: 12, width: "100%", background: "none", border: "none", fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.08em", color: "var(--ink3)", cursor: "pointer", padding: "6px 0" }}
           >
             {expanded ? "▲ Ocultar detalles" : "▼ Ver más detalles"}
           </button>
@@ -199,51 +211,33 @@ export default function InversionCard({ investment, cotizacion }: InversionCardP
       </div>
 
       {expanded && cotizacion && (
-        <div className="border-t border-neutral-700 px-5 pb-5 pt-4">
+        <div style={{ borderTop: "1px solid var(--rule2)", padding: "16px 20px 20px" }}>
           <PriceHistoryChart ticker={investment.ticker} currentPrice={cp} />
           <div className="grid grid-cols-2 gap-x-4 gap-y-3">
-            <div>
-              <p className="text-xs text-neutral-500">Cierre anterior</p>
-              <p className="mt-0.5 text-sm text-white">
-                {cotizacion.previousClose !== null ? fmt(cotizacion.previousClose) : "—"}
-              </p>
-            </div>
-            <div>
-              <p className="text-xs text-neutral-500">Exchange</p>
-              <p className="mt-0.5 text-sm text-white">{cotizacion.exchangeName ?? "—"}</p>
-            </div>
-            <div>
-              <p className="text-xs text-neutral-500">Máximo del día</p>
-              <p className="mt-0.5 text-sm text-green-400">
-                {cotizacion.dayHigh !== null ? fmt(cotizacion.dayHigh) : "—"}
-              </p>
-            </div>
-            <div>
-              <p className="text-xs text-neutral-500">Mínimo del día</p>
-              <p className="mt-0.5 text-sm text-red-400">
-                {cotizacion.dayLow !== null ? fmt(cotizacion.dayLow) : "—"}
-              </p>
-            </div>
-            <div>
-              <p className="text-xs text-neutral-500">Máx. 52 semanas</p>
-              <p className="mt-0.5 text-sm text-green-400">
-                {cotizacion.week52High !== null ? fmt(cotizacion.week52High) : "—"}
-              </p>
-            </div>
-            <div>
-              <p className="text-xs text-neutral-500">Mín. 52 semanas</p>
-              <p className="mt-0.5 text-sm text-red-400">
-                {cotizacion.week52Low !== null ? fmt(cotizacion.week52Low) : "—"}
-              </p>
-            </div>
+            {[
+              { label: "Cierre anterior", value: cotizacion.previousClose !== null ? fmt(cotizacion.previousClose) : "—", color: "var(--ink)" },
+              { label: "Exchange", value: cotizacion.exchangeName ?? "—", color: "var(--ink)" },
+              { label: "Máximo del día", value: cotizacion.dayHigh !== null ? fmt(cotizacion.dayHigh) : "—", color: "var(--olive)" },
+              { label: "Mínimo del día", value: cotizacion.dayLow !== null ? fmt(cotizacion.dayLow) : "—", color: "var(--brick)" },
+              { label: "Máx. 52 semanas", value: cotizacion.week52High !== null ? fmt(cotizacion.week52High) : "—", color: "var(--olive)" },
+              { label: "Mín. 52 semanas", value: cotizacion.week52Low !== null ? fmt(cotizacion.week52Low) : "—", color: "var(--brick)" },
+            ].map(({ label, value, color }) => (
+              <div key={label}>
+                <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ink3)" }}>{label}</p>
+                <p style={{ fontFamily: "var(--font-mono)", fontSize: 13, color, marginTop: 2 }}>{value}</p>
+              </div>
+            ))}
 
             {cotizacion.week52High !== null && cp !== null && (
               <div className="col-span-2">
-                <p className="mb-1 text-xs text-neutral-500">Posición en rango de 52 semanas</p>
-                <div className="relative h-1.5 w-full rounded-full bg-neutral-700">
+                <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ink3)", marginBottom: 4 }}>Posición en rango de 52 semanas</p>
+                <div style={{ position: "relative", height: 6, width: "100%", background: "var(--paper3)" }}>
                   <div
-                    className="absolute left-0 h-1.5 rounded-full bg-blue-500"
                     style={{
+                      position: "absolute",
+                      left: 0,
+                      height: 6,
+                      background: "var(--navy)",
                       width: `${Math.min(100, Math.max(0,
                         ((cp - (cotizacion.week52Low ?? 0)) /
                           ((cotizacion.week52High - (cotizacion.week52Low ?? 0)) || 1)) * 100
@@ -251,7 +245,7 @@ export default function InversionCard({ investment, cotizacion }: InversionCardP
                     }}
                   />
                 </div>
-                <div className="mt-1 flex justify-between text-xs text-neutral-600">
+                <div className="mt-1 flex justify-between" style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ink3)" }}>
                   <span>{cotizacion.week52Low !== null ? fmt(cotizacion.week52Low) : "—"}</span>
                   <span>{fmt(cotizacion.week52High)}</span>
                 </div>
@@ -262,7 +256,7 @@ export default function InversionCard({ investment, cotizacion }: InversionCardP
       )}
 
       {cotizacion?.error && (
-        <p className="px-5 pb-4 text-xs text-yellow-600">Sin cotización — revisá el ticker</p>
+        <p style={{ fontFamily: "var(--font-serif)", fontSize: 11, fontStyle: "italic", color: "var(--rust)", padding: "0 20px 16px" }}>Sin cotización — revisá el ticker</p>
       )}
     </div>
   );

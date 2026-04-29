@@ -1,21 +1,198 @@
 @import "tailwindcss";
 
+/* ── Almanaque design tokens ─────────────────────────────────────── */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --paper:   #fdf6e3;
+  --paper2:  #f5edd5;
+  --paper3:  #ebe2c4;
+  --rule:    #d8cfae;
+  --rule2:   #bfb48f;
+  --ink:     #1a1a1a;
+  --ink2:    #3d3a30;
+  --ink3:    #6b6655;
+  --brick:   #c14a3a;
+  --olive:   #586e3d;
+  --rust:    #a35a2a;
+  --navy:    #346280;
+  --stamp:   #9c2b1c;
+  --foto-paper:  #f4ecd8;
+  --foto-paper2: #ead9b8;
+  --foto-ink:    #2b1a0e;
+  --foto-ink2:   #5a3e26;
+  --foto-rule:   #c9b48a;
+  --foto-accent: #7a3920;
+  --foto-gold:   #a07931;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-paper:   var(--paper);
+  --color-paper2:  var(--paper2);
+  --color-paper3:  var(--paper3);
+  --color-rule:    var(--rule);
+  --color-rule2:   var(--rule2);
+  --color-ink:     var(--ink);
+  --color-ink2:    var(--ink2);
+  --color-ink3:    var(--ink3);
+  --color-brick:   var(--brick);
+  --color-olive:   var(--olive);
+  --color-rust:    var(--rust);
+  --color-navy:    var(--navy);
+  --color-stamp:   var(--stamp);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* ── Base ────────────────────────────────────────────────────────── */
+html, body {
+  background-color: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-serif), 'Crimson Pro', 'Source Serif 4', Georgia, serif;
 }
 
+/* ── Remap Tailwind neutral BACKGROUNDS to paper palette ────────── */
+/* Solid */
+.bg-neutral-950 { background-color: var(--ink) !important; }
+.bg-neutral-900 { background-color: var(--paper3) !important; }
+.bg-neutral-800 { background-color: var(--paper2) !important; }
+.bg-neutral-700 { background-color: var(--paper3) !important; }
+.bg-neutral-600 { background-color: var(--rule2) !important; }
+.bg-neutral-500 { background-color: var(--rule) !important; }
+/* Opacity variants — Tailwind generates these as separate classes */
+[class*="bg-neutral-900\/"] { background-color: var(--paper3) !important; opacity: 1 !important; }
+[class*="bg-neutral-800\/"] { background-color: var(--paper2) !important; opacity: 1 !important; }
+[class*="bg-neutral-700\/"] { background-color: var(--paper3) !important; opacity: 1 !important; }
+/* Border opacity variants */
+[class*="border-neutral-700\/"] { border-color: var(--rule2) !important; opacity: 1 !important; }
+
+/* ── Remap TEXT colors (content areas on paper) ──────────────────── */
+.text-white       { color: var(--ink) !important; }
+.text-neutral-100 { color: var(--ink) !important; }
+.text-neutral-200 { color: var(--ink) !important; }
+.text-neutral-300 { color: var(--ink2) !important; }
+.text-neutral-400 { color: var(--ink2) !important; }
+.text-neutral-500 { color: var(--ink3) !important; }
+.text-neutral-600 { color: var(--ink3) !important; }
+.text-neutral-700 { color: var(--rule2) !important; }
+
+/* ── Borders & Dividers ──────────────────────────────────────────── */
+.border-neutral-700 { border-color: var(--rule2) !important; }
+.border-neutral-800 { border-color: var(--rule) !important; }
+.divide-neutral-700 > * + * { border-color: var(--rule2) !important; }
+.divide-neutral-800 > * + * { border-color: var(--rule) !important; }
+
+/* ── Rings ───────────────────────────────────────────────────────── */
+.ring-neutral-700, .ring-neutral-700\/50 { --tw-ring-color: var(--rule2) !important; }
+.ring-neutral-800 { --tw-ring-color: var(--rule) !important; }
+
+/* ── Hover ───────────────────────────────────────────────────────── */
+.hover\:bg-neutral-700:hover  { background-color: var(--paper3) !important; }
+.hover\:bg-neutral-800:hover  { background-color: var(--paper3) !important; }
+.hover\:bg-neutral-600:hover  { background-color: var(--rule2) !important; }
+.hover\:text-white:hover       { color: var(--ink) !important; }
+.hover\:text-neutral-300:hover { color: var(--ink2) !important; }
+
+/* ── Focus ───────────────────────────────────────────────────────── */
+.focus\:ring-blue-500:focus { --tw-ring-color: var(--navy) !important; }
+
+/* ── Placeholder ─────────────────────────────────────────────────── */
+.placeholder-neutral-600::placeholder,
+.placeholder-neutral-500::placeholder { color: var(--rule2) !important; }
+
+/* ── Input/select base ───────────────────────────────────────────── */
+input, select, textarea {
+  font-family: var(--font-serif), Georgia, serif;
+}
+input:not([type="range"]), select, textarea {
+  background-color: var(--paper);
+  color: var(--ink);
+  border-color: var(--rule2);
+}
+
+/* ── Rounded corners → sharp ─────────────────────────────────────── */
+.rounded-xl, .rounded-2xl, .rounded-lg, .rounded-md, .rounded { border-radius: 0 !important; }
+/* Keep rounded-full for circular elements (avatars, badges) */
+
+/* ── ACTION BUTTONS: dark bg needs light text ────────────────────── */
+/*    bg-blue-600, bg-green-600/700, bg-red-600, bg-neutral-950 = ink */
+.bg-blue-600 { background-color: var(--ink) !important; color: var(--paper) !important; }
+.hover\:bg-blue-500:hover { background-color: var(--ink2) !important; color: var(--paper) !important; }
+.bg-blue-600 .text-white, .bg-blue-600.text-white { color: var(--paper) !important; }
+
+.bg-green-600 { background-color: var(--olive) !important; color: var(--paper) !important; }
+.bg-green-700 { background-color: var(--olive) !important; color: var(--paper) !important; }
+.hover\:bg-green-600:hover, .hover\:bg-green-500:hover { background-color: color-mix(in srgb, var(--olive) 80%, black) !important; }
+.bg-green-600 .text-white, .bg-green-600.text-white { color: var(--paper) !important; }
+
+.bg-red-600 { background-color: var(--brick) !important; color: var(--paper) !important; }
+.hover\:bg-red-500:hover { background-color: color-mix(in srgb, var(--brick) 80%, black) !important; }
+.bg-red-600 .text-white, .bg-red-600.text-white { color: var(--paper) !important; }
+
+/* Disabled state */
+.disabled\:opacity-50:disabled { opacity: 0.5; }
+
+/* ── Accent background tints ─────────────────────────────────────── */
+.bg-blue-950\/30, .bg-blue-950\/40 { background-color: color-mix(in srgb, var(--navy) 10%, var(--paper2)) !important; }
+.text-blue-400, .text-blue-500 { color: var(--navy) !important; }
+.text-blue-300, .text-blue-200 { color: var(--navy) !important; }
+.ring-blue-900\/40, .ring-blue-800\/30 { --tw-ring-color: var(--navy) !important; }
+.border-blue-900\/30 { border-color: color-mix(in srgb, var(--navy) 30%, transparent) !important; }
+
+.bg-green-950, .bg-green-950\/30, .bg-green-950\/40 { background-color: color-mix(in srgb, var(--olive) 10%, var(--paper2)) !important; }
+.text-green-400, .text-green-500 { color: var(--olive) !important; }
+.text-green-700 { color: color-mix(in srgb, var(--olive) 60%, black) !important; }
+.ring-green-900\/50, .ring-green-800\/40 { --tw-ring-color: var(--olive) !important; }
+
+.bg-red-950, .bg-red-950\/30, .bg-red-950\/40 { background-color: color-mix(in srgb, var(--brick) 10%, var(--paper2)) !important; }
+.text-red-400, .text-red-500 { color: var(--brick) !important; }
+.ring-red-900\/50, .ring-red-800\/30 { --tw-ring-color: var(--brick) !important; }
+
+.bg-orange-950\/30 { background-color: color-mix(in srgb, var(--rust) 10%, var(--paper2)) !important; }
+.text-orange-400 { color: var(--rust) !important; }
+.ring-orange-800\/30 { --tw-ring-color: var(--rust) !important; }
+
+.bg-yellow-950\/10 { background-color: color-mix(in srgb, var(--rust) 5%, var(--paper)) !important; }
+.text-yellow-400 { color: var(--rust) !important; }
+
+.bg-purple-400\/10 { background-color: color-mix(in srgb, var(--navy) 8%, var(--paper2)) !important; }
+.text-purple-400 { color: var(--navy) !important; }
+
+.bg-cyan-400\/10 { background-color: color-mix(in srgb, var(--navy) 8%, var(--paper2)) !important; }
+.text-cyan-400 { color: var(--navy) !important; }
+.hover\:text-cyan-400:hover { color: var(--navy) !important; }
+
+.text-pink-400 { color: var(--brick) !important; }
+.hover\:text-pink-400:hover { color: var(--brick) !important; }
+
+/* Gradient backgrounds → paper */
+.bg-gradient-to-br { background-image: none !important; background-color: var(--paper3) !important; }
+
+/* ── Chart colors ────────────────────────────────────────────────── */
+.recharts-wrapper, .recharts-surface {
+  font-family: var(--font-mono), monospace !important;
+}
+.recharts-cartesian-axis-tick-value {
+  fill: var(--ink3) !important;
+  font-size: 11px !important;
+}
+.recharts-tooltip-wrapper .recharts-default-tooltip {
+  background: var(--paper2) !important;
+  border: 1px solid var(--rule2) !important;
+  border-radius: 0 !important;
+}
+
+/* ── Misc ────────────────────────────────────────────────────────── */
+.backdrop-blur-sm { backdrop-filter: none !important; }
+* { scrollbar-width: thin; scrollbar-color: var(--rule2) transparent; }
+
+/* ── Mobile bottom nav clearance ────────────────────────────────── */
+@media (max-width: 1023px) {
+  main { padding-bottom: 88px !important; }
+}
+
+/* ── Utilities ───────────────────────────────────────────────────── */
+.tabular-nums { font-variant-numeric: tabular-nums; }
+
+.ledger-bg {
+  background-image:
+    linear-gradient(var(--rule) 1px, transparent 1px),
+    linear-gradient(90deg, var(--rule) 1px, transparent 1px);
+  background-size: 24px 24px;
+}

@@ -2,16 +2,15 @@
 
 import { useState, useMemo, useEffect } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
-// Cada monto se muestra en su moneda original — sin conversión
-
-const fmtARS = (n: number) =>
-  new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", maximumFractionDigits: 0 }).format(n);
-const fmtUSD = (n: number) =>
-  new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2 }).format(n);
-const fmtNative = (n: number, currency: string) => currency === "USD" ? fmtUSD(n) : fmtARS(n);
-import { LuSearch, LuX, LuTrendingDown, LuTrendingUp, LuRepeat, LuCheck, LuPencil, LuTrash2, LuEllipsis } from "react-icons/lu";
+import { LuSearch, LuX, LuRepeat, LuCheck, LuPencil, LuTrash2, LuEllipsis } from "react-icons/lu";
 import { toast } from "sonner";
 import RecurrentRuleModal from "@/components/finanzas/RecurrentRuleModal";
+
+const fmtARS = (n: number) =>
+  new Intl.NumberFormat("es-AR", { maximumFractionDigits: 0 }).format(n);
+const fmtUSD = (n: number) =>
+  new Intl.NumberFormat("en-US", { minimumFractionDigits: 2 }).format(n);
+const fmtNative = (n: number, currency: string) => currency === "USD" ? fmtUSD(n) : fmtARS(n);
 
 type TxType = "EXPENSE" | "INCOME" | "STOCK_PURCHASE" | "CRYPTO_PURCHASE";
 
@@ -42,11 +41,11 @@ interface Props {
 type RangeKey = "week" | "month" | "3m" | "year" | "ytd" | "all";
 
 const RANGES: { key: RangeKey; label: string }[] = [
-  { key: "week",  label: "7 días" },
-  { key: "month", label: "Este mes" },
-  { key: "3m",    label: "3 meses" },
-  { key: "year",  label: "12 meses" },
-  { key: "ytd",   label: "Este año" },
+  { key: "week",  label: "7 d" },
+  { key: "month", label: "Mes" },
+  { key: "3m",    label: "3 m" },
+  { key: "year",  label: "12 m" },
+  { key: "ytd",   label: "Año" },
   { key: "all",   label: "Todo" },
 ];
 
@@ -66,7 +65,16 @@ function getRange(key: RangeKey): { from: Date; to: Date } {
 const FALLBACK_GASTO  = ["Alimentación","Transporte","Entretenimiento","Salud","Servicios","Ropa","Educación","Suscripciones","Otro"];
 const FALLBACK_INGRESO = ["Sueldo","Freelance","Fotografía","Venta","Inversión","Transferencia recibida","Reembolso","Otro"];
 
-const INPUT = "rounded-lg bg-neutral-800 px-3 py-1.5 text-sm text-white placeholder-neutral-600 outline-none ring-1 ring-neutral-700 focus:ring-blue-500";
+const inputStyle: React.CSSProperties = {
+  background: "var(--paper2)",
+  border: "1px solid var(--rule2)",
+  borderRadius: 0,
+  padding: "6px 10px",
+  fontFamily: "var(--font-serif)",
+  fontSize: 13,
+  color: "var(--ink)",
+  outline: "none",
+};
 
 function EditRow({
   id, description, category, amount, type, onDone, userCategories,
@@ -85,7 +93,6 @@ function EditRow({
   ).map((c) => c.name);
   const fallback = type === "EXPENSE" ? FALLBACK_GASTO : FALLBACK_INGRESO;
   const cats = userCatsForType.length > 0 ? userCatsForType : fallback;
-  // Siempre incluir la categoría actual aunque no esté en la lista
   const catsWithCurrent = cats.includes(category) ? cats : [category, ...cats];
 
   async function save() {
@@ -101,19 +108,21 @@ function EditRow({
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-2 px-4 py-3">
-      <input value={desc} onChange={(e) => setDesc(e.target.value)} className={`${INPUT} min-w-0 flex-1`} placeholder="Descripción" />
-      <input type="number" value={amt} onChange={(e) => setAmt(e.target.value)} className={`${INPUT} w-24`} />
-      <select value={cat} onChange={(e) => setCat(e.target.value)} className={`${INPUT} flex-1`}>
-        {catsWithCurrent.map((c) => <option key={c}>{c}</option>)}
-      </select>
-      <button onClick={save} disabled={loading} className="rounded-lg bg-blue-600 p-1.5 text-white hover:bg-blue-500 disabled:opacity-50">
-        <LuCheck size={14} />
-      </button>
-      <button onClick={onDone} className="rounded-lg bg-neutral-700 p-1.5 text-white hover:bg-neutral-600">
-        <LuX size={14} />
-      </button>
-    </div>
+    <td colSpan={4} style={{ padding: "8px 0" }}>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 8, padding: "4px 0" }}>
+        <input value={desc} onChange={(e) => setDesc(e.target.value)} style={{ ...inputStyle, flex: 1, minWidth: 120 }} placeholder="Descripción" />
+        <input type="number" value={amt} onChange={(e) => setAmt(e.target.value)} style={{ ...inputStyle, width: 90 }} />
+        <select value={cat} onChange={(e) => setCat(e.target.value)} style={{ ...inputStyle, flex: 1 }}>
+          {catsWithCurrent.map((c) => <option key={c}>{c}</option>)}
+        </select>
+        <button onClick={save} disabled={loading} style={{ background: "var(--ink)", color: "var(--paper)", border: "none", padding: "6px 12px", fontFamily: "var(--font-mono)", fontSize: 10, cursor: "pointer", letterSpacing: "0.06em", textTransform: "uppercase" }}>
+          <LuCheck size={13} />
+        </button>
+        <button onClick={onDone} style={{ background: "transparent", color: "var(--ink3)", border: "1px solid var(--rule2)", padding: "6px 10px", fontFamily: "var(--font-mono)", fontSize: 10, cursor: "pointer" }}>
+          <LuX size={13} />
+        </button>
+      </div>
+    </td>
   );
 }
 
@@ -132,64 +141,65 @@ function TxRow({ tx, onEdit, onOpenRule }: { tx: Transaction; onEdit: () => void
   }
 
   return (
-    <div className="flex items-center gap-3 px-4 py-3">
-      <span className={`flex-shrink-0 ${isExpense ? "text-red-400" : "text-green-400"}`}>
-          {isExpense ? <LuTrendingDown size={15} /> : <LuTrendingUp size={15} />}
-        </span>
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            <p className="truncate text-sm text-white">{tx.description ?? tx.category}</p>
-            {isPhoto && (
-              <span className="flex-shrink-0 rounded-full bg-blue-400/10 px-1.5 py-0.5 text-[10px] font-medium text-blue-400">Foto</span>
-            )}
-            {tx.isRecurring && tx.recurrentRuleId && (
-              <button
-                onClick={() => onOpenRule(tx.recurrentRuleId!)}
-                className="flex-shrink-0 text-neutral-500 hover:text-blue-400 transition-colors"
-                title="Ver regla recurrente"
-              >
-                <LuRepeat size={11} />
-              </button>
-            )}
-          </div>
-          <p className="text-xs text-neutral-500">{tx.category}</p>
+    <tr style={{ borderBottom: "1px dashed var(--rule)" }}>
+      <td style={{ padding: "8px 12px 8px 0", fontFamily: "var(--font-serif)", fontSize: 14, color: "var(--ink)", maxWidth: 0 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, overflow: "hidden" }}>
+          <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{tx.description ?? tx.category}</span>
+          {isPhoto && (
+            <span style={{ flexShrink: 0, fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--navy)", letterSpacing: "0.08em", textTransform: "uppercase", border: "1px solid var(--navy)", padding: "1px 5px" }}>FOTO</span>
+          )}
+          {tx.isRecurring && tx.recurrentRuleId && (
+            <button
+              onClick={() => onOpenRule(tx.recurrentRuleId!)}
+              style={{ flexShrink: 0, background: "transparent", border: "none", color: "var(--ink3)", cursor: "pointer", fontFamily: "var(--font-serif)", fontSize: 16, fontStyle: "italic", lineHeight: 1 }}
+              title="Ver regla recurrente"
+            >
+              ↻
+            </button>
+          )}
         </div>
-        <p className={`flex-shrink-0 text-sm font-semibold tabular-nums ${isExpense ? "text-red-400" : "text-green-400"}`}>
-          {isExpense ? "-" : "+"}{fmtNative(tx.amount, tx.currency)}
-        </p>
-        {isPhoto ? (
-          <div className="w-[26px] flex-shrink-0" />
-        ) : (
-          <div className="relative flex-shrink-0">
-            <button onClick={() => setMenuOpen((v) => !v)} className="rounded-lg p-1 text-neutral-600 hover:bg-neutral-700 hover:text-neutral-300">
-              <LuEllipsis size={15} />
+      </td>
+      <td style={{ padding: "8px 12px 8px 0", fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ink3)", letterSpacing: "0.1em", textTransform: "uppercase", whiteSpace: "nowrap" }}>
+        {tx.category}
+      </td>
+      <td style={{ padding: "8px 0", textAlign: "right", fontFamily: "var(--font-mono)", fontSize: 14, color: isExpense ? "var(--ink)" : "var(--olive)", fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>
+        {isExpense ? "−" : "+"} {fmtNative(tx.amount, tx.currency)} <span style={{ fontSize: 9, color: "var(--ink3)" }}>{tx.currency}</span>
+      </td>
+      {!isPhoto ? (
+        <td style={{ padding: "8px 0 8px 12px", width: 28 }}>
+          <div style={{ position: "relative" }}>
+            <button onClick={() => setMenuOpen((v) => !v)} style={{ background: "transparent", border: "none", color: "var(--ink3)", cursor: "pointer", lineHeight: 1 }}>
+              <LuEllipsis size={14} />
             </button>
             {menuOpen && (
               <>
                 <div className="fixed inset-0 z-10" onClick={() => { setMenuOpen(false); setConfirming(false); }} />
-                <div className="absolute right-0 bottom-full z-20 mb-1 flex flex-col overflow-hidden rounded-lg bg-neutral-700 shadow-lg min-w-[140px]">
+                <div style={{ position: "absolute", right: 0, bottom: "100%", zIndex: 20, marginBottom: 4, background: "var(--paper2)", border: "1px solid var(--rule2)", minWidth: 130 }}>
                   {!confirming ? (
                     <>
-                      <button onClick={() => { setMenuOpen(false); onEdit(); }} className="flex items-center gap-2 px-4 py-2.5 text-sm text-neutral-200 hover:bg-neutral-600">
-                        <LuPencil size={13} /> Editar
+                      <button onClick={() => { setMenuOpen(false); onEdit(); }} style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "10px 14px", background: "transparent", border: "none", fontFamily: "var(--font-serif)", fontSize: 13, color: "var(--ink)", cursor: "pointer", textAlign: "left" }}>
+                        <LuPencil size={12} /> Editar
                       </button>
-                      <button onClick={() => setConfirming(true)} className="flex items-center gap-2 px-4 py-2.5 text-sm text-red-400 hover:bg-neutral-600">
-                        <LuTrash2 size={13} /> Eliminar
+                      <button onClick={() => setConfirming(true)} style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "10px 14px", background: "transparent", border: "none", borderTop: "1px solid var(--rule)", fontFamily: "var(--font-serif)", fontSize: 13, color: "var(--brick)", cursor: "pointer", textAlign: "left" }}>
+                        <LuTrash2 size={12} /> Eliminar
                       </button>
                     </>
                   ) : (
-                    <div className="flex flex-col gap-1 p-2 w-44">
-                      <p className="px-2 py-1 text-xs text-neutral-400">¿Eliminar?</p>
-                      <button onClick={() => { setMenuOpen(false); setConfirming(false); handleDelete(); }} className="rounded-md bg-red-600 px-3 py-2 text-sm font-medium text-white hover:bg-red-500">Sí, eliminar</button>
-                      <button onClick={() => setConfirming(false)} className="rounded-md bg-neutral-600 px-3 py-2 text-sm font-medium text-neutral-200 hover:bg-neutral-500">Cancelar</button>
+                    <div style={{ padding: 10 }}>
+                      <p style={{ fontFamily: "var(--font-serif)", fontStyle: "italic", fontSize: 12, color: "var(--ink3)", margin: "0 0 8px" }}>¿Eliminar?</p>
+                      <button onClick={() => { setMenuOpen(false); setConfirming(false); handleDelete(); }} style={{ display: "block", width: "100%", background: "var(--brick)", color: "var(--paper)", border: "none", padding: "7px 0", fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer", marginBottom: 4 }}>Sí</button>
+                      <button onClick={() => setConfirming(false)} style={{ display: "block", width: "100%", background: "transparent", border: "1px solid var(--rule2)", color: "var(--ink3)", padding: "7px 0", fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.08em", cursor: "pointer" }}>No</button>
                     </div>
                   )}
                 </div>
               </>
             )}
           </div>
-        )}
-    </div>
+        </td>
+      ) : (
+        <td style={{ width: 28 }} />
+      )}
+    </tr>
   );
 }
 
@@ -205,7 +215,6 @@ export default function TransaccionesView({ transactions, initialTipo = "", init
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  // Sync filter state to URL
   useEffect(() => {
     const params = new URLSearchParams(searchParams.toString());
     if (typeFilter) params.set("tipo", typeFilter === "EXPENSE" ? "expense" : "income");
@@ -225,27 +234,22 @@ export default function TransaccionesView({ transactions, initialTipo = "", init
       if (catFilter && t.category !== catFilter) return false;
       if (search) {
         const q = search.toLowerCase();
-        if (
-          !t.description?.toLowerCase().includes(q) &&
-          !t.category.toLowerCase().includes(q)
-        ) return false;
+        if (!t.description?.toLowerCase().includes(q) && !t.category.toLowerCase().includes(q)) return false;
       }
       return true;
     });
   }, [transactions, from, to, typeFilter, catFilter, search]);
 
-  // KPIs por moneda — sin conversión
   const kpis = useMemo(() => {
-    const ingresosARS = filtered.filter((t) => t.type === "INCOME"   && t.currency === "ARS").reduce((s, t) => s + t.amount, 0);
-    const ingresosUSD = filtered.filter((t) => t.type === "INCOME"   && t.currency === "USD").reduce((s, t) => s + t.amount, 0);
-    const gastosARS   = filtered.filter((t) => t.type === "EXPENSE"  && t.currency === "ARS").reduce((s, t) => s + t.amount, 0);
-    const gastosUSD   = filtered.filter((t) => t.type === "EXPENSE"  && t.currency === "USD").reduce((s, t) => s + t.amount, 0);
+    const ingresosARS = filtered.filter((t) => t.type === "INCOME"  && t.currency === "ARS").reduce((s, t) => s + t.amount, 0);
+    const ingresosUSD = filtered.filter((t) => t.type === "INCOME"  && t.currency === "USD").reduce((s, t) => s + t.amount, 0);
+    const gastosARS   = filtered.filter((t) => t.type === "EXPENSE" && t.currency === "ARS").reduce((s, t) => s + t.amount, 0);
+    const gastosUSD   = filtered.filter((t) => t.type === "EXPENSE" && t.currency === "USD").reduce((s, t) => s + t.amount, 0);
     return { ingresosARS, ingresosUSD, gastosARS, gastosUSD, balanceARS: ingresosARS - gastosARS, balanceUSD: ingresosUSD - gastosUSD };
   }, [filtered]);
 
-  // Agrupar por día con headers "HOY · 25 ABR" / "AYER · 24 ABR"
   const grouped = useMemo(() => {
-    const map = new Map<string, { label: string; txs: Transaction[] }>();
+    const map = new Map<string, { label: string; dateLabel: string; txs: Transaction[] }>();
     const todayStr = new Date().toDateString();
     const yesterdayDate = new Date(); yesterdayDate.setDate(yesterdayDate.getDate() - 1);
     const yesterdayStr = yesterdayDate.toDateString();
@@ -254,15 +258,15 @@ export default function TransaccionesView({ transactions, initialTipo = "", init
       const d = new Date(t.date);
       const dStr = d.toDateString();
       const dayKey = d.toISOString().slice(0, 10);
-      let label: string;
+      let dateLabel: string;
       if (dStr === todayStr) {
-        label = `HOY · ${d.toLocaleDateString("es-AR", { day: "2-digit", month: "short" }).toUpperCase()}`;
+        dateLabel = `HOY · ${d.toLocaleDateString("es-AR", { day: "2-digit", month: "short" }).toUpperCase()}`;
       } else if (dStr === yesterdayStr) {
-        label = `AYER · ${d.toLocaleDateString("es-AR", { day: "2-digit", month: "short" }).toUpperCase()}`;
+        dateLabel = `AYER · ${d.toLocaleDateString("es-AR", { day: "2-digit", month: "short" }).toUpperCase()}`;
       } else {
-        label = d.toLocaleDateString("es-AR", { weekday: "short", day: "2-digit", month: "short" }).toUpperCase();
+        dateLabel = d.toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long" });
       }
-      if (!map.has(dayKey)) map.set(dayKey, { label, txs: [] });
+      if (!map.has(dayKey)) map.set(dayKey, { label: dayKey, dateLabel, txs: [] });
       map.get(dayKey)!.txs.push(t);
     }
     return Array.from(map.values());
@@ -273,88 +277,113 @@ export default function TransaccionesView({ transactions, initialTipo = "", init
 
   return (
     <div>
-      {/* KPI strip — por moneda, sin conversión */}
-      <div className="mb-5 grid grid-cols-3 gap-3">
-        <div className="rounded-xl bg-neutral-800 p-3">
-          <p className="text-xs text-neutral-500 mb-1">Ingresos</p>
-          {kpis.ingresosARS > 0 && <p className="text-sm font-bold text-green-400 tabular-nums">{fmtARS(kpis.ingresosARS)}</p>}
-          {kpis.ingresosUSD > 0 && <p className="text-sm font-bold text-green-400 tabular-nums">{fmtUSD(kpis.ingresosUSD)}</p>}
-          {kpis.ingresosARS === 0 && kpis.ingresosUSD === 0 && <p className="text-sm font-bold text-neutral-600">—</p>}
+      {/* ── Header ──────────────────────────────────────────────── */}
+      <header style={{ paddingBottom: 16, borderBottom: "1px solid var(--rule2)", marginBottom: 28 }}>
+        <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.18em", color: "var(--ink3)", margin: 0, textTransform: "uppercase" }}>II · Movimientos — libro de asientos</p>
+        <h1 style={{ fontFamily: "var(--font-display)", fontSize: 40, color: "var(--ink)", margin: "4px 0 0", lineHeight: 0.95, fontStyle: "italic", letterSpacing: "-0.02em" }}>
+          Bitácora del mes
+        </h1>
+      </header>
+
+      {/* ── KPIs ────────────────────────────────────────────────── */}
+      <div style={{ display: "flex", gap: 32, fontFamily: "var(--font-mono)", fontSize: 12, marginBottom: 24, flexWrap: "wrap" }}>
+        <div>
+          <span style={{ color: "var(--ink3)", letterSpacing: "0.08em", textTransform: "uppercase", fontSize: 9, marginRight: 8 }}>Entr.</span>
+          {kpis.ingresosARS > 0 && <span style={{ color: "var(--olive)", fontVariantNumeric: "tabular-nums" }}>+ {fmtARS(kpis.ingresosARS)} ARS</span>}
+          {kpis.ingresosUSD > 0 && <span style={{ color: "var(--olive)", fontVariantNumeric: "tabular-nums", marginLeft: 8 }}>+ {fmtUSD(kpis.ingresosUSD)} USD</span>}
+          {kpis.ingresosARS === 0 && kpis.ingresosUSD === 0 && <span style={{ color: "var(--ink3)" }}>—</span>}
         </div>
-        <div className="rounded-xl bg-neutral-800 p-3">
-          <p className="text-xs text-neutral-500 mb-1">Gastos</p>
-          {kpis.gastosARS > 0 && <p className="text-sm font-bold text-red-400 tabular-nums">{fmtARS(kpis.gastosARS)}</p>}
-          {kpis.gastosUSD > 0 && <p className="text-sm font-bold text-red-400 tabular-nums">{fmtUSD(kpis.gastosUSD)}</p>}
-          {kpis.gastosARS === 0 && kpis.gastosUSD === 0 && <p className="text-sm font-bold text-neutral-600">—</p>}
+        <div>
+          <span style={{ color: "var(--ink3)", letterSpacing: "0.08em", textTransform: "uppercase", fontSize: 9, marginRight: 8 }}>Sal.</span>
+          {kpis.gastosARS > 0 && <span style={{ color: "var(--brick)", fontVariantNumeric: "tabular-nums" }}>− {fmtARS(kpis.gastosARS)} ARS</span>}
+          {kpis.gastosUSD > 0 && <span style={{ color: "var(--brick)", fontVariantNumeric: "tabular-nums", marginLeft: 8 }}>− {fmtUSD(kpis.gastosUSD)} USD</span>}
+          {kpis.gastosARS === 0 && kpis.gastosUSD === 0 && <span style={{ color: "var(--ink3)" }}>—</span>}
         </div>
-        <div className="rounded-xl bg-neutral-800 p-3">
-          <p className="text-xs text-neutral-500 mb-1">Balance</p>
+        <div>
+          <span style={{ color: "var(--ink3)", letterSpacing: "0.08em", textTransform: "uppercase", fontSize: 9, marginRight: 8 }}>Bal.</span>
           {(kpis.ingresosARS > 0 || kpis.gastosARS > 0) && (
-            <p className={`text-sm font-bold tabular-nums ${kpis.balanceARS >= 0 ? "text-white" : "text-red-400"}`}>{fmtARS(kpis.balanceARS)}</p>
+            <span style={{ color: kpis.balanceARS >= 0 ? "var(--olive)" : "var(--brick)", fontVariantNumeric: "tabular-nums" }}>
+              {kpis.balanceARS >= 0 ? "+" : "−"} {fmtARS(Math.abs(kpis.balanceARS))} ARS
+            </span>
           )}
           {(kpis.ingresosUSD > 0 || kpis.gastosUSD > 0) && (
-            <p className={`text-sm font-bold tabular-nums ${kpis.balanceUSD >= 0 ? "text-white" : "text-red-400"}`}>{fmtUSD(kpis.balanceUSD)}</p>
-          )}
-          {kpis.ingresosARS === 0 && kpis.gastosARS === 0 && kpis.ingresosUSD === 0 && kpis.gastosUSD === 0 && (
-            <p className="text-sm font-bold text-neutral-600">—</p>
+            <span style={{ color: kpis.balanceUSD >= 0 ? "var(--olive)" : "var(--brick)", fontVariantNumeric: "tabular-nums", marginLeft: 8 }}>
+              {kpis.balanceUSD >= 0 ? "+" : "−"} {fmtUSD(Math.abs(kpis.balanceUSD))} USD
+            </span>
           )}
         </div>
       </div>
 
-      {/* Rango de fechas */}
-      <div className="mb-4 flex gap-1 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        {RANGES.map((r) => (
-          <button
-            key={r.key}
-            onClick={() => setRange(r.key)}
-            className={`flex-shrink-0 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
-              range === r.key ? "bg-neutral-700 text-white" : "text-neutral-500 hover:bg-neutral-800 hover:text-neutral-300"
-            }`}
-          >
-            {r.label}
-          </button>
-        ))}
-      </div>
+      {/* ── Filtros — typewriter form vibe ──────────────────────── */}
+      <div style={{ display: "flex", gap: 12, alignItems: "center", padding: "12px 0", borderBottom: "1px solid var(--rule2)", background: "var(--paper2)", marginBottom: 20, paddingLeft: 0, flexWrap: "wrap" }}>
+        {/* Búsqueda */}
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flex: 1, minWidth: 200, maxWidth: 320, padding: "3px 0", borderBottom: "1px solid var(--ink)" }}>
+          <LuSearch size={13} style={{ color: "var(--ink3)", flexShrink: 0 }} />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="buscar concepto…"
+            style={{ flex: 1, background: "transparent", border: "none", outline: "none", fontFamily: "var(--font-serif)", fontStyle: "italic", fontSize: 14, color: "var(--ink)" }}
+          />
+          {search && (
+            <button onClick={() => setSearch("")} style={{ background: "transparent", border: "none", color: "var(--ink3)", cursor: "pointer", lineHeight: 1 }}>
+              <LuX size={12} />
+            </button>
+          )}
+        </div>
 
-      {/* Buscador */}
-      <div className="relative mb-3">
-        <LuSearch size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500" />
-        <input
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Buscar por descripción, monto o categoría…"
-          className="w-full rounded-lg bg-neutral-800 py-2 pl-8 pr-3 text-sm text-white placeholder-neutral-600 outline-none ring-1 ring-neutral-700 focus:ring-blue-500"
-        />
-        {search && (
-          <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-white">
-            <LuX size={13} />
-          </button>
-        )}
-      </div>
+        {/* Rango */}
+        <div style={{ display: "flex", gap: 0, border: "1px solid var(--rule2)" }}>
+          {RANGES.map((r) => (
+            <button
+              key={r.key}
+              onClick={() => setRange(r.key)}
+              style={{
+                padding: "4px 10px",
+                background: range === r.key ? "var(--ink)" : "transparent",
+                color: range === r.key ? "var(--paper)" : "var(--ink3)",
+                border: "none",
+                borderRight: "1px solid var(--rule2)",
+                fontFamily: "var(--font-mono)",
+                fontSize: 10,
+                letterSpacing: "0.06em",
+                cursor: "pointer",
+              }}
+            >
+              {r.label}
+            </button>
+          ))}
+        </div>
 
-      {/* Chips de filtro */}
-      <div className="mb-4 flex flex-wrap gap-1.5">
         {/* Tipo */}
-        {(["EXPENSE", "INCOME"] as const).map((v) => (
-          <button
-            key={v}
-            onClick={() => setTypeFilter(typeFilter === v ? "" : v)}
-            className={`flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium transition-colors ${
-              typeFilter === v
-                ? "bg-neutral-700 text-white ring-1 ring-neutral-600"
-                : "bg-neutral-800/60 text-neutral-500 hover:bg-neutral-800 hover:text-neutral-300"
-            }`}
-          >
-            {v === "EXPENSE" ? "Gastos" : "Ingresos"}
-            {typeFilter === v && <LuX size={10} />}
-          </button>
-        ))}
+        <div style={{ display: "flex", gap: 0, border: "1px solid var(--rule2)" }}>
+          {(["", "EXPENSE", "INCOME"] as const).map((v) => (
+            <button
+              key={v}
+              onClick={() => setTypeFilter(v)}
+              style={{
+                padding: "4px 10px",
+                background: typeFilter === v ? "var(--ink)" : "transparent",
+                color: typeFilter === v ? "var(--paper)" : "var(--ink3)",
+                border: "none",
+                borderRight: v !== "INCOME" ? "1px solid var(--rule2)" : "none",
+                fontFamily: "var(--font-mono)",
+                fontSize: 10,
+                letterSpacing: "0.06em",
+                textTransform: "uppercase",
+                cursor: "pointer",
+              }}
+            >
+              {v === "" ? "Todo" : v === "EXPENSE" ? "Gastos" : "Ingresos"}
+            </button>
+          ))}
+        </div>
 
-        {/* Categoría — select si no hay activa, chip si hay */}
+        {/* Categoría */}
         {catFilter ? (
           <button
             onClick={() => setCatFilter("")}
-            className="flex items-center gap-1 rounded-full bg-neutral-700 px-3 py-1 text-xs font-medium text-white ring-1 ring-neutral-600"
+            style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 10px", border: "1px solid var(--ink)", background: "var(--ink)", color: "var(--paper)", fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.06em", textTransform: "uppercase", cursor: "pointer" }}
           >
             {catFilter} <LuX size={10} />
           </button>
@@ -362,60 +391,50 @@ export default function TransaccionesView({ transactions, initialTipo = "", init
           <select
             value=""
             onChange={(e) => setCatFilter(e.target.value)}
-            className="rounded-full bg-neutral-800/60 px-3 py-1 text-xs text-neutral-500 outline-none hover:bg-neutral-800 hover:text-neutral-300 cursor-pointer"
+            style={{ padding: "4px 10px", background: "transparent", border: "1px solid var(--rule2)", color: "var(--ink3)", fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.06em", cursor: "pointer", outline: "none" }}
           >
-            <option value="">+ Categoría</option>
+            <option value="">Cat. · todas</option>
             {allCategories.map((c) => <option key={c} value={c}>{c}</option>)}
           </select>
         )}
 
-        {hasFilters && (
-          <button
-            onClick={() => { setSearch(""); setTypeFilter(""); setCatFilter(""); }}
-            className="rounded-full px-2.5 py-1 text-xs text-neutral-600 hover:text-neutral-400 transition-colors"
-          >
-            Limpiar todo
-          </button>
-        )}
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ink3)", marginLeft: "auto" }}>fol. {filtered.length}</span>
       </div>
 
-      {/* Conteo */}
-      <p className="mb-4 text-xs text-neutral-600">
-        {filtered.length} transacciones{hasFilters ? " (filtradas)" : ""}
-      </p>
-
-      {/* Lista agrupada por día */}
+      {/* ── Ledger agrupado por día ──────────────────────────────── */}
       {grouped.length === 0 ? (
-        <p className="text-sm text-neutral-500">No hay transacciones en este período.</p>
+        <p style={{ fontFamily: "var(--font-serif)", fontStyle: "italic", fontSize: 14, color: "var(--ink3)" }}>No hay transacciones en este período.</p>
       ) : (
-        <div className="space-y-4">
-          {grouped.map(({ label, txs }) => (
-            <div key={label}>
-              <p className="mb-1.5 text-[11px] font-semibold tracking-wider text-neutral-500">{label}</p>
-              <div className="rounded-xl bg-neutral-800 divide-y divide-neutral-700">
-                {txs.map((t) =>
-                  editingId === t.id ? (
-                    <EditRow
-                      key={t.id}
-                      id={t.id}
-                      description={t.description}
-                      category={t.category}
-                      amount={t.amount}
-                      type={t.type}
-                      onDone={() => setEditingId(null)}
-                      userCategories={userCategories}
-                    />
-                  ) : (
-                    <TxRow key={t.id} tx={t} onEdit={() => setEditingId(t.id)} onOpenRule={setRuleModalId} />
-                  )
-                )}
+        <div>
+          {grouped.map(({ label, dateLabel, txs }, gi) => (
+            <section key={label} style={{ marginTop: gi === 0 ? 0 : 28 }}>
+              <div style={{ display: "flex", alignItems: "baseline", gap: 12, marginBottom: 8, paddingBottom: 4, borderBottom: "2px solid var(--ink)" }}>
+                <h3 style={{ fontFamily: "var(--font-display)", fontSize: 22, fontStyle: "italic", color: "var(--ink)", margin: 0, lineHeight: 1 }}>{dateLabel}</h3>
+                <span style={{ flex: 1 }} />
+                <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ink3)", letterSpacing: "0.06em" }}>{txs.length} asiento{txs.length !== 1 ? "s" : ""}</span>
               </div>
-            </div>
+              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                <colgroup>
+                  <col />
+                  <col style={{ width: 100 }} />
+                  <col style={{ width: 120 }} />
+                  <col style={{ width: 28 }} />
+                </colgroup>
+                <tbody>
+                  {txs.map((t) =>
+                    editingId === t.id ? (
+                      <tr key={t.id}><EditRow id={t.id} description={t.description} category={t.category} amount={t.amount} type={t.type} onDone={() => setEditingId(null)} userCategories={userCategories} /></tr>
+                    ) : (
+                      <TxRow key={t.id} tx={t} onEdit={() => setEditingId(t.id)} onOpenRule={setRuleModalId} />
+                    )
+                  )}
+                </tbody>
+              </table>
+            </section>
           ))}
         </div>
       )}
 
-      {/* Modal regla recurrente — fuera del listado para no afectar el layout */}
       {ruleModalId && (
         <RecurrentRuleModal ruleId={ruleModalId} onClose={() => setRuleModalId(null)} />
       )}

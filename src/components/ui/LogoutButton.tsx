@@ -18,23 +18,19 @@ export default function LogoutButton({ username }: LogoutButtonProps) {
   }
 
   return (
-    <div className="flex items-center justify-between px-3 py-2">
-      <div className="flex items-center gap-2 min-w-0">
-        <span className="truncate text-sm text-neutral-400">{username}</span>
-        <Link
-          href="/finanzas/configuracion"
-          title="Configuración"
-          className="rounded-lg p-1 text-neutral-500 hover:bg-neutral-700 hover:text-white transition-colors"
-        >
-          <LuSettings size={14} />
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "4px 0" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ink3)", letterSpacing: "0.06em", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{username}</span>
+        <Link href="/finanzas/configuracion" title="Configuración" style={{ color: "var(--ink3)", lineHeight: 1 }}>
+          <LuSettings size={12} />
         </Link>
       </div>
       <button
         onClick={handleLogout}
         title="Cerrar sesión"
-        className="rounded-lg p-1.5 text-neutral-500 hover:bg-neutral-700 hover:text-white transition-colors"
+        style={{ background: "transparent", border: "none", color: "var(--ink3)", cursor: "pointer", lineHeight: 1 }}
       >
-        <LuLogOut size={15} />
+        <LuLogOut size={13} />
       </button>
     </div>
   );

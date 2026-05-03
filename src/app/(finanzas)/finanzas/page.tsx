@@ -120,6 +120,40 @@ export default async function FinanzasDashboard() {
     .sort((a, b) => b.total - a.total)
     .slice(0, 8);
 
+  // ── Gastos USD por categoría ───────────────────────────────────────────────
+  const categoryMapUSD: Record<string, number> = {};
+  for (const t of thisMes) {
+    if (t.type !== TransactionType.EXPENSE || t.currency !== "USD") continue;
+    categoryMapUSD[t.category] = (categoryMapUSD[t.category] ?? 0) + t.amount;
+  }
+  const categoryDataUSD = Object.entries(categoryMapUSD)
+    .map(([category, total]) => ({ category, total }))
+    .sort((a, b) => b.total - a.total)
+    .slice(0, 8);
+
+  // ── Gastos fijos vs variables (ARS) ───────────────────────────────────────
+  const fixedExpensesARS = thisMes
+    .filter((t) => t.type === TransactionType.EXPENSE && t.currency === "ARS" && t.recurrentRuleId)
+    .reduce((s, t) => s + t.amount, 0);
+  const variableExpensesARS = gastosMes - fixedExpensesARS;
+
+  // ── Ingresos por categoría (ARS + USD) ────────────────────────────────────
+  const incomeCategoryMapARS: Record<string, number> = {};
+  const incomeCategoryMapUSD: Record<string, number> = {};
+  for (const t of thisMes) {
+    if (t.type !== TransactionType.INCOME) continue;
+    if (t.currency === "ARS") incomeCategoryMapARS[t.category] = (incomeCategoryMapARS[t.category] ?? 0) + t.amount;
+    if (t.currency === "USD") incomeCategoryMapUSD[t.category] = (incomeCategoryMapUSD[t.category] ?? 0) + t.amount;
+  }
+  const allIncomeCategories = Array.from(new Set([...Object.keys(incomeCategoryMapARS), ...Object.keys(incomeCategoryMapUSD)]));
+  const incomeCategoryData = allIncomeCategories
+    .map((category) => ({ category, ars: incomeCategoryMapARS[category] ?? 0, usd: incomeCategoryMapUSD[category] ?? 0 }))
+    .sort((a, b) => (b.ars + b.usd * 1000) - (a.ars + a.usd * 1000));
+
+  // ── Totales USD del mes ────────────────────────────────────────────────────
+  const ingresosUSD = thisMes.filter((t) => t.type === TransactionType.INCOME && t.currency === "USD").reduce((s, t) => s + t.amount, 0);
+  const gastosUSD = thisMes.filter((t) => t.type === TransactionType.EXPENSE && t.currency === "USD").reduce((s, t) => s + t.amount, 0);
+
   // ── Gráfico mensual ────────────────────────────────────────────────────────
   const monthlyMap: Record<string, MonthlyDataPoint> = {};
   for (let i = 5; i >= 0; i--) {
@@ -180,6 +214,12 @@ export default async function FinanzasDashboard() {
         dayOfMonth: proximoRecurrente.dayOfMonth,
       } : null}
       categoryData={categoryData}
+      categoryDataUSD={categoryDataUSD}
+      fixedExpensesARS={fixedExpensesARS}
+      variableExpensesARS={variableExpensesARS}
+      incomeCategoryData={incomeCategoryData}
+      ingresosUSD={ingresosUSD}
+      gastosUSD={gastosUSD}
       monthlyData={Object.values(monthlyMap)}
       wealthData={wealthData}
       recentTransactions={recentTransactions.map((t) => ({

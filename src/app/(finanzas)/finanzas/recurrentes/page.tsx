@@ -4,11 +4,11 @@ import { db } from "@/lib/db";
 import { requireSession } from "@/lib/auth";
 import RecurringManager from "./RecurringManager";
 
-const CATEGORIAS_GASTO = [
+const FALLBACK_GASTO = [
   "Alimentación", "Transporte", "Entretenimiento", "Salud",
   "Servicios", "Ropa", "Educación", "Suscripciones", "Otro",
 ];
-const CATEGORIAS_INGRESO = [
+const FALLBACK_INGRESO = [
   "Sueldo", "Freelance", "Fotografía", "Inversiones", "Alquiler", "Regalo", "Otro ingreso",
 ];
 
@@ -18,10 +18,11 @@ const fmtUSD = (n: number) => new Intl.NumberFormat("en-US", { style: "currency"
 export default async function RecurrentesPage() {
   const { userId } = await requireSession();
 
-  const [items, wallets, foreignAccounts] = await Promise.all([
+  const [items, wallets, foreignAccounts, userCategories] = await Promise.all([
     db.recurringExpense.findMany({ where: { userId }, orderBy: [{ transactionType: "asc" }, { dayOfMonth: "asc" }] }),
     db.wallet.findMany({ where: { userId }, orderBy: { name: "asc" } }),
     db.foreignAccount.findMany({ where: { userId }, orderBy: { name: "asc" } }),
+    db.category.findMany({ where: { userId }, orderBy: { name: "asc" } }),
   ]);
 
   const expenses = items.filter((i) => i.isActive && i.transactionType === "EXPENSE");
@@ -93,8 +94,16 @@ export default async function RecurrentesPage() {
       <div className="mt-8">
         <RecurringManager
           items={serialized}
-          categoriasGasto={CATEGORIAS_GASTO}
-          categoriasIngreso={CATEGORIAS_INGRESO}
+          categoriasGasto={
+            userCategories.filter((c) => c.type === "EXPENSE" || c.type === "BOTH").map((c) => c.name).length > 0
+              ? userCategories.filter((c) => c.type === "EXPENSE" || c.type === "BOTH").map((c) => c.name)
+              : FALLBACK_GASTO
+          }
+          categoriasIngreso={
+            userCategories.filter((c) => c.type === "INCOME" || c.type === "BOTH").map((c) => c.name).length > 0
+              ? userCategories.filter((c) => c.type === "INCOME" || c.type === "BOTH").map((c) => c.name)
+              : FALLBACK_INGRESO
+          }
           accounts={accounts}
           accountMap={accountMap}
         />

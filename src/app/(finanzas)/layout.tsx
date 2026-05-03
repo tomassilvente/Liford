@@ -17,10 +17,11 @@ const navItems = [
   { href: "/finanzas/inversiones",   label: "Inversiones",   num: "III" },
   { href: "/finanzas/billeteras",    label: "Billeteras",    num: "IV" },
   { href: "/finanzas/presupuesto",   label: "Presupuesto",   num: "V" },
-  { href: "/finanzas/metas",         label: "Metas",         num: "VI" },
-  { href: "/finanzas/anual",         label: "Anual",         num: "VII" },
-  { href: "/finanzas/categorias",    label: "Categorías",    num: "VIII" },
-  { href: "/finanzas/importar",      label: "Importar",      num: "IX" },
+  { href: "/finanzas/recurrentes",   label: "Recurrentes",   num: "VI" },
+  { href: "/finanzas/metas",         label: "Metas",         num: "VII" },
+  { href: "/finanzas/anual",         label: "Anual",         num: "VIII" },
+  { href: "/finanzas/categorias",    label: "Categorías",    num: "IX" },
+  { href: "/finanzas/importar",      label: "Importar",      num: "X" },
 ];
 
 export default async function FinanzasLayout({

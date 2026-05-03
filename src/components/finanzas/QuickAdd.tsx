@@ -49,6 +49,7 @@ export default function QuickAdd({ wallets, foreignAccounts, categories }: Quick
   const [toAccountRaw, setToAccountRaw] = useState(""); // para Transfer
   const [category, setCategory] = useState("");
   const [description, setDescription] = useState("");
+  const [date, setDate] = useState(() => new Date().toISOString().split("T")[0]);
   const [suggestion, setSuggestion] = useState<Suggestion | null>(null);
   const [loadingSuggestion, setLoadingSuggestion] = useState(false);
   const descRef = useRef<HTMLInputElement>(null);
@@ -112,6 +113,7 @@ export default function QuickAdd({ wallets, foreignAccounts, categories }: Quick
   function reset() {
     setAmount(""); setCategory(""); setDescription(""); setAccountRaw(""); setToAccountRaw("");
     setSuggestion(null); setType("EXPENSE"); setDisplayCurrency("ARS");
+    setDate(new Date().toISOString().split("T")[0]);
   }
 
   const submit = useCallback(async (andAnother = false) => {
@@ -133,7 +135,7 @@ export default function QuickAdd({ wallets, foreignAccounts, categories }: Quick
         amount: Number(amount),
         category: "Transferencia",
         description: description || "Transferencia entre cuentas",
-        date: new Date().toISOString(),
+        date,
         ...(accountType === "w" ? { walletId: accountId } : { foreignAccountId: accountId }),
       };
       // Enviar ambas operaciones
@@ -152,7 +154,7 @@ export default function QuickAdd({ wallets, foreignAccounts, categories }: Quick
             amount: Number(amount),
             category: "Transferencia recibida",
             description: description || "Transferencia entre cuentas",
-            date: new Date().toISOString(),
+            date,
             ...(toType === "w" ? { walletId: toId } : { foreignAccountId: toId }),
           }),
         }),
@@ -174,7 +176,7 @@ export default function QuickAdd({ wallets, foreignAccounts, categories }: Quick
       amount: Number(amount),
       category,
       description,
-      date: new Date().toISOString(),
+      date,
       ...(accountType === "w" ? { walletId: accountId } : { foreignAccountId: accountId }),
     };
 
@@ -340,6 +342,13 @@ export default function QuickAdd({ wallets, foreignAccounts, categories }: Quick
                 })}
               </select>
             )}
+
+            <input
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              style={{ ...inputSt, colorScheme: "dark" }}
+            />
           </div>
 
           <div style={{ marginTop: 14, display: "flex", gap: 8 }}>

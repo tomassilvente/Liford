@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { LuTrash2, LuPlus, LuPencil, LuCheck, LuX, LuRepeat } from "react-icons/lu";
+import { LuTrash2, LuPlus, LuPencil, LuCheck, LuX } from "react-icons/lu";
 import { useCurrency } from "@/context/CurrencyContext";
 
 interface Budget {
@@ -18,21 +18,11 @@ interface GastoItem {
   currency: "ARS" | "USD";
 }
 
-interface Suscripcion {
-  id: string;
-  description: string;
-  amount: number;
-  currency: "ARS" | "USD";
-  category: string;
-  dayOfMonth: number;
-}
-
 interface Props {
   budgets: Budget[];
   allGastos: GastoItem[];
   usdArs: number;
   categorias: string[];
-  suscripciones: Suscripcion[];
 }
 
 function convertTo(amount: number, from: "ARS" | "USD", to: "ARS" | "USD", usdArs: number): number {
@@ -54,7 +44,7 @@ function BudgetBar({ spent, limit }: { spent: number; limit: number }) {
   );
 }
 
-export default function BudgetManager({ budgets, allGastos, usdArs, categorias, suscripciones }: Props) {
+export default function BudgetManager({ budgets, allGastos, usdArs, categorias }: Props) {
   const router = useRouter();
   const { fmt } = useCurrency();
   const [adding, setAdding] = useState(false);
@@ -115,9 +105,6 @@ export default function BudgetManager({ budgets, allGastos, usdArs, categorias, 
   }
 
   const INPUT = "rounded-lg bg-neutral-900 px-3 py-1.5 text-sm text-white outline-none ring-1 ring-neutral-700 focus:ring-blue-500";
-
-  const totalSuscARS = suscripciones.filter((s) => s.currency === "ARS").reduce((sum, s) => sum + s.amount, 0);
-  const totalSuscUSD = suscripciones.filter((s) => s.currency === "USD").reduce((sum, s) => sum + s.amount, 0);
 
   return (
     <div className="space-y-4">
@@ -200,40 +187,6 @@ export default function BudgetManager({ budgets, allGastos, usdArs, categorias, 
         </button>
       )}
 
-      {/* Sección Suscripciones recurrentes */}
-      {suscripciones.length > 0 && (
-        <div className="mt-6">
-          <div className="mb-3 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <LuRepeat size={13} className="text-neutral-500" />
-              <p className="text-sm font-semibold text-neutral-300">Suscripciones recurrentes</p>
-            </div>
-            <div className="flex gap-3 text-xs text-neutral-500">
-              {totalSuscARS > 0 && (
-                <span>{new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", maximumFractionDigits: 0 }).format(totalSuscARS)}/mes</span>
-              )}
-              {totalSuscUSD > 0 && (
-                <span>{new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(totalSuscUSD)}/mes</span>
-              )}
-            </div>
-          </div>
-          <div className="rounded-xl bg-neutral-800 divide-y divide-neutral-700">
-            {suscripciones.map((s) => (
-              <div key={s.id} className="flex items-center justify-between px-4 py-3">
-                <div>
-                  <p className="text-sm text-white">{s.description}</p>
-                  <p className="text-xs text-neutral-500">{s.category} · día {s.dayOfMonth}</p>
-                </div>
-                <p className="text-sm font-semibold text-neutral-300 tabular-nums">
-                  {s.currency === "USD"
-                    ? new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(s.amount)
-                    : new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", maximumFractionDigits: 0 }).format(s.amount)}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 }

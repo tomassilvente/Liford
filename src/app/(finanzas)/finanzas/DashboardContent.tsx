@@ -54,6 +54,12 @@ interface Props {
   diasRestantesMes: number;
   proximoRecurrente: { description: string; amount: number; currency: string; dayOfMonth: number } | null;
   categoryData: { category: string; total: number }[];
+  categoryDataUSD: { category: string; total: number }[];
+  fixedExpensesARS: number;
+  variableExpensesARS: number;
+  incomeCategoryData: { category: string; ars: number; usd: number }[];
+  ingresosUSD: number;
+  gastosUSD: number;
   monthlyData: MonthlyDataPoint[];
   wealthData: WealthDataPoint[];
   recentTransactions: RecentTransaction[];
@@ -111,7 +117,9 @@ export default function DashboardContent({
   gastadoHoy, txHoyCount,
   presupuestoTotal, presupuestoRestante, presupuestoPct, diasRestantesMes,
   proximoRecurrente,
-  categoryData, monthlyData, wealthData,
+  categoryData, categoryDataUSD, fixedExpensesARS, variableExpensesARS,
+  incomeCategoryData, ingresosUSD, gastosUSD,
+  monthlyData, wealthData,
   recentTransactions, budgetAlerts, sessionsToday,
 }: Props) {
 
@@ -301,32 +309,127 @@ export default function DashboardContent({
 
       <WavyRule width={240} />
 
-      {/* ── Gastos por categoría con % de ingresos ───────────────── */}
-      {catConPct.length > 0 && (
+      {/* ── Distribución del gasto ───────────────────────────────── */}
+      {(catConPct.length > 0 || categoryDataUSD.length > 0) && (
         <section style={{ marginBottom: 40 }}>
-          <SectionHeader num="III · Categorías" title="Distribución del gasto" />
-          <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ink3)", margin: "-12px 0 16px", letterSpacing: "0.1em", textTransform: "uppercase" }}>
-            % sobre ingresos ARS del mes
-          </p>
-          <div className="grid grid-cols-1 lg:grid-cols-2" style={{ gap: "0 32px" }}>
-            {catConPct.map((c, i) => (
-              <div key={i} style={{ padding: "8px 0", borderBottom: "1px dashed var(--rule)", display: "grid", gridTemplateColumns: "1fr auto auto", alignItems: "center", gap: "0 10px" }}>
-                <span style={{ fontFamily: "var(--font-serif)", fontSize: 14, color: "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", gridColumn: "1 / -1" }} className="lg:col-span-1">{c.category}</span>
-                <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ink)", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>
-                  {fmtARS(c.total)}
-                </span>
-                <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, textAlign: "right", color: c.pct > 30 ? "var(--brick)" : c.pct > 15 ? "var(--rust)" : "var(--ink3)", fontVariantNumeric: "tabular-nums" }}>
-                  {c.pct.toFixed(0)}%
-                </span>
+          <SectionHeader num="III · Gastos" title="Distribución del gasto" />
+
+          {/* Fijos vs Variables */}
+          {gastosMes > 0 && (
+            <div style={{ marginBottom: 20 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, alignItems: "center" }}>
+                <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ink3)", letterSpacing: "0.1em", textTransform: "uppercase" }}>Fijos vs Variables · ARS</span>
+                <div style={{ display: "flex", gap: 16, fontFamily: "var(--font-mono)", fontSize: 10 }}>
+                  <span style={{ color: "var(--ink3)" }}>Fijos: <span style={{ color: "var(--ink)" }}>{fmtARS(fixedExpensesARS)}</span></span>
+                  <span style={{ color: "var(--ink3)" }}>Variables: <span style={{ color: "var(--ink)" }}>{fmtARS(variableExpensesARS)}</span></span>
+                </div>
               </div>
-            ))}
-          </div>
+              <div style={{ height: 6, background: "var(--paper2)", display: "flex" }}>
+                <div style={{ height: "100%", width: `${(fixedExpensesARS / gastosMes) * 100}%`, background: "var(--rust)" }} />
+                <div style={{ height: "100%", flex: 1, background: "var(--brick)" }} />
+              </div>
+              <div style={{ display: "flex", gap: 12, marginTop: 4 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                  <span style={{ width: 8, height: 8, background: "var(--rust)", display: "inline-block" }} />
+                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ink3)", letterSpacing: "0.06em" }}>FIJOS {gastosMes > 0 ? ((fixedExpensesARS / gastosMes) * 100).toFixed(0) : 0}%</span>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                  <span style={{ width: 8, height: 8, background: "var(--brick)", display: "inline-block" }} />
+                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ink3)", letterSpacing: "0.06em" }}>VARIABLES {gastosMes > 0 ? ((variableExpensesARS / gastosMes) * 100).toFixed(0) : 0}%</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ARS por categoría */}
+          {catConPct.length > 0 && (
+            <>
+              <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ink3)", margin: "0 0 10px", letterSpacing: "0.1em", textTransform: "uppercase" }}>
+                Por categoría · ARS · % sobre ingresos
+              </p>
+              <div className="grid grid-cols-1 lg:grid-cols-2" style={{ gap: "0 32px", marginBottom: categoryDataUSD.length > 0 ? 20 : 0 }}>
+                {catConPct.map((c, i) => (
+                  <div key={i} style={{ padding: "8px 0", borderBottom: "1px dashed var(--rule)", display: "grid", gridTemplateColumns: "1fr auto auto", alignItems: "center", gap: "0 10px" }}>
+                    <span style={{ fontFamily: "var(--font-serif)", fontSize: 14, color: "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", gridColumn: "1 / -1" }} className="lg:col-span-1">{c.category}</span>
+                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ink)", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{fmtARS(c.total)}</span>
+                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, textAlign: "right", color: c.pct > 30 ? "var(--brick)" : c.pct > 15 ? "var(--rust)" : "var(--ink3)", fontVariantNumeric: "tabular-nums" }}>{c.pct.toFixed(0)}%</span>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+
+          {/* USD por categoría */}
+          {categoryDataUSD.length > 0 && (
+            <>
+              <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ink3)", margin: "0 0 10px", letterSpacing: "0.1em", textTransform: "uppercase" }}>
+                Por categoría · USD · total {fmtUSD(gastosUSD)} USD
+              </p>
+              <div className="grid grid-cols-1 lg:grid-cols-2" style={{ gap: "0 32px" }}>
+                {categoryDataUSD.map((c, i) => {
+                  const maxUSDCat = Math.max(...categoryDataUSD.map((x) => x.total), 1);
+                  return (
+                    <div key={i} style={{ padding: "8px 0", borderBottom: "1px dashed var(--rule)", display: "grid", gridTemplateColumns: "1fr auto auto", alignItems: "center", gap: "0 10px" }}>
+                      <span style={{ fontFamily: "var(--font-serif)", fontSize: 14, color: "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", gridColumn: "1 / -1" }} className="lg:col-span-1">{c.category}</span>
+                      <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ink)", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{fmtUSD(c.total)} <span style={{ fontSize: 9, color: "var(--ink3)" }}>USD</span></span>
+                      <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, textAlign: "right", color: "var(--ink3)", fontVariantNumeric: "tabular-nums" }}>{((c.total / maxUSDCat) * 100).toFixed(0)}%</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          )}
+
           {ingresosMes > 0 && (
             <p style={{ fontFamily: "var(--font-serif)", fontStyle: "italic", fontSize: 12, color: "var(--ink3)", margin: "12px 0 0" }}>
-              Total gastado: {((gastosMes / ingresosMes) * 100).toFixed(0)}% de los ingresos del mes.{" "}
+              Total gastado ARS: {((gastosMes / ingresosMes) * 100).toFixed(0)}% de ingresos.{" "}
               {gastosMes / ingresosMes > 0.9 ? "Zona roja." : gastosMes / ingresosMes > 0.7 ? "Margen ajustado." : "Margen saludable."}
             </p>
           )}
+        </section>
+      )}
+
+      <WavyRule width={240} />
+
+      {/* ── Distribución de ganancias ────────────────────────────── */}
+      {incomeCategoryData.length > 0 && (
+        <section style={{ marginBottom: 40 }}>
+          <SectionHeader num="IV · Ingresos" title="Distribución de ganancias" />
+
+          {/* Resumen ARS + USD */}
+          <div style={{ display: "flex", gap: 32, marginBottom: 20 }}>
+            <div style={{ borderLeft: "3px solid var(--olive)", paddingLeft: 12 }}>
+              <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ink3)", margin: 0, letterSpacing: "0.1em", textTransform: "uppercase" }}>Total ARS</p>
+              <p style={{ fontFamily: "var(--font-mono)", fontSize: 20, color: "var(--olive)", margin: "2px 0 0", fontVariantNumeric: "tabular-nums" }}>{fmtARS(ingresosMes)}</p>
+            </div>
+            {ingresosUSD > 0 && (
+              <div style={{ borderLeft: "3px solid var(--navy)", paddingLeft: 12 }}>
+                <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ink3)", margin: 0, letterSpacing: "0.1em", textTransform: "uppercase" }}>Total USD</p>
+                <p style={{ fontFamily: "var(--font-mono)", fontSize: 20, color: "var(--navy)", margin: "2px 0 0", fontVariantNumeric: "tabular-nums" }}>{fmtUSD(ingresosUSD)} <span style={{ fontSize: 10 }}>USD</span></p>
+              </div>
+            )}
+          </div>
+
+          {/* Por categoría */}
+          <div style={{ borderTop: "1px solid var(--rule2)" }}>
+            {incomeCategoryData.map((c, i) => (
+              <div key={i} style={{ padding: "9px 0", borderBottom: "1px dashed var(--rule)", display: "grid", gridTemplateColumns: "1fr auto auto", alignItems: "center", gap: "0 12px" }}>
+                <span style={{ fontFamily: "var(--font-serif)", fontSize: 14, color: "var(--ink)" }}>{c.category}</span>
+                {c.ars > 0 && (
+                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--olive)", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>
+                    {fmtARS(c.ars)} <span style={{ fontSize: 9, color: "var(--ink3)" }}>ARS</span>
+                  </span>
+                )}
+                {c.usd > 0 && (
+                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--navy)", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>
+                    {fmtUSD(c.usd)} <span style={{ fontSize: 9, color: "var(--ink3)" }}>USD</span>
+                  </span>
+                )}
+                {c.ars === 0 && <span />}
+                {c.usd === 0 && <span />}
+              </div>
+            ))}
+          </div>
         </section>
       )}
 
@@ -336,7 +439,7 @@ export default function DashboardContent({
       {recentTransactions.length > 0 && (
         <section style={{ marginBottom: 40 }}>
           <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 16 }}>
-            <SectionHeader num="IV · Asientos" title="Últimos movimientos" />
+            <SectionHeader num="V · Asientos" title="Últimos movimientos" />
             <Link href="/finanzas/transacciones" style={{ fontFamily: "var(--font-serif)", fontStyle: "italic", fontSize: 13, color: "var(--navy)", textDecoration: "none" }}>ver todos →</Link>
           </div>
           <table style={{ width: "100%", borderCollapse: "collapse", fontFamily: "var(--font-mono)" }}>
@@ -369,7 +472,7 @@ export default function DashboardContent({
       {/* ── Gráficos ─────────────────────────────────────────────── */}
       {(monthlyData.some((m) => m.ingresos > 0 || m.gastos > 0) || wealthData.length >= 2) && (
         <section style={{ marginBottom: 40 }}>
-          <SectionHeader num="V · Evolución" title="Histórico" />
+          <SectionHeader num="VI · Evolución" title="Histórico" />
           <div style={{ display: "grid", gridTemplateColumns: wealthData.length >= 2 ? "1fr 1fr" : "1fr", gap: 32 }}>
             {monthlyData.some((m) => m.ingresos > 0 || m.gastos > 0) && (
               <div>

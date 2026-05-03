@@ -7,7 +7,7 @@ import { fetchDolarBlue } from "@/lib/dolar";
 import BudgetManager from "./BudgetManager";
 import MonthFilter from "@/components/finanzas/MonthFilter";
 
-const CATEGORIAS_GASTO = [
+const CATEGORIAS_FALLBACK = [
   "Alimentación", "Transporte", "Entretenimiento", "Salud",
   "Servicios", "Ropa", "Educación", "Suscripciones", "Otro",
 ];
@@ -30,14 +30,14 @@ export default async function PresupuestoPage({
   const from = new Date(year, month - 1, 1);
   const to = new Date(year, month, 1);
 
-  const [budgets, gastosMes, recurringItems, usdArs] = await Promise.all([
+  const [budgets, gastosMes, userCategories, usdArs] = await Promise.all([
     db.budget.findMany({ where: { userId }, orderBy: { category: "asc" } }),
     db.transaction.findMany({
       where: { userId, type: TransactionType.EXPENSE, source: TransactionSource.PERSONAL, date: { gte: from, lt: to } },
     }),
-    db.recurringExpense.findMany({
-      where: { userId, isActive: true, transactionType: TransactionType.EXPENSE },
-      orderBy: { amount: "desc" },
+    db.category.findMany({
+      where: { userId, type: { in: ["EXPENSE", "BOTH"] } },
+      orderBy: { name: "asc" },
     }),
     fetchDolarBlue(),
   ]);
@@ -48,7 +48,6 @@ export default async function PresupuestoPage({
     currency: t.currency as "ARS" | "USD",
   }));
 
-  // Totales globales (conversión al vuelo para KPIs del header)
   const arsGastado = gastosMes.filter((t) => t.currency === "ARS").reduce((s, t) => s + t.amount, 0);
   const usdGastado = gastosMes.filter((t) => t.currency === "USD").reduce((s, t) => s + t.amount, 0);
   const arsPresupuestado = budgets.filter((b) => b.currency === "ARS").reduce((s, b) => s + b.monthlyLimit, 0);
@@ -57,16 +56,13 @@ export default async function PresupuestoPage({
   const fmtARS = (n: number) => new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", maximumFractionDigits: 0 }).format(n);
   const fmtUSD = (n: number) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2 }).format(n);
 
-  const todasLasCats = Array.from(new Set([...CATEGORIAS_GASTO, ...budgets.map((b) => b.category)])).sort();
-
-  const suscripciones = recurringItems.map((r) => ({
-    id: r.id,
-    description: r.description,
-    amount: r.amount,
-    currency: r.currency as "ARS" | "USD",
-    category: r.category,
-    dayOfMonth: r.dayOfMonth,
-  }));
+  const dbCatNames = userCategories.map((c) => c.name);
+  const todasLasCats = Array.from(
+    new Set([
+      ...(dbCatNames.length > 0 ? dbCatNames : CATEGORIAS_FALLBACK),
+      ...budgets.map((b) => b.category),
+    ])
+  ).sort();
 
   return (
     <div>
@@ -105,7 +101,6 @@ export default async function PresupuestoPage({
           allGastos={allGastos}
           usdArs={usdArs}
           categorias={todasLasCats}
-          suscripciones={suscripciones}
         />
       </div>
     </div>

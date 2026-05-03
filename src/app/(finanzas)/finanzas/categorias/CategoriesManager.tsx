@@ -19,8 +19,16 @@ interface Props {
   categories: Category[];
 }
 
-const COLORS = ["#3b82f6","#10b981","#f59e0b","#ef4444","#8b5cf6","#ec4899","#06b6d4","#84cc16","#f97316","#6366f1"];
-const ICONS  = ["🍔","🚗","🎬","❤️","💡","👕","📚","📺","✈️","🏠","💼","💰","🎁","⚽","🎵","📱","🐾","🌿","☕","🛍️"];
+const COLORS = [
+  "#3b82f6","#1d4ed8","#06b6d4","#0891b2",
+  "#10b981","#16a34a","#84cc16","#65a30d",
+  "#ef4444","#dc2626","#ec4899","#db2777",
+  "#8b5cf6","#7c3aed","#6366f1","#4f46e5",
+  "#f59e0b","#d97706","#f97316","#ea580c",
+  "#14b8a6","#0d9488","#a855f7","#9333ea",
+  "#6b7280","#374151","#f1f5f9","#e2e8f0",
+];
+const ICONS  = ["🍔","🚗","🎬","❤️","💡","👕","📚","📺","✈️","🏠","💼","💰","🎁","⚽","🎵","📱","🐾","🌿","☕","🛍️","🏥","💊","🎓","🎮","🍷","🏋️","💈","🧴","🔧","⚡","🌎","🎨","🏖️","🍕","🚀","🎯","💎","🧾","🏦","🔑"];
 
 const INPUT = "rounded-lg bg-neutral-900 px-3 py-2 text-sm text-white placeholder-neutral-600 outline-none ring-1 ring-neutral-700 focus:ring-blue-500";
 const EMPTY = { name: "", icon: "", color: COLORS[0], type: "EXPENSE" };
@@ -79,10 +87,21 @@ function CategoryRow({
         </div>
         <div>
           <p className="mb-1.5 text-xs text-neutral-500">Ícono</p>
+          <div className="mb-2 flex items-center gap-2">
+            <input
+              value={form.icon}
+              onChange={(e) => setForm({ ...form, icon: e.target.value })}
+              placeholder="Pegá tu emoji"
+              className={`${INPUT} w-24 text-center text-lg`}
+              maxLength={8}
+            />
+            <span className="text-xs text-neutral-500">o elegí:</span>
+          </div>
           <div className="flex flex-wrap gap-1">
             {ICONS.map((icon) => (
               <button
                 key={icon}
+                type="button"
                 onClick={() => setForm({ ...form, icon })}
                 className={`rounded-lg p-1.5 text-lg transition-colors ${form.icon === icon ? "bg-neutral-600 ring-1 ring-neutral-500" : "hover:bg-neutral-700"}`}
               >
@@ -97,6 +116,7 @@ function CategoryRow({
             {COLORS.map((c) => (
               <button
                 key={c}
+                type="button"
                 onClick={() => setForm({ ...form, color: c })}
                 style={{ background: c }}
                 className={`h-6 w-6 rounded-full transition-transform ${form.color === c ? "scale-125 ring-2 ring-white/40" : "hover:scale-110"}`}
@@ -211,10 +231,21 @@ export default function CategoriesManager({ categories }: Props) {
           />
           <div>
             <p className="mb-1.5 text-xs text-neutral-500">Ícono</p>
+            <div className="mb-2 flex items-center gap-2">
+              <input
+                value={form.icon}
+                onChange={(e) => setForm({ ...form, icon: e.target.value })}
+                placeholder="Pegá tu emoji"
+                className={`${INPUT} w-24 text-center text-lg`}
+                maxLength={8}
+              />
+              <span className="text-xs text-neutral-500">o elegí:</span>
+            </div>
             <div className="flex flex-wrap gap-1">
               {ICONS.map((icon) => (
                 <button
                   key={icon}
+                  type="button"
                   onClick={() => setForm({ ...form, icon })}
                   className={`rounded-lg p-1.5 text-lg ${form.icon === icon ? "bg-neutral-600 ring-1 ring-neutral-500" : "hover:bg-neutral-700"}`}
                 >
@@ -229,6 +260,7 @@ export default function CategoriesManager({ categories }: Props) {
               {COLORS.map((c) => (
                 <button
                   key={c}
+                  type="button"
                   onClick={() => setForm({ ...form, color: c })}
                   style={{ background: c }}
                   className={`h-6 w-6 rounded-full ${form.color === c ? "scale-125 ring-2 ring-white/40" : "hover:scale-110"}`}

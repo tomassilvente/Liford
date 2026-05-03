@@ -7,11 +7,19 @@ import CategoriesManager from "./CategoriesManager";
 export default async function CategoriasPage() {
   const { userId } = await requireSession();
 
-  const categories = await db.category.findMany({
-    where: { userId, parentId: null },
-    orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
-    include: { children: { orderBy: [{ sortOrder: "asc" }, { name: "asc" }] } },
-  });
+  const [categories, txGroups] = await Promise.all([
+    db.category.findMany({
+      where: { userId, parentId: null },
+      orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
+      include: { children: { orderBy: [{ sortOrder: "asc" }, { name: "asc" }] } },
+    }),
+    db.transaction.groupBy({
+      by: ["category"],
+      where: { userId },
+      _count: { category: true },
+      orderBy: { category: "asc" },
+    }),
+  ]);
 
   const serialized = categories.map((c) => ({
     id: c.id,
@@ -31,6 +39,8 @@ export default async function CategoriasPage() {
     })),
   }));
 
+  const txCategoryNames = txGroups.map((g) => ({ name: g.category, count: g._count.category }));
+
   return (
     <div>
       <h1 className="text-2xl font-bold text-white">Categorías</h1>
@@ -38,7 +48,7 @@ export default async function CategoriasPage() {
         Personalizá tus categorías con íconos y colores. Se usan en transacciones y presupuestos.
       </p>
       <div className="max-w-2xl">
-        <CategoriesManager categories={serialized} />
+        <CategoriesManager categories={serialized} txCategoryNames={txCategoryNames} />
       </div>
     </div>
   );

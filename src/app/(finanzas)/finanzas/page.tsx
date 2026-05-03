@@ -8,15 +8,30 @@ import type { MonthlyDataPoint } from "@/components/finanzas/MonthlyChart";
 import type { WealthDataPoint } from "@/components/finanzas/WealthChart";
 import DashboardContent from "./DashboardContent";
 
-export default async function FinanzasDashboard() {
+function currentYM() {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+}
+
+export default async function FinanzasDashboard({
+  searchParams,
+}: {
+  searchParams: Promise<{ mes?: string }>;
+}) {
   const session = await requireSession();
   const userId = session.userId;
 
+  const { mes } = await searchParams;
+  const ym = mes ?? currentYM();
+  const [selYear, selMonth] = ym.split("-").map(Number);
+  const isCurrentMonth = ym === currentYM();
+
   const now = new Date();
-  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-  const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-  const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-  const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);
+  const startOfMonth = new Date(selYear, selMonth - 1, 1);
+  const endOfMonth = new Date(selYear, selMonth, 1);
+  const startOfLastMonth = new Date(selYear, selMonth - 2, 1);
+  const endOfLastMonth = startOfMonth;
+  const sixMonthsAgo = new Date(selYear, selMonth - 6, 1);
   const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
 
@@ -60,7 +75,7 @@ export default async function FinanzasDashboard() {
 
   // ── Mes actual ─────────────────────────────────────────────────────────────
   const thisMes = allTransactions.filter((t) => t.date >= startOfMonth && t.date < endOfMonth);
-  const lastMes = allTransactions.filter((t) => t.date >= startOfLastMonth && t.date < startOfMonth);
+  const lastMes = allTransactions.filter((t) => t.date >= startOfLastMonth && t.date < endOfLastMonth);
 
   const ingresosMes = thisMes.filter((t) => t.type === TransactionType.INCOME && t.currency === "ARS").reduce((s, t) => s + t.amount, 0);
   const gastosMes = thisMes.filter((t) => t.type === TransactionType.EXPENSE && t.currency === "ARS").reduce((s, t) => s + t.amount, 0);
@@ -72,29 +87,27 @@ export default async function FinanzasDashboard() {
   const diffGastos = gastosLastMes > 0 ? ((gastosMes - gastosLastMes) / gastosLastMes) * 100 : null;
   const diffIngresos = ingresosLastMes > 0 ? ((ingresosMes - ingresosLastMes) / ingresosLastMes) * 100 : null;
 
-  // ── Gastado hoy ────────────────────────────────────────────────────────────
-  const txHoy = allTransactions.filter((t) => t.date >= startOfToday && t.date < endOfToday && t.type === TransactionType.EXPENSE && t.currency === "ARS");
+  // ── Gastado hoy (solo mes actual) ─────────────────────────────────────────
+  const txHoy = isCurrentMonth
+    ? allTransactions.filter((t) => t.date >= startOfToday && t.date < endOfToday && t.type === TransactionType.EXPENSE && t.currency === "ARS")
+    : [];
   const gastadoHoy = txHoy.reduce((s, t) => s + t.amount, 0);
 
   // ── Presupuesto del mes ────────────────────────────────────────────────────
   const presupuestoTotal = budgets.filter((b) => b.currency === "ARS").reduce((s, b) => s + b.monthlyLimit, 0);
   const presupuestoRestante = Math.max(0, presupuestoTotal - gastosMes);
   const presupuestoPct = presupuestoTotal > 0 ? (gastosMes / presupuestoTotal) * 100 : null;
-  const diasRestantesMes = Math.ceil((endOfMonth.getTime() - now.getTime()) / 86400000);
+  const diasRestantesMes = isCurrentMonth ? Math.ceil((endOfMonth.getTime() - now.getTime()) / 86400000) : 0;
 
-  // ── Próximo recurrente (primero que vence en los próximos días) ────────────
+  // ── Próximo recurrente (solo mes actual) ──────────────────────────────────
   const today = now.getDate();
-  const proximoRecurrente = (() => {
-    // Recurrentes que aún no se aplicaron este mes (dayOfMonth >= today)
+  const proximoRecurrente = isCurrentMonth ? (() => {
     const proximos = allRecurring
       .filter((r) => r.transactionType === TransactionType.EXPENSE)
-      .filter((r) => {
-        if (r.dayOfMonth >= today) return true;
-        return false;
-      })
+      .filter((r) => r.dayOfMonth >= today)
       .sort((a, b) => a.dayOfMonth - b.dayOfMonth);
     return proximos[0] ?? null;
-  })();
+  })() : null;
 
   // ── Alertas de presupuesto ─────────────────────────────────────────────────
   const gastoPorCat: Record<string, number> = {};
@@ -154,10 +167,10 @@ export default async function FinanzasDashboard() {
   const ingresosUSD = thisMes.filter((t) => t.type === TransactionType.INCOME && t.currency === "USD").reduce((s, t) => s + t.amount, 0);
   const gastosUSD = thisMes.filter((t) => t.type === TransactionType.EXPENSE && t.currency === "USD").reduce((s, t) => s + t.amount, 0);
 
-  // ── Gráfico mensual ────────────────────────────────────────────────────────
+  // ── Gráfico mensual (6 meses terminando en el mes seleccionado) ───────────
   const monthlyMap: Record<string, MonthlyDataPoint> = {};
   for (let i = 5; i >= 0; i--) {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const d = new Date(selYear, selMonth - 1 - i, 1);
     const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
     monthlyMap[key] = { month: d.toLocaleDateString("es-AR", { month: "short", year: "2-digit" }), ingresos: 0, gastos: 0 };
   }
@@ -176,15 +189,16 @@ export default async function FinanzasDashboard() {
     totalUSD: s.totalUSD,
   }));
 
-  // ── Sesiones hoy ───────────────────────────────────────────────────────────
-  const sessionsTodayData = sessionsToday.map((s) => ({
+  // ── Sesiones hoy (solo mes actual) ────────────────────────────────────────
+  const sessionsTodayData = isCurrentMonth ? sessionsToday.map((s) => ({
     clientName: s.client.name,
     time: s.date.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" }),
     type: s.type,
-  }));
+  })) : [];
 
   return (
     <DashboardContent
+      mesYM={ym}
       displayName={session.displayName ?? session.username}
       totalARS={totalARS}
       walletsARSCount={wallets.filter((w) => w.currency === "ARS").length}
@@ -200,7 +214,7 @@ export default async function FinanzasDashboard() {
       tasaAhorro={tasaAhorro}
       diffGastos={diffGastos}
       diffIngresos={diffIngresos}
-      mesLabel={now.toLocaleDateString("es-AR", { month: "long", year: "numeric" })}
+      mesLabel={new Date(selYear, selMonth - 1, 1).toLocaleDateString("es-AR", { month: "long", year: "numeric" })}
       gastadoHoy={gastadoHoy}
       txHoyCount={txHoy.length}
       presupuestoTotal={presupuestoTotal}

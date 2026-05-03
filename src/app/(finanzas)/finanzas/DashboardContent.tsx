@@ -5,6 +5,7 @@ import type { MonthlyDataPoint } from "@/components/finanzas/MonthlyChart";
 import type { WealthDataPoint } from "@/components/finanzas/WealthChart";
 import WealthChart from "@/components/finanzas/WealthChart";
 import MonthlyChart from "@/components/finanzas/MonthlyChart";
+import MonthFilter from "@/components/finanzas/MonthFilter";
 
 interface BudgetAlert {
   category: string;
@@ -30,6 +31,7 @@ interface RecentTransaction {
 }
 
 interface Props {
+  mesYM: string;
   displayName: string;
   totalARS: number;
   walletsARSCount: number;
@@ -108,6 +110,7 @@ function SectionHeader({ num, title }: { num: string; title: string }) {
 }
 
 export default function DashboardContent({
+  mesYM,
   displayName,
   totalARS, walletsARSCount,
   foreignUSD, foreignAccountsCount,
@@ -143,9 +146,6 @@ export default function DashboardContent({
   }));
   const maxCat = Math.max(...catConPct.map((c) => c.total), 1);
 
-  const today = new Date();
-  const dateStr = today.toLocaleDateString("es-AR", { weekday: "short", day: "numeric", month: "short" }).toUpperCase();
-
   return (
     <div>
       {/* ── Page header ──────────────────────────────────────────── */}
@@ -156,7 +156,7 @@ export default function DashboardContent({
             El estado de la cosa
           </h1>
         </div>
-        <p style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ink3)", margin: 0, letterSpacing: "0.08em", textTransform: "uppercase" }}>{dateStr}</p>
+        <MonthFilter selected={mesYM} />
       </header>
 
       {/* ── Patrimonio: ARS + USD separados ──────────────────────── */}

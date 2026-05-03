@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { LuPlus, LuPencil, LuTrash2, LuCheck, LuX } from "react-icons/lu";
+import { LuPlus, LuPencil, LuTrash2, LuCheck, LuX, LuArrowRight, LuTriangleAlert } from "react-icons/lu";
 import { toast } from "sonner";
 
 interface Category {
@@ -17,6 +17,7 @@ interface Category {
 
 interface Props {
   categories: Category[];
+  txCategoryNames: { name: string; count: number }[];
 }
 
 const COLORS = [
@@ -168,7 +169,78 @@ function CategoryRow({
   );
 }
 
-export default function CategoriesManager({ categories }: Props) {
+function CategoryRemapper({
+  categories,
+  txCategoryNames,
+}: {
+  categories: Category[];
+  txCategoryNames: { name: string; count: number }[];
+}) {
+  const router = useRouter();
+  const allCatNames = categories.map((c) => c.name);
+  const unmapped = txCategoryNames.filter((t) => !allCatNames.includes(t.name));
+  const [remaps, setRemaps] = useState<Record<string, string>>({});
+  const [saving, setSaving] = useState(false);
+
+  if (unmapped.length === 0) return null;
+
+  async function applyRemap(from: string, to: string) {
+    setSaving(true);
+    const res = await fetch("/api/finanzas/categories/remap", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ from, to }),
+    });
+    setSaving(false);
+    if (res.ok) {
+      const { updated } = await res.json();
+      toast.success(`${updated} transacciones movidas a "${to}"`);
+      router.refresh();
+    } else {
+      toast.error("No se pudo remap");
+    }
+  }
+
+  return (
+    <div className="mt-8 rounded-xl border border-yellow-800/40 bg-yellow-950/20 p-4">
+      <div className="mb-3 flex items-center gap-2">
+        <LuTriangleAlert size={14} className="text-yellow-500" />
+        <p className="text-sm font-medium text-yellow-400">Categorías sin unificar</p>
+        <span className="text-xs text-neutral-500">— usadas en transacciones pero no definidas</span>
+      </div>
+      <div className="space-y-2">
+        {unmapped.map((tx) => (
+          <div key={tx.name} className="flex flex-wrap items-center gap-2">
+            <span className="rounded bg-neutral-800 px-2.5 py-1 text-sm text-neutral-300 font-mono">
+              {tx.name}
+              <span className="ml-1.5 text-xs text-neutral-500">({tx.count} tx)</span>
+            </span>
+            <LuArrowRight size={13} className="text-neutral-600 shrink-0" />
+            <select
+              value={remaps[tx.name] ?? ""}
+              onChange={(e) => setRemaps({ ...remaps, [tx.name]: e.target.value })}
+              className="rounded-lg bg-neutral-900 px-3 py-1.5 text-sm text-white outline-none ring-1 ring-neutral-700 focus:ring-blue-500"
+            >
+              <option value="">Elegí destino</option>
+              {allCatNames.map((n) => (
+                <option key={n} value={n}>{n}</option>
+              ))}
+            </select>
+            <button
+              disabled={!remaps[tx.name] || saving}
+              onClick={() => applyRemap(tx.name, remaps[tx.name])}
+              className="flex items-center gap-1 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-500 disabled:opacity-40"
+            >
+              <LuCheck size={12} /> Unificar
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export default function CategoriesManager({ categories, txCategoryNames }: Props) {
   const router = useRouter();
   const [adding, setAdding] = useState(false);
   const [form, setForm] = useState(EMPTY);
@@ -285,6 +357,8 @@ export default function CategoriesManager({ categories }: Props) {
           <LuPlus size={15} /> Nueva categoría
         </button>
       )}
+
+      <CategoryRemapper categories={categories} txCategoryNames={txCategoryNames} />
     </div>
   );
 }

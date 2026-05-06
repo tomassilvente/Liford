@@ -88,6 +88,18 @@ export async function POST(request: NextRequest) {
   if (!message) return new Response("OK", { status: 200 });
 
   const from = message.from as string;
+
+  try {
+    return await handleMessage(message, from);
+  } catch (err) {
+    console.error("[WhatsApp] Error no controlado:", err);
+    await sendWhatsAppMessage(from, `❌ Error interno al procesar el mensaje. Detalle: ${err instanceof Error ? err.message : String(err)}`);
+    return new Response("OK", { status: 200 });
+  }
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function handleMessage(message: any, from: string): Promise<Response> {
   const msgType = message.type as string;
 
   console.log(`[WhatsApp] Mensaje de: ${from} | Tipo: ${msgType}`);

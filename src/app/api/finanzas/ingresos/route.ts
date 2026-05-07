@@ -2,6 +2,7 @@ import { db } from "@/lib/db";
 import { TransactionSource, TransactionType } from "@/generated/prisma/enums";
 import { NextRequest } from "next/server";
 import { getApiSession } from "@/lib/auth";
+import { parseDateToUTCNoon } from "@/lib/dates";
 
 export async function POST(request: NextRequest) {
   const session = await getApiSession();
@@ -29,7 +30,7 @@ export async function POST(request: NextRequest) {
           currency: wallet.currency,
           category,
           description,
-          date: date ? new Date(date) : new Date(),
+          date: date ? parseDateToUTCNoon(date) : new Date(),
         },
       }),
       db.wallet.update({
@@ -55,7 +56,7 @@ export async function POST(request: NextRequest) {
         currency: account.currency,
         category,
         description,
-        date: date ? new Date(date) : new Date(),
+        date: date ? parseDateToUTCNoon(date) : new Date(),
       },
     }),
     db.foreignAccount.update({

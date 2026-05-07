@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { getApiSession } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { TransactionType, TransactionSource } from "@/generated/prisma/enums";
+import { parseDateToUTCNoon } from "@/lib/dates";
 
 export async function POST(request: NextRequest) {
   const session = await getApiSession();
@@ -52,7 +53,7 @@ export async function POST(request: NextRequest) {
         currency: t.currency,
         category: t.category,
         description: t.description,
-        date: new Date(t.date),
+        date: parseDateToUTCNoon(t.date),
       })),
       skipDuplicates: true,
     }),

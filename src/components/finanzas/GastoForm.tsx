@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import type { WalletModel as Wallet, ForeignAccountModel as ForeignAccount } from "@/generated/prisma/models";
+import { localDateString } from "@/lib/dates";
 
 const CATEGORIAS = [
   "Alimentación",
@@ -27,7 +28,7 @@ export default function GastoForm({ wallets, foreignAccounts }: GastoFormProps) 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const today = new Date().toISOString().split("T")[0];
+  const today = localDateString();
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();

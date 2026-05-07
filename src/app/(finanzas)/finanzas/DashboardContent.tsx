@@ -449,7 +449,7 @@ export default function DashboardContent({
                 return (
                   <tr key={t.id} style={{ borderBottom: i === 0 ? "1px solid var(--ink)" : "1px dashed var(--rule)" }}>
                     <td style={{ padding: "8px 0", fontSize: 10, color: "var(--ink3)", letterSpacing: "0.06em", width: 80 }}>
-                      {new Intl.DateTimeFormat("es-AR", { day: "2-digit", month: "short" }).format(new Date(t.date)).toUpperCase()}
+                      {new Intl.DateTimeFormat("es-AR", { day: "2-digit", month: "short", timeZone: "UTC" }).format(new Date(t.date)).toUpperCase()}
                     </td>
                     <td style={{ padding: "8px 0", fontFamily: "var(--font-serif)", fontSize: 14, color: "var(--ink)", flex: 1 }}>
                       {t.description ?? t.category}

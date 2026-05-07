@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { NextRequest } from "next/server";
 import { getApiSession } from "@/lib/auth";
+import { parseDateToUTCNoon } from "@/lib/dates";
 
 export async function GET(request: NextRequest) {
   const session = await getApiSession();
@@ -42,7 +43,7 @@ export async function POST(request: NextRequest) {
       category: body.category,
       description: body.description,
       source: body.source,
-      date: new Date(body.date),
+      date: parseDateToUTCNoon(body.date),
       sessionId: body.sessionId ?? null,
     },
   });

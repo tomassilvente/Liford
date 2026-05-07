@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { db } from "@/lib/db";
 import { TransactionType } from "@/generated/prisma/enums";
 import { getApiSession } from "@/lib/auth";
+import { parseDateToUTCNoon } from "@/lib/dates";
 
 export async function PATCH(
   request: NextRequest,
@@ -35,7 +36,7 @@ export async function PATCH(
           data: {
             ...(description && { description }),
             ...(category && { category }),
-            ...(date && { date: new Date(date) }),
+            ...(date && { date: parseDateToUTCNoon(date) }),
             amount: newAmount!,
           },
         }),
@@ -58,7 +59,7 @@ export async function PATCH(
     data: {
       ...(description && { description }),
       ...(category && { category }),
-      ...(date && { date: new Date(date) }),
+      ...(date && { date: parseDateToUTCNoon(date) }),
       ...(newAmount !== null && { amount: newAmount }),
     },
   });

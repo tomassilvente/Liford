@@ -250,21 +250,22 @@ export default function TransaccionesView({ transactions, initialTipo = "", init
 
   const grouped = useMemo(() => {
     const map = new Map<string, { label: string; dateLabel: string; txs: Transaction[] }>();
-    const todayStr = new Date().toDateString();
-    const yesterdayDate = new Date(); yesterdayDate.setDate(yesterdayDate.getDate() - 1);
-    const yesterdayStr = yesterdayDate.toDateString();
+    const todayKey = new Date().toISOString().slice(0, 10);
+    const yDate = new Date(); yDate.setUTCDate(yDate.getUTCDate() - 1);
+    const yesterdayKey = yDate.toISOString().slice(0, 10);
+    const fmtShort = new Intl.DateTimeFormat("es-AR", { day: "2-digit", month: "short", timeZone: "UTC" });
+    const fmtLong  = new Intl.DateTimeFormat("es-AR", { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" });
 
     for (const t of filtered) {
       const d = new Date(t.date);
-      const dStr = d.toDateString();
       const dayKey = d.toISOString().slice(0, 10);
       let dateLabel: string;
-      if (dStr === todayStr) {
-        dateLabel = `HOY · ${d.toLocaleDateString("es-AR", { day: "2-digit", month: "short" }).toUpperCase()}`;
-      } else if (dStr === yesterdayStr) {
-        dateLabel = `AYER · ${d.toLocaleDateString("es-AR", { day: "2-digit", month: "short" }).toUpperCase()}`;
+      if (dayKey === todayKey) {
+        dateLabel = `HOY · ${fmtShort.format(d).toUpperCase()}`;
+      } else if (dayKey === yesterdayKey) {
+        dateLabel = `AYER · ${fmtShort.format(d).toUpperCase()}`;
       } else {
-        dateLabel = d.toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long" });
+        dateLabel = fmtLong.format(d);
       }
       if (!map.has(dayKey)) map.set(dayKey, { label: dayKey, dateLabel, txs: [] });
       map.get(dayKey)!.txs.push(t);

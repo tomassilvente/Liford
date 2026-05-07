@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { localDateString } from "@/lib/dates";
 import { useRouter } from "next/navigation";
 import { LuPlus, LuX, LuCheck, LuLoader, LuRepeat, LuSparkles } from "react-icons/lu";
 import { toast } from "sonner";
@@ -49,7 +50,7 @@ export default function QuickAdd({ wallets, foreignAccounts, categories }: Quick
   const [toAccountRaw, setToAccountRaw] = useState(""); // para Transfer
   const [category, setCategory] = useState("");
   const [description, setDescription] = useState("");
-  const [date, setDate] = useState(() => new Date().toISOString().split("T")[0]);
+  const [date, setDate] = useState(() => localDateString());
   const [suggestion, setSuggestion] = useState<Suggestion | null>(null);
   const [loadingSuggestion, setLoadingSuggestion] = useState(false);
   const descRef = useRef<HTMLInputElement>(null);
@@ -113,7 +114,7 @@ export default function QuickAdd({ wallets, foreignAccounts, categories }: Quick
   function reset() {
     setAmount(""); setCategory(""); setDescription(""); setAccountRaw(""); setToAccountRaw("");
     setSuggestion(null); setType("EXPENSE"); setDisplayCurrency("ARS");
-    setDate(new Date().toISOString().split("T")[0]);
+    setDate(localDateString());
   }
 
   const submit = useCallback(async (andAnother = false) => {

@@ -264,7 +264,7 @@ export default function RecurringManager({ items, categoriasGasto, categoriasIng
               <p className="mt-0.5 text-xs text-neutral-500">
                 {item.category} · día {item.dayOfMonth} de cada mes
                 {item.lastApplied && (
-                  <> · último {isExpense ? "cobro" : "acredito"} {new Date(item.lastApplied).toLocaleDateString("es-AR", { day: "numeric", month: "short" })}</>
+                  <> · último {isExpense ? "cobro" : "acredito"} {new Intl.DateTimeFormat("es-AR", { day: "numeric", month: "short", timeZone: "UTC" }).format(new Date(item.lastApplied))}</>
                 )}
               </p>
               {accountLabel && (

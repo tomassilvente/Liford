@@ -1,10 +1,17 @@
 export const dynamic = "force-dynamic";
 
+import Link from "next/link";
 import { requireSession } from "@/lib/auth";
 import { db } from "@/lib/db";
 import ChangePasswordForm from "./ChangePasswordForm";
 import EmailForm from "./EmailForm";
-import { LuMail, LuShieldCheck } from "react-icons/lu";
+
+const navLinks = [
+  { href: "/finanzas/recurrentes", label: "Recurrentes",  desc: "Gastos e ingresos fijos del mes" },
+  { href: "/finanzas/anual",       label: "Anual",        desc: "Resumen del año en curso" },
+  { href: "/finanzas/categorias",  label: "Categorías",   desc: "Administrar categorías de transacciones" },
+  { href: "/finanzas/importar",    label: "Importar",     desc: "Importar movimientos desde CSV" },
+];
 
 export default async function ConfiguracionPage() {
   const session = await requireSession();
@@ -14,40 +21,44 @@ export default async function ConfiguracionPage() {
   });
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold text-white">Configuración</h1>
-      <p className="mt-1 text-neutral-400">Ajustes de tu cuenta</p>
+    <div style={{ maxWidth: 560 }}>
+      <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.18em", color: "var(--ink3)", margin: 0, textTransform: "uppercase" }}>IX · Ajustes</p>
+      <h1 style={{ fontFamily: "var(--font-display)", fontSize: 36, fontStyle: "italic", color: "var(--ink)", margin: "4px 0 32px", lineHeight: 0.95, letterSpacing: "-0.02em" }}>Configuración</h1>
 
-      <div className="mt-8 max-w-md space-y-4">
-
-        {/* Cuenta */}
-        <div className="rounded-xl bg-neutral-900 p-6 ring-1 ring-neutral-800">
-          <p className="mb-2 text-xs font-medium uppercase tracking-wider text-neutral-500">Cuenta</p>
-          <p className="text-sm text-white">
-            Usuario: <span className="font-medium">{session.username}</span>
-          </p>
+      {/* Secciones de herramientas */}
+      <div style={{ borderTop: "2px solid var(--ink)", paddingTop: 14, marginBottom: 32 }}>
+        <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--ink3)", margin: "0 0 12px" }}>Herramientas</p>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+          {navLinks.map((l) => (
+            <Link key={l.href} href={l.href} style={{ textDecoration: "none", padding: "12px 14px", border: "1px solid var(--rule2)", background: "var(--paper2)", display: "block" }}>
+              <p style={{ fontFamily: "var(--font-serif)", fontSize: 15, color: "var(--ink)", margin: 0 }}>{l.label}</p>
+              <p style={{ fontFamily: "var(--font-serif)", fontStyle: "italic", fontSize: 12, color: "var(--ink3)", margin: "2px 0 0" }}>{l.desc}</p>
+            </Link>
+          ))}
         </div>
+      </div>
 
-        {/* Email */}
-        <div className="rounded-xl bg-neutral-900 p-6 ring-1 ring-neutral-800">
-          <div className="mb-4 flex items-center gap-2">
-            <LuMail size={14} className="text-neutral-500" />
-            <p className="text-sm font-medium text-white">Email de recuperación</p>
-            {user?.email && (
-              <span className="ml-auto flex items-center gap-1 rounded-full bg-green-900/30 px-2 py-0.5 text-[10px] font-medium text-green-400 ring-1 ring-green-800/30">
-                <LuShieldCheck size={10} /> Configurado
-              </span>
-            )}
-          </div>
-          <EmailForm currentEmail={user?.email ?? null} />
-        </div>
+      {/* Cuenta */}
+      <div style={{ borderTop: "2px solid var(--ink)", paddingTop: 14, marginBottom: 24 }}>
+        <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--ink3)", margin: "0 0 8px" }}>Cuenta</p>
+        <p style={{ fontFamily: "var(--font-serif)", fontSize: 14, color: "var(--ink2)", margin: 0 }}>
+          Usuario: <span style={{ color: "var(--ink)", fontWeight: 500 }}>{session.username}</span>
+        </p>
+      </div>
 
-        {/* Cambiar contraseña */}
-        <div className="rounded-xl bg-neutral-900 p-6 ring-1 ring-neutral-800">
-          <p className="mb-4 text-sm font-medium text-white">Cambiar contraseña</p>
-          <ChangePasswordForm />
-        </div>
+      {/* Email */}
+      <div style={{ borderTop: "1px solid var(--rule2)", paddingTop: 20, marginBottom: 24 }}>
+        <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--ink3)", margin: "0 0 12px" }}>
+          Email de recuperación
+          {user?.email && <span style={{ marginLeft: 10, color: "var(--olive)" }}>✓ configurado</span>}
+        </p>
+        <EmailForm currentEmail={user?.email ?? null} />
+      </div>
 
+      {/* Contraseña */}
+      <div style={{ borderTop: "1px solid var(--rule2)", paddingTop: 20 }}>
+        <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--ink3)", margin: "0 0 12px" }}>Contraseña</p>
+        <ChangePasswordForm />
       </div>
     </div>
   );

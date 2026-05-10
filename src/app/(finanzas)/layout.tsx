@@ -11,16 +11,13 @@ import { saveWealthSnapshotIfNeeded } from "@/lib/save-wealth-snapshot";
 import { fetchDolarBlue } from "@/lib/dolar";
 
 const navItems = [
-  { href: "/finanzas",               label: "Patrimonio",    num: "I" },
-  { href: "/finanzas/transacciones", label: "Movimientos",   num: "II" },
-  { href: "/finanzas/inversiones",   label: "Inversiones",   num: "III" },
-  { href: "/finanzas/billeteras",    label: "Billeteras",    num: "IV" },
-  { href: "/finanzas/presupuesto",   label: "Presupuesto",   num: "V" },
-  { href: "/finanzas/recurrentes",   label: "Recurrentes",   num: "VI" },
-  { href: "/finanzas/metas",         label: "Metas",         num: "VII" },
-  { href: "/finanzas/anual",         label: "Anual",         num: "VIII" },
-  { href: "/finanzas/categorias",    label: "Categorías",    num: "IX" },
-  { href: "/finanzas/importar",      label: "Importar",      num: "X" },
+  { href: "/finanzas",                     label: "Inicio",      num: "I"   },
+  { href: "/finanzas/transacciones",       label: "Movimientos", num: "II"  },
+  { href: "/finanzas/inversiones",         label: "Inversiones", num: "III" },
+  { href: "/finanzas/billeteras",          label: "Billeteras",  num: "IV"  },
+  { href: "/finanzas/presupuesto",         label: "Presupuesto", num: "V"   },
+  { href: "/finanzas/metas",               label: "Metas",       num: "VI"  },
+  { href: "/finanzas/configuracion",       label: "Ajustes",     num: "VII" },
 ];
 
 export default async function FinanzasLayout({

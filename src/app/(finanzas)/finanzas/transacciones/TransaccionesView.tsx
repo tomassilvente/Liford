@@ -77,15 +77,16 @@ const inputStyle: React.CSSProperties = {
 };
 
 function EditRow({
-  id, description, category, amount, type, onDone, userCategories,
+  id, description, category, amount, type, date, onDone, userCategories,
 }: {
-  id: string; description: string | null; category: string; amount: number; type: TxType; onDone: () => void;
+  id: string; description: string | null; category: string; amount: number; type: TxType; date: string; onDone: () => void;
   userCategories: UserCategory[];
 }) {
   const router = useRouter();
   const [desc, setDesc] = useState(description ?? "");
   const [cat, setCat] = useState(category);
   const [amt, setAmt] = useState(String(amount));
+  const [dateStr, setDateStr] = useState(date.slice(0, 10));
   const [loading, setLoading] = useState(false);
 
   const userCatsForType = userCategories.filter((c) =>
@@ -100,7 +101,7 @@ function EditRow({
     const res = await fetch(`/api/finanzas/transactions/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ description: desc, category: cat, amount: amt }),
+      body: JSON.stringify({ description: desc, category: cat, amount: amt, date: dateStr }),
     });
     setLoading(false);
     if (res.ok) { toast.success("Guardado"); onDone(); router.refresh(); }
@@ -115,6 +116,7 @@ function EditRow({
         <select value={cat} onChange={(e) => setCat(e.target.value)} style={{ ...inputStyle, flex: 1 }}>
           {catsWithCurrent.map((c) => <option key={c}>{c}</option>)}
         </select>
+        <input type="date" value={dateStr} onChange={(e) => setDateStr(e.target.value)} style={{ ...inputStyle, width: 140 }} />
         <button onClick={save} disabled={loading} style={{ background: "var(--ink)", color: "var(--paper)", border: "none", padding: "6px 12px", fontFamily: "var(--font-mono)", fontSize: 10, cursor: "pointer", letterSpacing: "0.06em", textTransform: "uppercase" }}>
           <LuCheck size={13} />
         </button>
@@ -424,7 +426,7 @@ export default function TransaccionesView({ transactions, initialTipo = "", init
                 <tbody>
                   {txs.map((t) =>
                     editingId === t.id ? (
-                      <tr key={t.id}><EditRow id={t.id} description={t.description} category={t.category} amount={t.amount} type={t.type} onDone={() => setEditingId(null)} userCategories={userCategories} /></tr>
+                      <tr key={t.id}><EditRow id={t.id} description={t.description} category={t.category} amount={t.amount} type={t.type} date={t.date} onDone={() => setEditingId(null)} userCategories={userCategories} /></tr>
                     ) : (
                       <TxRow key={t.id} tx={t} onEdit={() => setEditingId(t.id)} onOpenRule={setRuleModalId} />
                     )

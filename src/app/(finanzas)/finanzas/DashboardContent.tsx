@@ -67,6 +67,10 @@ interface Props {
   recentTransactions: RecentTransaction[];
   budgetAlerts: BudgetAlert[];
   sessionsToday: SessionToday[];
+  deltaARSPct: number | null;
+  deltaUSDPct: number | null;
+  gastoSemana: number;
+  promedioSemana4w: number | null;
 }
 
 const fmtARS = (n: number) =>
@@ -109,6 +113,139 @@ function SectionHeader({ num, title }: { num: string; title: string }) {
   );
 }
 
+function DashboardMobile({
+  totalARS, totalUSD,
+  deltaARSPct, deltaUSDPct,
+  gastoSemana, promedioSemana4w,
+  balanceMes, tasaAhorro,
+  recentTransactions,
+  mesLabel, diasRestantesMes,
+}: {
+  totalARS: number; totalUSD: number;
+  deltaARSPct: number | null; deltaUSDPct: number | null;
+  gastoSemana: number; promedioSemana4w: number | null;
+  balanceMes: number; tasaAhorro: number | null;
+  recentTransactions: RecentTransaction[];
+  mesLabel: string; diasRestantesMes: number;
+}) {
+  const semanaDeltaPct = promedioSemana4w && promedioSemana4w > 0
+    ? (gastoSemana / promedioSemana4w - 1) * 100
+    : null;
+  const top4 = recentTransactions.slice(0, 4);
+  const now = new Date();
+
+  return (
+    <div style={{ padding: "16px 20px 100px" }}>
+      <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.18em", textTransform: "uppercase", color: "var(--ink3)", margin: "0 0 18px" }}>
+        {mesLabel} · día {now.getDate()} · quedan {diasRestantesMes}
+      </p>
+
+      {/* HERO — Tenés en pesos */}
+      <p style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--ink3)", margin: 0 }}>
+        Tenés en pesos
+      </p>
+      <p style={{ fontFamily: "var(--font-display)", fontSize: 52, lineHeight: 1, margin: "4px 0 0", fontVariantNumeric: "tabular-nums", letterSpacing: "-0.03em", color: "var(--ink)", fontStyle: "italic" }}>
+        {fmtARS(totalARS)}
+      </p>
+      {deltaARSPct !== null && (
+        <p style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: deltaARSPct >= 0 ? "#586e3d" : "#c14a3a", margin: "4px 0 0", letterSpacing: "0.04em" }}>
+          {deltaARSPct >= 0 ? "▲ +" : "▼ −"}{Math.abs(deltaARSPct).toFixed(0)}% · 30d
+        </p>
+      )}
+
+      {/* USD secundario */}
+      <div style={{ marginTop: 14, paddingTop: 10, borderTop: "1px solid var(--rule)", display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+        <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--ink3)", margin: 0 }}>
+          En dólares
+        </p>
+        <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+          <p style={{ fontFamily: "var(--font-mono)", fontSize: 18, color: "var(--ink)", margin: 0, fontVariantNumeric: "tabular-nums" }}>
+            {fmtUSD(totalUSD)} <span style={{ fontSize: 10, color: "var(--ink3)" }}>USD</span>
+          </p>
+          {deltaUSDPct !== null && (
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: deltaUSDPct >= 0 ? "#586e3d" : "#c14a3a", letterSpacing: "0.04em" }}>
+              {deltaUSDPct >= 0 ? "▲ +" : "▼ −"}{Math.abs(deltaUSDPct).toFixed(0)}%
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Esta semana */}
+      <div style={{ marginTop: 24, padding: "14px 16px", background: "var(--paper2)", border: "1px solid var(--rule2)" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+          <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--ink3)", margin: 0 }}>
+            Esta semana · gastaste
+          </p>
+          {semanaDeltaPct !== null && (
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.04em", color: semanaDeltaPct > 0 ? "#c14a3a" : "#586e3d" }}>
+              {semanaDeltaPct > 0 ? "▲ +" : "▼ −"}{Math.abs(semanaDeltaPct).toFixed(0)}% vs prom.
+            </span>
+          )}
+        </div>
+        <p style={{ fontFamily: "var(--font-display)", fontSize: 30, lineHeight: 1, margin: "6px 0 4px", fontVariantNumeric: "tabular-nums", letterSpacing: "-0.02em", color: "var(--ink)", fontStyle: "italic" }}>
+          {fmtARS(gastoSemana)}
+        </p>
+        {promedioSemana4w !== null && (
+          <p style={{ fontFamily: "var(--font-serif)", fontStyle: "italic", fontSize: 12, color: "var(--ink3)", margin: 0 }}>
+            promedio últimas 4 semanas · {fmtARS(promedioSemana4w)}
+          </p>
+        )}
+      </div>
+
+      {/* Mes compacto */}
+      <div style={{ marginTop: 20, paddingTop: 12, borderTop: "1px solid var(--rule)", display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+        <p style={{ fontFamily: "var(--font-serif)", fontStyle: "italic", fontSize: 14, color: "var(--ink2)", margin: 0 }}>
+          este mes vas{" "}
+          <strong style={{ fontStyle: "normal", color: balanceMes >= 0 ? "#586e3d" : "#c14a3a" }}>
+            {balanceMes >= 0 ? "+" : "−"} {fmtARS(Math.abs(balanceMes))}
+          </strong>
+        </p>
+        {tasaAhorro !== null && (
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ink3)" }}>
+            {tasaAhorro.toFixed(0)}% ahorro
+          </span>
+        )}
+      </div>
+
+      {/* Últimos */}
+      <h2 style={{ fontFamily: "var(--font-display)", fontStyle: "italic", fontSize: 22, margin: "22px 0 4px", letterSpacing: "-0.02em" }}>Últimos</h2>
+      {top4.map((t, i) => {
+        const isExpense = t.type === "EXPENSE" || t.type === "STOCK_PURCHASE" || t.type === "CRYPTO_PURCHASE";
+        const date = new Date(t.date);
+        const today = new Date();
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+        const isToday = date.toDateString() === today.toDateString();
+        const isYest = date.toDateString() === yesterday.toDateString();
+        const timeStr = new Intl.DateTimeFormat("es-AR", { hour: "2-digit", minute: "2-digit", timeZone: "UTC" }).format(date);
+        const weekday = new Intl.DateTimeFormat("es-AR", { weekday: "short", timeZone: "UTC" }).format(date);
+        const dateLabel = isToday ? `Hoy ${timeStr}` : isYest ? "Ayer" : weekday.charAt(0).toUpperCase() + weekday.slice(1);
+        return (
+          <Link key={t.id} href="/finanzas/transacciones" style={{ display: "block", textDecoration: "none" }}>
+            <div style={{ padding: "11px 0", borderBottom: "1px dashed var(--rule)", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <p style={{ fontFamily: "var(--font-serif)", fontSize: 15, margin: 0, color: "var(--ink)", lineHeight: 1.2 }}>
+                  {t.description ?? t.category}
+                </p>
+                <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ink3)", margin: "2px 0 0", letterSpacing: "0.06em", textTransform: "uppercase" }}>
+                  {dateLabel} · {t.category}
+                </p>
+              </div>
+              <p style={{ fontFamily: "var(--font-mono)", fontSize: 14, color: isExpense ? "var(--ink)" : "#586e3d", margin: 0, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>
+                {isExpense ? "−" : "+"}{" "}
+                {t.currency === "USD" ? `${fmtUSD(t.amount)} USD` : fmtARS(t.amount)}
+              </p>
+            </div>
+          </Link>
+        );
+      })}
+      <p style={{ fontFamily: "var(--font-serif)", fontStyle: "italic", fontSize: 12, margin: "14px 0 0", textAlign: "center" }}>
+        <Link href="/finanzas/transacciones" style={{ color: "var(--navy)", textDecoration: "none" }}>ver todos →</Link>
+      </p>
+    </div>
+  );
+}
+
 export default function DashboardContent({
   mesYM,
   displayName,
@@ -124,6 +261,8 @@ export default function DashboardContent({
   incomeCategoryData, ingresosUSD, gastosUSD,
   monthlyData, wealthData,
   recentTransactions, budgetAlerts, sessionsToday,
+  deltaARSPct, deltaUSDPct,
+  gastoSemana, promedioSemana4w,
 }: Props) {
 
   const totalUSD = walletsUSD + foreignUSD + portfolioUSD;
@@ -148,6 +287,24 @@ export default function DashboardContent({
 
   return (
     <div>
+      {/* ── Mobile ───────────────────────────────────────────────── */}
+      <div className="md:hidden">
+        <DashboardMobile
+          totalARS={totalARS}
+          totalUSD={totalUSD}
+          deltaARSPct={deltaARSPct}
+          deltaUSDPct={deltaUSDPct}
+          gastoSemana={gastoSemana}
+          promedioSemana4w={promedioSemana4w}
+          balanceMes={balanceMes}
+          tasaAhorro={tasaAhorro}
+          recentTransactions={recentTransactions}
+          mesLabel={mesLabel}
+          diasRestantesMes={diasRestantesMes}
+        />
+      </div>
+      {/* ── Desktop ──────────────────────────────────────────────── */}
+      <div className="hidden md:block">
       {/* ── Page header ──────────────────────────────────────────── */}
       <header style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 32, paddingBottom: 16, borderBottom: "1px solid var(--rule2)" }}>
         <div>
@@ -168,6 +325,11 @@ export default function DashboardContent({
           <p style={{ fontFamily: "var(--font-mono)", fontSize: "clamp(28px, 5vw, 48px)", lineHeight: 1, margin: "6px 0 0", color: "var(--ink)", fontVariantNumeric: "tabular-nums", letterSpacing: "-0.02em", fontWeight: 500 }}>
             {fmtARS(totalARS)}
           </p>
+          {deltaARSPct !== null && (
+            <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.04em", margin: "2px 0 0", color: deltaARSPct >= 0 ? "#586e3d" : "#c14a3a" }}>
+              {deltaARSPct >= 0 ? "▲ +" : "▼ −"}{Math.abs(deltaARSPct).toFixed(0)}% · 30d
+            </p>
+          )}
           {diffIngresos !== null && (
             <p style={{ fontFamily: "var(--font-mono)", fontSize: 11, margin: "6px 0 0", color: diffIngresos >= 0 ? "var(--olive)" : "var(--brick)" }}>
               {diffIngresos >= 0 ? "▲" : "▼"} {Math.abs(diffIngresos).toFixed(1)}% MoM
@@ -196,6 +358,11 @@ export default function DashboardContent({
           <p style={{ fontFamily: "var(--font-mono)", fontSize: "clamp(28px, 5vw, 48px)", lineHeight: 1, margin: "6px 0 0", color: "var(--ink)", fontVariantNumeric: "tabular-nums", letterSpacing: "-0.02em", fontWeight: 500 }}>
             {fmtUSD(totalUSD)}
           </p>
+          {deltaUSDPct !== null && (
+            <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.04em", margin: "2px 0 0", color: deltaUSDPct >= 0 ? "#586e3d" : "#c14a3a" }}>
+              {deltaUSDPct >= 0 ? "▲ +" : "▼ −"}{Math.abs(deltaUSDPct).toFixed(0)}% · 30d
+            </p>
+          )}
           {portfolioDayChange !== 0 && (
             <p style={{ fontFamily: "var(--font-mono)", fontSize: 11, margin: "6px 0 0", color: portfolioDayChange >= 0 ? "var(--olive)" : "var(--brick)" }}>
               {portfolioDayChange >= 0 ? "▲" : "▼"} {fmtUSD(Math.abs(portfolioDayChange))} USD portfolio hoy
@@ -489,6 +656,7 @@ export default function DashboardContent({
           </div>
         </section>
       )}
+      </div>{/* end desktop */}
     </div>
   );
 }

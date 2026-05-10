@@ -1,7 +1,6 @@
 import { Toaster } from "sonner";
 import Sidebar from "@/components/ui/Sidebar";
 import BottomNav from "@/components/ui/BottomNav";
-import LogoutButton from "@/components/ui/LogoutButton";
 import QuickAdd from "@/components/finanzas/QuickAdd";
 import AlertsCenterServer from "@/components/ui/AlertsCenterServer";
 import { CurrencyProvider } from "@/context/CurrencyContext";
@@ -50,7 +49,6 @@ export default async function FinanzasLayout({
             module="finanzas"
             items={navItems}
             homeHref="/finanzas"
-            footer={<LogoutButton username={session.displayName ?? session.username} />}
           />
         </div>
 

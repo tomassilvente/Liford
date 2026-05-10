@@ -189,6 +189,45 @@ export default async function FinanzasDashboard({
     totalUSD: s.totalUSD,
   }));
 
+  // ── Delta patrimonial 30d ──────────────────────────────────────────────────
+  const totalUSD = walletsUSD + foreignUSD + portfolioUSD;
+  const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+  const last30dTx = allTransactions.filter((t) => t.date >= thirtyDaysAgo);
+
+  const netARS30d = last30dTx
+    .filter((t) => t.currency === "ARS" && (t.type === TransactionType.INCOME || t.type === TransactionType.EXPENSE))
+    .reduce((s, t) => s + (t.type === TransactionType.INCOME ? t.amount : -t.amount), 0);
+
+  const netUSD30d = last30dTx
+    .filter((t) => t.currency === "USD" && (t.type === TransactionType.INCOME || t.type === TransactionType.EXPENSE))
+    .reduce((s, t) => s + (t.type === TransactionType.INCOME ? t.amount : -t.amount), 0);
+
+  const patrimonioARS_30d = totalARS - netARS30d;
+  const patrimonioUSD_30d = totalUSD - netUSD30d;
+
+  const deltaARSPct = patrimonioARS_30d !== 0 ? (totalARS / patrimonioARS_30d - 1) * 100 : null;
+  const deltaUSDPct = patrimonioUSD_30d !== 0 ? (totalUSD / patrimonioUSD_30d - 1) * 100 : null;
+
+  // ── Gasto semana + promedio 4 semanas ─────────────────────────────────────
+  const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+  const gastoSemana = allTransactions
+    .filter((t) => t.date >= sevenDaysAgo && t.type === TransactionType.EXPENSE && t.currency === "ARS")
+    .reduce((s, t) => s + t.amount, 0);
+
+  const promedioSemana4w = (() => {
+    let total = 0;
+    let weeks = 0;
+    for (let i = 1; i <= 4; i++) {
+      const wEnd = new Date(now.getTime() - i * 7 * 24 * 60 * 60 * 1000);
+      const wStart = new Date(now.getTime() - (i + 1) * 7 * 24 * 60 * 60 * 1000);
+      const spend = allTransactions
+        .filter((t) => t.date >= wStart && t.date < wEnd && t.type === TransactionType.EXPENSE && t.currency === "ARS")
+        .reduce((s, t) => s + t.amount, 0);
+      if (spend > 0) { total += spend; weeks++; }
+    }
+    return weeks > 0 ? total / weeks : null;
+  })();
+
   // ── Sesiones hoy (solo mes actual) ────────────────────────────────────────
   const sessionsTodayData = isCurrentMonth ? sessionsToday.map((s) => ({
     clientName: s.client.name,
@@ -247,6 +286,10 @@ export default async function FinanzasDashboard({
       }))}
       budgetAlerts={budgetAlerts}
       sessionsToday={sessionsTodayData}
+      deltaARSPct={deltaARSPct}
+      deltaUSDPct={deltaUSDPct}
+      gastoSemana={gastoSemana}
+      promedioSemana4w={promedioSemana4w}
     />
   );
 }

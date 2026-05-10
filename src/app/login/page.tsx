@@ -60,7 +60,6 @@ export default function LoginPage() {
 
     if (res.ok) {
       router.push("/finanzas");
-      router.refresh();
     } else {
       try {
         const data = await res.json();

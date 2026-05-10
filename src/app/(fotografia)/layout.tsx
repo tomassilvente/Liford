@@ -1,7 +1,6 @@
 import { Toaster } from "sonner";
 import Sidebar from "@/components/ui/Sidebar";
 import BottomNav from "@/components/ui/BottomNav";
-import LogoutButton from "@/components/ui/LogoutButton";
 import { requireSession } from "@/lib/auth";
 
 const navItems = [
@@ -16,7 +15,7 @@ export default async function FotografiaLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const session = await requireSession();
+  await requireSession();
 
   return (
     <div className="flex h-screen overflow-hidden" style={{ background: "var(--foto-paper)" }}>
@@ -25,7 +24,6 @@ export default async function FotografiaLayout({
           module="fotografia"
           items={navItems}
           homeHref="/fotografia"
-          footer={<LogoutButton username={session.displayName ?? session.username} />}
         />
       </div>
 

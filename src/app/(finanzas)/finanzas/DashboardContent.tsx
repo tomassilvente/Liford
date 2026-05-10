@@ -173,8 +173,8 @@ function DashboardMobile({
         const isToday = date.toDateString() === today.toDateString();
         const isYest = date.toDateString() === yesterday.toDateString();
         const timeStr = new Intl.DateTimeFormat("es-AR", { hour: "2-digit", minute: "2-digit", timeZone: "UTC" }).format(date);
-        const weekday = new Intl.DateTimeFormat("es-AR", { weekday: "short", timeZone: "UTC" }).format(date);
-        const dateLabel = isToday ? `Hoy ${timeStr}` : isYest ? "Ayer" : weekday.charAt(0).toUpperCase() + weekday.slice(1);
+        const shortDate = new Intl.DateTimeFormat("es-AR", { day: "2-digit", month: "2-digit", timeZone: "UTC" }).format(date);
+        const dateLabel = isToday ? `Hoy ${timeStr}` : isYest ? "Ayer" : shortDate;
         return (
           <Link key={t.id} href="/finanzas/transacciones" style={{ display: "block", textDecoration: "none" }}>
             <div style={{ padding: "11px 0", borderBottom: "1px dashed var(--rule)", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>

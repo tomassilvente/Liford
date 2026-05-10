@@ -34,16 +34,15 @@ function formatDate(dateStr: string) {
   }).format(new Date(dateStr));
 }
 
+const fieldSt: React.CSSProperties = {
+  width: "100%", boxSizing: "border-box",
+  background: "var(--paper)", border: "1px solid var(--rule2)",
+  padding: "7px 10px", fontFamily: "var(--font-serif)", fontSize: 13,
+  color: "var(--ink)", outline: "none",
+};
+
 export default function TransactionRow({
-  id,
-  description,
-  category,
-  date,
-  amount,
-  currency,
-  type,
-  categories,
-  source = "PERSONAL",
+  id, description, category, date, amount, currency, type, categories, source = "PERSONAL",
 }: TransactionRowProps) {
   const router = useRouter();
   const [editing, setEditing] = useState(false);
@@ -52,6 +51,7 @@ export default function TransactionRow({
   const [desc, setDesc] = useState(description);
   const [cat, setCat] = useState(category);
   const [amt, setAmt] = useState(String(amount));
+  const [dateStr, setDateStr] = useState(date.slice(0, 10));
   const [loading, setLoading] = useState(false);
 
   const isExpense = type === "EXPENSE";
@@ -61,7 +61,7 @@ export default function TransactionRow({
     const res = await fetch(`/api/finanzas/transactions/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ description: desc, category: cat, amount: amt }),
+      body: JSON.stringify({ description: desc, category: cat, amount: amt, date: dateStr }),
     });
     setLoading(false);
     if (res.ok) {
@@ -71,6 +71,14 @@ export default function TransactionRow({
     } else {
       toast.error("No se pudo actualizar");
     }
+  }
+
+  function handleCancel() {
+    setEditing(false);
+    setDesc(description);
+    setCat(category);
+    setAmt(String(amount));
+    setDateStr(date.slice(0, 10));
   }
 
   async function handleDelete() {
@@ -86,44 +94,45 @@ export default function TransactionRow({
   // ── Modo edición ──────────────────────────────────────────────────────────
   if (editing) {
     return (
-      <div className="flex flex-col gap-2 px-4 py-3">
+      <div style={{ padding: "12px 16px", borderBottom: "1px solid var(--rule2)", background: "var(--paper2)", display: "flex", flexDirection: "column", gap: 8 }}>
         <input
           value={desc}
           onChange={(e) => setDesc(e.target.value)}
-          className="w-full rounded-lg bg-neutral-900 px-3 py-1.5 text-sm text-white outline-none ring-1 ring-neutral-700 focus:ring-blue-500"
+          placeholder="Descripción"
+          style={fieldSt}
         />
-        <div className="flex items-center gap-2">
+        <div style={{ display: "grid", gridTemplateColumns: "110px 1fr 140px", gap: 8, alignItems: "center" }}>
           <input
             type="number"
             value={amt}
             onChange={(e) => setAmt(e.target.value)}
             min="0.01"
             step="0.01"
-            className="w-28 rounded-lg bg-neutral-900 px-3 py-1.5 text-sm text-white outline-none ring-1 ring-neutral-700 focus:ring-blue-500"
+            style={fieldSt}
           />
-          <select
-            value={cat}
-            onChange={(e) => setCat(e.target.value)}
-            className="flex-1 rounded-lg bg-neutral-900 px-3 py-1.5 text-sm text-white outline-none ring-1 ring-neutral-700 focus:ring-blue-500"
-          >
-            {categories.map((c) => (
-              <option key={c} value={c}>{c}</option>
-            ))}
+          <select value={cat} onChange={(e) => setCat(e.target.value)} style={fieldSt}>
+            {categories.map((c) => <option key={c} value={c}>{c}</option>)}
           </select>
+          <input
+            type="date"
+            value={dateStr}
+            onChange={(e) => setDateStr(e.target.value)}
+            style={fieldSt}
+          />
+        </div>
+        <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
           <button
             onClick={handleSave}
             disabled={loading}
-            className="rounded-lg bg-blue-600 p-1.5 text-white hover:bg-blue-500 disabled:opacity-50"
-            title="Guardar"
+            style={{ display: "flex", alignItems: "center", gap: 6, background: "var(--ink)", color: "var(--paper)", border: "none", padding: "7px 14px", fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.1em", textTransform: "uppercase", cursor: "pointer", opacity: loading ? 0.6 : 1 }}
           >
-            <LuCheck size={14} />
+            <LuCheck size={12} /> Guardar
           </button>
           <button
-            onClick={() => { setEditing(false); setDesc(description); setCat(category); setAmt(String(amount)); }}
-            className="rounded-lg bg-neutral-700 p-1.5 text-white hover:bg-neutral-600"
-            title="Cancelar"
+            onClick={handleCancel}
+            style={{ display: "flex", alignItems: "center", gap: 6, background: "transparent", color: "var(--ink3)", border: "1px solid var(--rule2)", padding: "7px 14px", fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.1em", textTransform: "uppercase", cursor: "pointer" }}
           >
-            <LuX size={14} />
+            <LuX size={12} /> Cancelar
           </button>
         </div>
       </div>
@@ -135,7 +144,6 @@ export default function TransactionRow({
   // ── Modo normal ───────────────────────────────────────────────────────────
   return (
     <div className="flex items-center gap-3 px-4 py-3">
-      {/* Texto — ocupa todo el espacio disponible */}
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
           <p className="truncate text-sm font-medium text-white">{description}</p>
@@ -148,12 +156,10 @@ export default function TransactionRow({
         <p className="text-xs text-neutral-500">{category} · {formatDate(date)}</p>
       </div>
 
-      {/* Monto */}
       <p className={`flex-shrink-0 text-sm font-semibold ${isExpense ? "text-red-400" : "text-green-400"}`}>
         {isExpense ? "-" : "+"}{formatCurrency(amount, currency)}
       </p>
 
-      {/* Menú ⋯ — deshabilitado para transacciones de fotografía (se gestionan desde ahí) */}
       {isPhotography ? (
         <div className="w-[26px] flex-shrink-0" />
       ) : (
@@ -176,15 +182,13 @@ export default function TransactionRow({
                       onClick={() => { setMenuOpen(false); setEditing(true); }}
                       className="flex items-center gap-2 px-4 py-2.5 text-sm text-neutral-200 hover:bg-neutral-600"
                     >
-                      <LuPencil size={13} />
-                      Editar
+                      <LuPencil size={13} /> Editar
                     </button>
                     <button
                       onClick={() => setConfirmingDelete(true)}
                       className="flex items-center gap-2 px-4 py-2.5 text-sm text-red-400 hover:bg-neutral-600"
                     >
-                      <LuTrash2 size={13} />
-                      Eliminar
+                      <LuTrash2 size={13} /> Eliminar
                     </button>
                   </>
                 ) : (

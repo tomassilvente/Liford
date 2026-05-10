@@ -104,28 +104,39 @@ function DashboardMobile({
         {mesLabel} · día {now.getDate()} · quedan {diasRestantesMes}
       </p>
 
+      {/* HERO — Balance del mes */}
       <p style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--ink3)", margin: 0 }}>
-        Tenés en pesos
+        Balance · este mes
       </p>
-      <p style={{ fontFamily: "var(--font-display)", fontSize: 52, lineHeight: 1, margin: "4px 0 0", fontVariantNumeric: "tabular-nums", letterSpacing: "-0.03em", color: "var(--ink)", fontStyle: "italic" }}>
-        {fmtARS(totalARS)}
+      <p style={{ fontFamily: "var(--font-display)", fontSize: 52, lineHeight: 1, margin: "4px 0 0", fontVariantNumeric: "tabular-nums", letterSpacing: "-0.03em", color: balanceMes >= 0 ? "#586e3d" : "#c14a3a", fontStyle: "italic" }}>
+        {balanceMes >= 0 ? "+" : "−"} {fmtARS(Math.abs(balanceMes))}
       </p>
-      {deltaARSPct !== null && (
-        <p style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: deltaARSPct >= 0 ? "#586e3d" : "#c14a3a", margin: "4px 0 0", letterSpacing: "0.04em" }}>
-          {deltaARSPct >= 0 ? "▲ +" : "▼ −"}{Math.abs(deltaARSPct).toFixed(0)}% · 30d
+      {tasaAhorro !== null && (
+        <p style={{ fontFamily: "var(--font-serif)", fontStyle: "italic", fontSize: 13, color: "var(--ink3)", margin: "4px 0 0" }}>
+          ahorrás el {tasaAhorro.toFixed(0)}% de lo que entra
         </p>
       )}
 
-      <div style={{ marginTop: 14, paddingTop: 10, borderTop: "1px solid var(--rule)", display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-        <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--ink3)", margin: 0 }}>En dólares</p>
-        <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-          <p style={{ fontFamily: "var(--font-mono)", fontSize: 18, color: "var(--ink)", margin: 0, fontVariantNumeric: "tabular-nums" }}>
+      {/* Patrimonio ARS + USD */}
+      <div style={{ marginTop: 16, paddingTop: 12, borderTop: "1px solid var(--rule)", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+        <div>
+          <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--ink3)", margin: 0 }}>Total ARS</p>
+          <p style={{ fontFamily: "var(--font-mono)", fontSize: 18, color: "var(--ink)", margin: "2px 0 0", fontVariantNumeric: "tabular-nums" }}>{fmtARS(totalARS)}</p>
+          {deltaARSPct !== null && (
+            <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: deltaARSPct >= 0 ? "#586e3d" : "#c14a3a", margin: "2px 0 0", letterSpacing: "0.04em" }}>
+              {deltaARSPct >= 0 ? "▲ +" : "▼ −"}{Math.abs(deltaARSPct).toFixed(0)}% · 30d
+            </p>
+          )}
+        </div>
+        <div>
+          <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--ink3)", margin: 0 }}>Total USD</p>
+          <p style={{ fontFamily: "var(--font-mono)", fontSize: 18, color: "var(--ink)", margin: "2px 0 0", fontVariantNumeric: "tabular-nums" }}>
             {fmtUSD(totalUSD)} <span style={{ fontSize: 10, color: "var(--ink3)" }}>USD</span>
           </p>
           {deltaUSDPct !== null && (
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: deltaUSDPct >= 0 ? "#586e3d" : "#c14a3a", letterSpacing: "0.04em" }}>
-              {deltaUSDPct >= 0 ? "▲ +" : "▼ −"}{Math.abs(deltaUSDPct).toFixed(0)}%
-            </span>
+            <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: deltaUSDPct >= 0 ? "#586e3d" : "#c14a3a", margin: "2px 0 0", letterSpacing: "0.04em" }}>
+              {deltaUSDPct >= 0 ? "▲ +" : "▼ −"}{Math.abs(deltaUSDPct).toFixed(0)}% · 30d
+            </p>
           )}
         </div>
       </div>
@@ -146,20 +157,6 @@ function DashboardMobile({
           <p style={{ fontFamily: "var(--font-serif)", fontStyle: "italic", fontSize: 12, color: "var(--ink3)", margin: 0 }}>
             promedio últimas 4 semanas · {fmtARS(promedioSemana4w)}
           </p>
-        )}
-      </div>
-
-      <div style={{ marginTop: 20, paddingTop: 12, borderTop: "1px solid var(--rule)", display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-        <p style={{ fontFamily: "var(--font-serif)", fontStyle: "italic", fontSize: 14, color: "var(--ink2)", margin: 0 }}>
-          este mes vas{" "}
-          <strong style={{ fontStyle: "normal", color: balanceMes >= 0 ? "#586e3d" : "#c14a3a" }}>
-            {balanceMes >= 0 ? "+" : "−"} {fmtARS(Math.abs(balanceMes))}
-          </strong>
-        </p>
-        {tasaAhorro !== null && (
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ink3)" }}>
-            {tasaAhorro.toFixed(0)}% ahorro
-          </span>
         )}
       </div>
 

@@ -222,7 +222,7 @@ export default function QuickAdd({ wallets, foreignAccounts, categories }: Quick
     <>
       <button
         onClick={() => setOpen(true)}
-        style={{ position: "fixed", bottom: 80, left: 20, zIndex: 40, width: 48, height: 48, background: "var(--ink)", border: "none", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", boxShadow: "0 4px 12px rgba(0,0,0,0.15)" }}
+        style={{ position: "fixed", bottom: 64, left: 20, zIndex: 40, width: 48, height: 48, background: "var(--ink)", border: "none", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", boxShadow: "0 4px 12px rgba(0,0,0,0.15)" }}
         className="lg:left-auto lg:right-5 lg:bottom-6"
         title="Registrar transacción (⌘⇧G · ⌘⇧I · ⌘⇧T)"
       >

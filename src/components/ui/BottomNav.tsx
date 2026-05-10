@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
-import { LuEllipsis, LuX } from "react-icons/lu";
+import { LuEllipsis, LuX, LuLogOut } from "react-icons/lu";
 
 interface NavItem {
   href: string;
@@ -19,7 +19,13 @@ const PRIMARY_COUNT = 4;
 
 export default function BottomNav({ items }: BottomNavProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const [moreOpen, setMoreOpen] = useState(false);
+
+  async function handleLogout() {
+    await fetch("/api/auth/logout", { method: "POST" });
+    router.push("/login");
+  }
 
   const primary = items.slice(0, PRIMARY_COUNT);
   const secondary = items.slice(PRIMARY_COUNT);
@@ -101,6 +107,15 @@ export default function BottomNav({ items }: BottomNavProps) {
                   </Link>
                 );
               })}
+            </div>
+            <div style={{ margin: "12px 12px 0", borderTop: "1px solid var(--rule2)", paddingTop: 12 }}>
+              <button
+                onClick={handleLogout}
+                style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, background: "transparent", border: "1px solid var(--rule2)", padding: "10px 0", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--ink3)" }}
+              >
+                <LuLogOut size={13} />
+                Cerrar sesión
+              </button>
             </div>
           </div>
         </>

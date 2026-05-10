@@ -116,14 +116,12 @@ export default function Sidebar({ items, homeHref, module: currentModule }: Side
       </nav>
 
       {/* Footer */}
-      <div style={{ padding: "10px 12px 14px", borderTop: `1px solid ${border}`, display: "flex", alignItems: "center", gap: 5 }}>
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: ink3, letterSpacing: "0.1em", whiteSpace: "nowrap" }}>Tomo MMXXVI</span>
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: ink3 }}>·</span>
+      <div style={{ padding: "10px 12px 14px", borderTop: `1px solid ${border}` }}>
         <button
           onClick={handleLogout}
-          style={{ background: "transparent", border: "none", padding: 0, cursor: "pointer", fontFamily: "var(--font-serif)", fontSize: 11, fontStyle: "italic", color: ink3, letterSpacing: "0.01em" }}
+          style={{ width: "100%", background: "transparent", border: `1px solid ${border}`, padding: "7px 0", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.12em", textTransform: "uppercase", color: ink3 }}
         >
-          Salir
+          Cerrar sesión
         </button>
       </div>
     </aside>

@@ -345,8 +345,8 @@ export default function DashboardContent({
               <h2 style={{ fontFamily: "var(--font-display)", fontStyle: "italic", fontSize: 24, margin: 0, letterSpacing: "-0.02em" }}>En qué se va</h2>
               <p style={{ fontFamily: "var(--font-serif)", fontStyle: "italic", fontSize: 12, color: "var(--ink3)", margin: 0 }}>% sobre tus ingresos del mes</p>
             </div>
-            {catConPct.map((c, i) => (
-              <div key={i} style={{ display: "grid", gridTemplateColumns: "180px 1fr 90px 50px", alignItems: "center", gap: 16, padding: "12px 0", borderBottom: "1px dashed var(--rule)" }}>
+            {catConPct.map((c, idx) => (
+              <div key={idx} style={{ display: "grid", gridTemplateColumns: "180px 1fr 90px 50px", alignItems: "center", gap: 16, padding: "12px 0", borderBottom: "1px dashed var(--rule)" }}>
                 <span style={{ fontFamily: "var(--font-serif)", fontSize: 16, color: "var(--ink)" }}>{c.category}</span>
                 <div style={{ height: 4, background: "var(--paper2)" }}>
                   <div style={{ height: "100%", width: `${Math.min((c.pct / 20) * 100, 100)}%`, background: c.pct > 15 ? "#c14a3a" : c.pct > 8 ? "var(--rust)" : "var(--ink2)" }} />

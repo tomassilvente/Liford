@@ -201,7 +201,7 @@ export default function QuickAdd({ wallets, foreignAccounts, categories }: Quick
     } else {
       toast.error("No se pudo guardar. Intentá de nuevo.");
     }
-  }, [amount, category, accountRaw, toAccountRaw, type, description, router]);
+  }, [amount, category, accountRaw, toAccountRaw, type, description, date, router]);
 
   const canSave = !!amount && (type === "TRANSFER" ? !!accountRaw && !!toAccountRaw : !!category && !!accountRaw);
 

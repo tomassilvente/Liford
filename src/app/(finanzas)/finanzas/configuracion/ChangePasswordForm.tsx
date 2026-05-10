@@ -2,6 +2,28 @@
 
 import { useState } from "react";
 
+const inputStyle: React.CSSProperties = {
+  width: "100%",
+  background: "var(--paper)",
+  border: "1px solid var(--rule2)",
+  padding: "9px 10px",
+  fontFamily: "var(--font-serif)",
+  fontSize: 14,
+  color: "var(--ink)",
+  outline: "none",
+  boxSizing: "border-box",
+};
+
+const labelStyle: React.CSSProperties = {
+  display: "block",
+  fontFamily: "var(--font-mono)",
+  fontSize: 9,
+  letterSpacing: "0.12em",
+  textTransform: "uppercase",
+  color: "var(--ink3)",
+  marginBottom: 6,
+};
+
 export default function ChangePasswordForm() {
   const [current, setCurrent] = useState("");
   const [next, setNext] = useState("");
@@ -14,16 +36,8 @@ export default function ChangePasswordForm() {
     e.preventDefault();
     setError("");
     setSuccess(false);
-
-    if (next !== confirm) {
-      setError("Las contraseñas nuevas no coinciden");
-      return;
-    }
-    if (next.length < 6) {
-      setError("La contraseña debe tener al menos 6 caracteres");
-      return;
-    }
-
+    if (next !== confirm) { setError("Las contraseñas nuevas no coinciden"); return; }
+    if (next.length < 6) { setError("Mínimo 6 caracteres"); return; }
     setLoading(true);
     const res = await fetch("/api/auth/password", {
       method: "PATCH",
@@ -31,7 +45,6 @@ export default function ChangePasswordForm() {
       body: JSON.stringify({ currentPassword: current, newPassword: next }),
     });
     setLoading(false);
-
     if (res.ok) {
       setSuccess(true);
       setCurrent(""); setNext(""); setConfirm("");
@@ -42,50 +55,29 @@ export default function ChangePasswordForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+    <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
       <div>
-        <label className="mb-1 block text-xs text-neutral-400">Contraseña actual</label>
-        <input
-          type="password"
-          value={current}
-          onChange={(e) => setCurrent(e.target.value)}
-          required
-          autoComplete="current-password"
-          className="w-full rounded-lg bg-neutral-800 px-3 py-2 text-sm text-white outline-none ring-1 ring-neutral-700 focus:ring-blue-500"
-        />
+        <label style={labelStyle}>Contraseña actual</label>
+        <input type="password" value={current} onChange={(e) => setCurrent(e.target.value)} required autoComplete="current-password" style={inputStyle} />
       </div>
       <div>
-        <label className="mb-1 block text-xs text-neutral-400">Nueva contraseña</label>
-        <input
-          type="password"
-          value={next}
-          onChange={(e) => setNext(e.target.value)}
-          required
-          autoComplete="new-password"
-          className="w-full rounded-lg bg-neutral-800 px-3 py-2 text-sm text-white outline-none ring-1 ring-neutral-700 focus:ring-blue-500"
-        />
+        <label style={labelStyle}>Nueva contraseña</label>
+        <input type="password" value={next} onChange={(e) => setNext(e.target.value)} required autoComplete="new-password" style={inputStyle} />
       </div>
       <div>
-        <label className="mb-1 block text-xs text-neutral-400">Confirmar nueva contraseña</label>
-        <input
-          type="password"
-          value={confirm}
-          onChange={(e) => setConfirm(e.target.value)}
-          required
-          autoComplete="new-password"
-          className="w-full rounded-lg bg-neutral-800 px-3 py-2 text-sm text-white outline-none ring-1 ring-neutral-700 focus:ring-blue-500"
-        />
+        <label style={labelStyle}>Confirmar nueva contraseña</label>
+        <input type="password" value={confirm} onChange={(e) => setConfirm(e.target.value)} required autoComplete="new-password" style={inputStyle} />
       </div>
 
-      {error && <p className="text-sm text-red-400">{error}</p>}
-      {success && <p className="text-sm text-green-400">Contraseña actualizada correctamente.</p>}
+      {error && <p style={{ fontFamily: "var(--font-serif)", fontStyle: "italic", fontSize: 13, color: "var(--brick)", margin: 0, padding: "8px 12px", border: "1px solid var(--brick)" }}>{error}</p>}
+      {success && <p style={{ fontFamily: "var(--font-serif)", fontStyle: "italic", fontSize: 13, color: "var(--olive)", margin: 0 }}>Contraseña actualizada correctamente.</p>}
 
       <button
         type="submit"
         disabled={loading}
-        className="mt-1 rounded-lg bg-blue-600 py-2 text-sm font-medium text-white hover:bg-blue-500 disabled:opacity-50 transition-colors"
+        style={{ background: "var(--ink)", color: "var(--paper)", border: "none", padding: "10px 0", fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.12em", textTransform: "uppercase", cursor: "pointer", opacity: loading ? 0.6 : 1 }}
       >
-        {loading ? "Guardando..." : "Actualizar contraseña"}
+        {loading ? "Guardando…" : "Actualizar contraseña"}
       </button>
     </form>
   );

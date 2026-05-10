@@ -40,10 +40,11 @@ export default async function ConfiguracionPage() {
 
       {/* Cuenta */}
       <div style={{ borderTop: "2px solid var(--ink)", paddingTop: 14, marginBottom: 24 }}>
-        <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--ink3)", margin: "0 0 8px" }}>Cuenta</p>
-        <p style={{ fontFamily: "var(--font-serif)", fontSize: 14, color: "var(--ink2)", margin: 0 }}>
-          Usuario: <span style={{ color: "var(--ink)", fontWeight: 500 }}>{session.username}</span>
-        </p>
+        <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--ink3)", margin: "0 0 12px" }}>Cuenta</p>
+        <div style={{ padding: "12px 14px", background: "var(--paper2)", border: "1px solid var(--rule2)", display: "flex", alignItems: "baseline", gap: 10 }}>
+          <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--ink3)", margin: 0 }}>Usuario</p>
+          <p style={{ fontFamily: "var(--font-mono)", fontSize: 16, color: "var(--ink)", margin: 0, letterSpacing: "0.02em" }}>{session.username}</p>
+        </div>
       </div>
 
       {/* Email */}

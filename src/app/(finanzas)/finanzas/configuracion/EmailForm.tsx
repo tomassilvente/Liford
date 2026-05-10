@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { LuMail, LuCheck } from "react-icons/lu";
 
 export default function EmailForm({ currentEmail }: { currentEmail: string | null }) {
   const [email, setEmail] = useState(currentEmail ?? "");
@@ -14,14 +13,12 @@ export default function EmailForm({ currentEmail }: { currentEmail: string | nul
     setError("");
     setSuccess(false);
     setLoading(true);
-
     const res = await fetch("/api/auth/email", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email }),
     });
     setLoading(false);
-
     if (res.ok) {
       setSuccess(true);
     } else {
@@ -31,41 +28,32 @@ export default function EmailForm({ currentEmail }: { currentEmail: string | nul
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-      <div className="relative">
-        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500">
-          <LuMail size={15} />
-        </span>
-        <input
-          type="email"
-          value={email}
-          onChange={(e) => { setEmail(e.target.value); setSuccess(false); }}
-          required
-          placeholder="tu@email.com"
-          autoComplete="email"
-          className="w-full rounded-lg bg-neutral-800 py-2.5 pl-9 pr-3 text-sm text-white placeholder-neutral-600 outline-none ring-1 ring-neutral-700 focus:ring-blue-500"
-        />
-      </div>
+    <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      <input
+        type="email"
+        value={email}
+        onChange={(e) => { setEmail(e.target.value); setSuccess(false); }}
+        required
+        placeholder="tu@email.com"
+        autoComplete="email"
+        style={{ width: "100%", background: "var(--paper)", border: "1px solid var(--rule2)", padding: "9px 10px", fontFamily: "var(--font-serif)", fontSize: 14, color: "var(--ink)", outline: "none", boxSizing: "border-box" as const }}
+      />
 
       {!currentEmail && (
-        <p className="text-xs text-neutral-600">
-          Necesitás un email para poder recuperar tu contraseña si la olvidás.
+        <p style={{ fontFamily: "var(--font-serif)", fontStyle: "italic", fontSize: 12, color: "var(--ink3)", margin: 0 }}>
+          Necesitás un email para recuperar tu contraseña si la olvidás.
         </p>
       )}
 
-      {error && <p className="text-sm text-red-400">{error}</p>}
-      {success && (
-        <p className="flex items-center gap-1.5 text-sm text-green-400">
-          <LuCheck size={13} /> Email actualizado correctamente.
-        </p>
-      )}
+      {error && <p style={{ fontFamily: "var(--font-serif)", fontStyle: "italic", fontSize: 13, color: "var(--brick)", margin: 0, padding: "8px 12px", border: "1px solid var(--brick)" }}>{error}</p>}
+      {success && <p style={{ fontFamily: "var(--font-serif)", fontStyle: "italic", fontSize: 13, color: "var(--olive)", margin: 0 }}>Email actualizado correctamente.</p>}
 
       <button
         type="submit"
         disabled={loading || !email.trim()}
-        className="rounded-lg bg-blue-600 py-2 text-sm font-medium text-white hover:bg-blue-500 disabled:opacity-50 transition-colors"
+        style={{ background: "var(--ink)", color: "var(--paper)", border: "none", padding: "10px 0", fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.12em", textTransform: "uppercase", cursor: "pointer", opacity: (loading || !email.trim()) ? 0.5 : 1 }}
       >
-        {loading ? "Guardando..." : "Guardar email"}
+        {loading ? "Guardando…" : "Guardar email"}
       </button>
     </form>
   );

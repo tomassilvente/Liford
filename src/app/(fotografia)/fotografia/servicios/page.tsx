@@ -6,26 +6,26 @@ function fmtARS(n: number) {
 }
 
 const DEPORTES = [
-  { deporte: "Fútbol",   tipo: "Liga Amateur (1 h)",    fotos: "Hasta 220",  precio: 50000,  promo: 40000 },
-  { deporte: "Fútbol",   tipo: "Liga Amateur (1.5 h)",  fotos: "Hasta 230",  precio: 70000,  promo: 58000 },
-  { deporte: "Fútbol",   tipo: "Liga Profesional",      fotos: "Hasta 230",  precio: 80000,  promo: 67000 },
-  { deporte: "Básquet",  tipo: "Liga Amateur",          fotos: "Hasta 220",  precio: 65000,  promo: 52000 },
-  { deporte: "Básquet",  tipo: "Primera",               fotos: "Hasta 230",  precio: 75000,  promo: 57000 },
-  { deporte: "Hockey",   tipo: "Liga / Primera",        fotos: "Hasta 230",  precio: 65000,  promo: 52000 },
-  { deporte: "Media Day",tipo: "Cualquier deporte",     fotos: "Sin límite", precio: 90000,  promo: null  },
+  { deporte: "Fútbol",   tipo: "Liga Amateur (1 h)",    fotos: "Hasta 220",  precio: 65000,  promo: 50000 },
+  { deporte: "Fútbol",   tipo: "Liga Amateur (1.5 h)",  fotos: "Hasta 230",  precio: 90000,  promo: 75000 },
+  { deporte: "Fútbol",   tipo: "Liga Profesional",      fotos: "Hasta 230",  precio: 110000, promo: 90000 },
+  { deporte: "Básquet",  tipo: "Liga Amateur",          fotos: "Hasta 220",  precio: 85000,  promo: 75000 },
+  { deporte: "Básquet",  tipo: "Primera",               fotos: "Hasta 230",  precio: 95000,  promo: 75000 },
+  { deporte: "Hockey",   tipo: "Liga / Primera",        fotos: "Hasta 230",  precio: 85000,  promo: 75000 },
+  { deporte: "Media Day",tipo: "Cualquier deporte",     fotos: "Sin límite", precio: 110000, promo: null  },
 ];
 
 const PRODUCTO = [
   {
     tipo: "Producto solo",
     desc: "Fotografía en fondo neutro o setup simple. Ideal para catálogo, redes y tienda online.",
-    precio: 35000,
+    precio: 45000,
     unidad: "/ hora",
   },
   {
     tipo: "Producto + ambiente",
     desc: "Fotos del producto en contexto real. Perfecto para contenido de marca, redes y publicidad.",
-    precio: 40000,
+    precio: 55000,
     unidad: "/ hora",
   },
 ];
@@ -41,12 +41,12 @@ const MENSAJES: { titulo: string; subtitulo: string; texto: string }[] = [
 📍 Presencia en el partido para capturar los mejores momentos.
 📷 Toma de fotos durante todo el encuentro.
 🎨 Edición profesional de las imágenes (1.5 veces el tiempo del partido).
-🖥️ Entrega en 2-3 días hábiles mediante un enlace a Google Drive con aprox. 180 a 230 fotos en alta calidad.
+🖥️ Entrega en 2-3 días hábiles mediante un enlace a Google Drive con aprox. 170 a 200 fotos en alta calidad.
 ⏳ El enlace tendrá una validez de 1 mes, ¡no olvides descargarlas a tiempo!
 
 💲 Tarifas:
-⏰ $50.000 por equipo
-Promo especial: si coordinás con el equipo rival, pagan $40.000 cada uno.
+⏰ $65.000 por equipo
+Promo especial: si coordinás con el equipo rival, pagan $50.000 cada uno.
 
 Si querés más info o coordinar un partido, ¡escribime! 🫶🏼`,
   },
@@ -60,12 +60,12 @@ Si querés más info o coordinar un partido, ¡escribime! 🫶🏼`,
 📍 Presencia en el partido para capturar los mejores momentos.
 📷 Toma de fotos durante todo el encuentro.
 🎨 Edición profesional de las imágenes (1.5 veces el tiempo del partido).
-🖥️ Entrega en 2-3 días hábiles mediante un enlace a Google Drive con aprox. 180 a 230 fotos en alta calidad.
+🖥️ Entrega en 2-3 días hábiles mediante un enlace a Google Drive con aprox. 170 a 200 fotos en alta calidad.
 ⏳ El enlace tendrá una validez de 1 mes, ¡no olvides descargarlas a tiempo!
 
 💲 Tarifas:
-⏰ $70.000 por equipo (partidos de 1 hora y media)
-Promo especial: si coordinás con el equipo rival, pagan $58.000 cada uno.
+⏰ $90.000 por equipo (partidos de 1 hora y media)
+Promo especial: si coordinás con el equipo rival, pagan $75.000 cada uno.
 
 Si querés más info o coordinar un partido, ¡escribime! 🫶🏼`,
   },
@@ -79,12 +79,12 @@ Si querés más info o coordinar un partido, ¡escribime! 🫶🏼`,
 📍 Presencia en el partido para capturar los mejores momentos.
 📷 Toma de fotos durante todo el encuentro.
 🎨 Edición profesional de las imágenes (1.5 veces el tiempo del partido).
-🖥️ Entrega en 2-3 días hábiles mediante un enlace a Google Drive con aprox. 180 a 230 fotos en alta calidad.
+🖥️ Entrega en 2-3 días hábiles mediante un enlace a Google Drive con aprox. 170 a 200 fotos en alta calidad.
 ⏳ El enlace tendrá una validez de 1 mes, ¡no olvides descargarlas a tiempo!
 
 💲 Tarifas:
-⏰ $80.000 por equipo (partidos de 1 hora y media)
-Promo especial: si coordinás con el equipo rival, pagan $67.000 cada uno.
+⏰ $110.000 por equipo (partidos de 1 hora y media)
+Promo especial: si coordinás con el equipo rival, pagan $90.000 cada uno.
 
 Si querés más info o coordinar un partido, ¡escribime! 🫶🏼`,
   },
@@ -98,12 +98,12 @@ Si querés más info o coordinar un partido, ¡escribime! 🫶🏼`,
 📍 Presencia en el partido para capturar los mejores momentos.
 📷 Toma de fotos durante todo el encuentro.
 🎨 Edición profesional de las imágenes (1.5 veces el tiempo del partido).
-🖥️ Entrega en 2-3 días hábiles mediante un enlace a Google Drive con aprox. 180 a 230 fotos en alta calidad.
+🖥️ Entrega en 2-3 días hábiles mediante un enlace a Google Drive con aprox. 170 a 200 fotos en alta calidad.
 ⏳ El enlace tendrá una validez de 1 mes, ¡no olvides descargarlas a tiempo!
 
 💲 Tarifas:
-🏀 $65.000 por equipo
-Promo especial: si coordinás con el equipo rival, pagan $52.000 cada uno.
+🏀 $85.000 por equipo
+Promo especial: si coordinás con el equipo rival, pagan $75.000 cada uno.
 
 Si querés más info o coordinar un partido, ¡escribime! 🫶🏼`,
   },
@@ -117,12 +117,12 @@ Si querés más info o coordinar un partido, ¡escribime! 🫶🏼`,
 📍 Presencia en el partido para capturar los mejores momentos.
 📷 Toma de fotos durante todo el encuentro.
 🎨 Edición profesional de las imágenes (1.5 veces el tiempo del partido).
-🖥️ Entrega en 2-3 días hábiles mediante un enlace a Google Drive con aprox. 180 a 230 fotos en alta calidad.
+🖥️ Entrega en 2-3 días hábiles mediante un enlace a Google Drive con aprox. 170 a 200 fotos en alta calidad.
 ⏳ El enlace tendrá una validez de 1 mes, ¡no olvides descargarlas a tiempo!
 
 💲 Tarifas:
-🏀 $75.000 por equipo
-Promo especial: si coordinás con el equipo rival, pagan $57.000 cada uno.
+🏀 $95.000 por equipo
+Promo especial: si coordinás con el equipo rival, pagan $75.000 cada uno.
 
 Si querés más info o coordinar un partido, ¡escribime! 🫶🏼`,
   },
@@ -136,12 +136,12 @@ Si querés más info o coordinar un partido, ¡escribime! 🫶🏼`,
 📍 Presencia en el partido para capturar los mejores momentos.
 📷 Toma de fotos durante todo el encuentro.
 🎨 Edición profesional de las imágenes (1.5 veces el tiempo del partido).
-🖥️ Entrega en 2-3 días hábiles mediante un enlace a Google Drive con aprox. 170 a 210 fotos en alta calidad.
+🖥️ Entrega en 2-3 días hábiles mediante un enlace a Google Drive con aprox. 170 a 200 fotos en alta calidad.
 ⏳ El enlace tendrá una validez de 1 mes, ¡no olvides descargarlas a tiempo!
 
 💲 Tarifas:
-🏑 $65.000 por equipo
-Promo especial: si coordinás con el equipo rival, pagan $52.000 cada uno.
+🏑 $85.000 por equipo
+Promo especial: si coordinás con el equipo rival, pagan $75.000 cada uno.
 
 Si querés más info o coordinar un partido, ¡escribime! 🫶🏼`,
   },
@@ -158,7 +158,7 @@ Si querés más info o coordinar un partido, ¡escribime! 🫶🏼`,
 🖥️ Entrega en 2-3 días hábiles mediante un enlace a Google Drive con fotos en alta calidad.
 ⏳ El enlace tendrá una validez de 1 mes, ¡no olvides descargarlas a tiempo!
 
-💲 Tarifa Media Day: $90.000
+💲 Tarifa Media Day: $110.000
 ✅ Sin límite de fotos, me aseguro de capturar y entregar todo el material necesario.
 
 Si querés más info o coordinar tu Media Day, ¡escribime! 📸🔥`,
@@ -172,12 +172,12 @@ Si querés más info o coordinar tu Media Day, ¡escribime! 📸🔥`,
 📷 Opción 1 – Producto solo (sin presencia)
 🔹 Fotografía de producto en fondo neutro o setup simple.
 🔹 Ideal para catálogo, redes sociales y tienda online.
-💲 Tarifa: $35.000 por hora.
+💲 Tarifa: $45.000 por hora.
 
 📷 Opción 2 – Producto + ambiente (presencial)
 🔹 Fotos del producto en contexto, mostrando su uso en un espacio real.
 🔹 Perfecto para contenido de marca, redes y publicidad.
-💲 Tarifa: $40.000 por hora.
+💲 Tarifa: $55.000 por hora.
 
 📩 Si querés más info o coordinar una sesión, ¡escribime! 📸✨`,
   },

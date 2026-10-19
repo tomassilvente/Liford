@@ -1,10 +1,12 @@
 "use client";
 
-import { useRouter, usePathname } from "next/navigation";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { LuChevronLeft, LuChevronRight } from "react-icons/lu";
 
 interface MonthFilterProps {
-  selected: string; // "YYYY-MM"
+  selected: string;      // "YYYY-MM"
+  prevHasData?: boolean; // muestra dot si el mes anterior tiene movimientos
+  nextHasData?: boolean; // muestra dot si el mes siguiente tiene movimientos
 }
 
 function getLabel(ym: string) {
@@ -23,40 +25,76 @@ function currentYM() {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
 }
 
-export default function MonthFilter({ selected }: MonthFilterProps) {
-  const router = useRouter();
-  const pathname = usePathname();
+const btnBase: React.CSSProperties = {
+  background: "transparent",
+  border: "1px solid var(--rule2)",
+  color: "var(--ink3)",
+  cursor: "pointer",
+  padding: "4px 8px",
+  display: "flex",
+  alignItems: "center",
+  lineHeight: 1,
+};
+
+export default function MonthFilter({ selected, prevHasData = false, nextHasData = false }: MonthFilterProps) {
+  const router       = useRouter();
+  const pathname     = usePathname();
+  const searchParams = useSearchParams();
 
   function go(ym: string) {
-    router.push(`${pathname}?mes=${ym}`);
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("mes", ym);
+    router.push(`${pathname}?${params.toString()}`);
   }
 
   const isCurrentMonth = selected === currentYM();
 
   return (
-    <div className="flex items-center gap-2">
-      <button
-        onClick={() => go(addMonths(selected, -1))}
-        className="rounded-lg p-1.5 text-neutral-400 hover:bg-neutral-800 hover:text-white transition-colors"
-      >
-        <LuChevronLeft size={16} />
-      </button>
-      <span className="min-w-[140px] text-center text-sm font-medium capitalize text-white">
+    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+      {/* Mes anterior */}
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
+        <button onClick={() => go(addMonths(selected, -1))} style={btnBase} title="Mes anterior">
+          <LuChevronLeft size={14} />
+        </button>
+        {prevHasData && (
+          <span style={{ width: 4, height: 4, borderRadius: "50%", background: "var(--olive)", display: "block" }} />
+        )}
+      </div>
+
+      <span style={{
+        fontFamily: "var(--font-mono)",
+        fontSize: 11,
+        color: "var(--ink)",
+        letterSpacing: "0.06em",
+        minWidth: 148,
+        textAlign: "center",
+        textTransform: "capitalize",
+      }}>
         {getLabel(selected)}
       </span>
-      <button
-        onClick={() => go(addMonths(selected, 1))}
-        disabled={isCurrentMonth}
-        className="rounded-lg p-1.5 text-neutral-400 hover:bg-neutral-800 hover:text-white transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-      >
-        <LuChevronRight size={16} />
-      </button>
+
+      {/* Mes siguiente */}
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
+        <button
+          onClick={() => go(addMonths(selected, 1))}
+          disabled={isCurrentMonth}
+          style={{ ...btnBase, color: isCurrentMonth ? "var(--rule2)" : "var(--ink3)", cursor: isCurrentMonth ? "default" : "pointer" }}
+          title="Mes siguiente"
+        >
+          <LuChevronRight size={14} />
+        </button>
+        {nextHasData && !isCurrentMonth && (
+          <span style={{ width: 4, height: 4, borderRadius: "50%", background: "var(--olive)", display: "block" }} />
+        )}
+      </div>
+
+      {/* Volver al mes actual */}
       {!isCurrentMonth && (
         <button
           onClick={() => go(currentYM())}
-          className="ml-1 rounded-lg px-2.5 py-1 text-xs text-neutral-400 hover:bg-neutral-800 hover:text-white transition-colors"
+          style={{ ...btnBase, padding: "4px 10px", fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.06em", marginLeft: 2 }}
         >
-          Hoy
+          hoy
         </button>
       )}
     </div>

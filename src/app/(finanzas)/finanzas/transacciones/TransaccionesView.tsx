@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
-import { useRouter, usePathname, useSearchParams } from "next/navigation";
-import { LuSearch, LuX, LuRepeat, LuCheck, LuPencil, LuTrash2, LuEllipsis } from "react-icons/lu";
+import { useState, useMemo } from "react";
+import { useRouter } from "next/navigation";
+import { LuSearch, LuX, LuCheck, LuPencil, LuTrash2, LuEllipsis } from "react-icons/lu";
 import { toast } from "sonner";
 import RecurrentRuleModal from "@/components/finanzas/RecurrentRuleModal";
+import MonthFilter from "@/components/finanzas/MonthFilter";
 
 const fmtARS = (n: number) =>
   new Intl.NumberFormat("es-AR", { maximumFractionDigits: 0 }).format(n);
@@ -31,38 +32,16 @@ interface UserCategory { name: string; icon: string; type: string; }
 
 interface Props {
   transactions: Transaction[];
+  mesYM: string;
+  prevHasData?: boolean;
+  nextHasData?: boolean;
   wallets: { id: string; name: string; currency: string }[];
   foreignAccounts: { id: string; name: string; currency: string }[];
   initialTipo?: "" | "EXPENSE" | "INCOME";
-  initialRange?: RangeKey;
   userCategories?: UserCategory[];
 }
 
-type RangeKey = "week" | "month" | "3m" | "year" | "ytd" | "all";
-
-const RANGES: { key: RangeKey; label: string }[] = [
-  { key: "week",  label: "7 d" },
-  { key: "month", label: "Mes" },
-  { key: "3m",    label: "3 m" },
-  { key: "year",  label: "12 m" },
-  { key: "ytd",   label: "Año" },
-  { key: "all",   label: "Todo" },
-];
-
-function getRange(key: RangeKey): { from: Date; to: Date } {
-  const now = new Date();
-  const to = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
-  switch (key) {
-    case "week":  return { from: new Date(now.getTime() - 6 * 86400000), to };
-    case "month": return { from: new Date(now.getFullYear(), now.getMonth(), 1), to };
-    case "3m":    return { from: new Date(now.getFullYear(), now.getMonth() - 2, 1), to };
-    case "year":  return { from: new Date(now.getFullYear(), now.getMonth() - 11, 1), to };
-    case "ytd":   return { from: new Date(now.getFullYear(), 0, 1), to };
-    case "all":   return { from: new Date(0), to };
-  }
-}
-
-const FALLBACK_GASTO  = ["Alimentación","Transporte","Entretenimiento","Salud","Servicios","Ropa","Educación","Suscripciones","Otro"];
+const FALLBACK_GASTO   = ["Alimentación","Transporte","Entretenimiento","Salud","Servicios","Ropa","Educación","Suscripciones","Otro"];
 const FALLBACK_INGRESO = ["Sueldo","Freelance","Fotografía","Venta","Inversión","Transferencia recibida","Reembolso","Otro"];
 
 const inputStyle: React.CSSProperties = {
@@ -76,6 +55,12 @@ const inputStyle: React.CSSProperties = {
   outline: "none",
 };
 
+function adjacentYM(ym: string, delta: number): string {
+  const [y, m] = ym.split("-").map(Number);
+  const d = new Date(y, m - 1 + delta, 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+}
+
 function EditRow({
   id, description, category, amount, type, date, onDone, userCategories,
 }: {
@@ -83,9 +68,9 @@ function EditRow({
   userCategories: UserCategory[];
 }) {
   const router = useRouter();
-  const [desc, setDesc] = useState(description ?? "");
-  const [cat, setCat] = useState(category);
-  const [amt, setAmt] = useState(String(amount));
+  const [desc, setDesc]     = useState(description ?? "");
+  const [cat, setCat]       = useState(category);
+  const [amt, setAmt]       = useState(String(amount));
   const [dateStr, setDateStr] = useState(date.slice(0, 10));
   const [loading, setLoading] = useState(false);
 
@@ -128,13 +113,36 @@ function EditRow({
   );
 }
 
-function TxRow({ tx, onEdit, onOpenRule }: { tx: Transaction; onEdit: () => void; onOpenRule: (id: string) => void }) {
+function TxRow({ tx, onEdit, onOpenRule, userCategories }: {
+  tx: Transaction;
+  onEdit: () => void;
+  onOpenRule: (id: string) => void;
+  userCategories: UserCategory[];
+}) {
   const router = useRouter();
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [menuOpen, setMenuOpen]     = useState(false);
   const [confirming, setConfirming] = useState(false);
+  const [editingCat, setEditingCat] = useState(false);
 
   const isExpense = tx.type === "EXPENSE" || tx.type === "STOCK_PURCHASE" || tx.type === "CRYPTO_PURCHASE";
-  const isPhoto = tx.source === "PHOTOGRAPHY";
+  const isPhoto   = tx.source === "PHOTOGRAPHY";
+
+  const catsForType = userCategories
+    .filter((c) => isExpense ? c.type === "EXPENSE" || c.type === "BOTH" : c.type === "INCOME" || c.type === "BOTH")
+    .map((c) => c.name);
+  const cats = catsForType.includes(tx.category) ? catsForType : [tx.category, ...catsForType];
+
+  async function handleCategoryChange(newCat: string) {
+    if (newCat === tx.category) { setEditingCat(false); return; }
+    setEditingCat(false);
+    const res = await fetch(`/api/finanzas/transactions/${tx.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ category: newCat }),
+    });
+    if (res.ok) { toast.success("Categoría actualizada"); router.refresh(); }
+    else toast.error("No se pudo actualizar");
+  }
 
   async function handleDelete() {
     const res = await fetch(`/api/finanzas/transactions/${tx.id}`, { method: "DELETE" });
@@ -161,8 +169,26 @@ function TxRow({ tx, onEdit, onOpenRule }: { tx: Transaction; onEdit: () => void
           )}
         </div>
       </td>
-      <td style={{ padding: "8px 12px 8px 0", fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ink3)", letterSpacing: "0.1em", textTransform: "uppercase", whiteSpace: "nowrap" }}>
-        {tx.category}
+      <td style={{ padding: "8px 12px 8px 0", whiteSpace: "nowrap" }}>
+        {editingCat ? (
+          <select
+            autoFocus
+            defaultValue={tx.category}
+            onChange={(e) => handleCategoryChange(e.target.value)}
+            onBlur={() => setEditingCat(false)}
+            style={{ ...inputStyle, padding: "2px 6px", fontSize: 9 }}
+          >
+            {cats.map((c) => <option key={c} value={c}>{c}</option>)}
+          </select>
+        ) : (
+          <span
+            onClick={() => !isPhoto && setEditingCat(true)}
+            title={isPhoto ? undefined : "Click para cambiar categoría"}
+            style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ink3)", letterSpacing: "0.1em", textTransform: "uppercase", cursor: isPhoto ? "default" : "pointer" }}
+          >
+            {tx.category}
+          </span>
+        )}
       </td>
       <td style={{ padding: "8px 0", textAlign: "right", fontFamily: "var(--font-mono)", fontSize: 14, color: isExpense ? "var(--ink)" : "var(--olive)", fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>
         {isExpense ? "−" : "+"} {fmtNative(tx.amount, tx.currency)} <span style={{ fontSize: 9, color: "var(--ink3)" }}>{tx.currency}</span>
@@ -205,33 +231,28 @@ function TxRow({ tx, onEdit, onOpenRule }: { tx: Transaction; onEdit: () => void
   );
 }
 
-export default function TransaccionesView({ transactions, initialTipo = "", initialRange = "month", userCategories = [] }: Props) {
-  const [search, setSearch] = useState("");
-  const [typeFilter, setTypeFilter] = useState<"" | "EXPENSE" | "INCOME">(initialTipo);
-  const [catFilter, setCatFilter] = useState("");
-  const [range, setRange] = useState<RangeKey>(initialRange);
-  const [editingId, setEditingId] = useState<string | null>(null);
+export default function TransaccionesView({
+  transactions,
+  mesYM,
+  prevHasData = false,
+  nextHasData = false,
+  initialTipo = "",
+  userCategories = [],
+}: Props) {
+  const [search, setSearch]           = useState("");
+  const [typeFilter, setTypeFilter]   = useState<"" | "EXPENSE" | "INCOME">(initialTipo);
+  const [catFilter, setCatFilter]     = useState("");
+  const [editingId, setEditingId]     = useState<string | null>(null);
   const [ruleModalId, setRuleModalId] = useState<string | null>(null);
 
-  const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
 
-  useEffect(() => {
-    const params = new URLSearchParams(searchParams.toString());
-    if (typeFilter) params.set("tipo", typeFilter === "EXPENSE" ? "expense" : "income");
-    else params.delete("tipo");
-    if (range !== "month") params.set("rango", range);
-    else params.delete("rango");
-    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [typeFilter, range]);
+  const mesLabel = (() => {
+    const [y, m] = mesYM.split("-").map(Number);
+    return new Date(y, m - 1, 1).toLocaleDateString("es-AR", { month: "long", year: "numeric" });
+  })();
 
-  const { from, to } = useMemo(() => getRange(range), [range]);
   const filtered = useMemo(() => {
     return transactions.filter((t) => {
-      const d = new Date(t.date);
-      if (d < from || d >= to) return false;
       if (typeFilter && t.type !== typeFilter) return false;
       if (catFilter && t.category !== catFilter) return false;
       if (search) {
@@ -240,7 +261,7 @@ export default function TransaccionesView({ transactions, initialTipo = "", init
       }
       return true;
     });
-  }, [transactions, from, to, typeFilter, catFilter, search]);
+  }, [transactions, typeFilter, catFilter, search]);
 
   const kpis = useMemo(() => {
     const ingresosARS = filtered.filter((t) => t.type === "INCOME"  && t.currency === "ARS").reduce((s, t) => s + t.amount, 0);
@@ -252,7 +273,7 @@ export default function TransaccionesView({ transactions, initialTipo = "", init
 
   const grouped = useMemo(() => {
     const map = new Map<string, { label: string; dateLabel: string; txs: Transaction[] }>();
-    const todayKey = new Date().toISOString().slice(0, 10);
+    const todayKey     = new Date().toISOString().slice(0, 10);
     const yDate = new Date(); yDate.setUTCDate(yDate.getUTCDate() - 1);
     const yesterdayKey = yDate.toISOString().slice(0, 10);
     const fmtShort = new Intl.DateTimeFormat("es-AR", { day: "2-digit", month: "short", timeZone: "UTC" });
@@ -262,13 +283,9 @@ export default function TransaccionesView({ transactions, initialTipo = "", init
       const d = new Date(t.date);
       const dayKey = d.toISOString().slice(0, 10);
       let dateLabel: string;
-      if (dayKey === todayKey) {
-        dateLabel = `HOY · ${fmtShort.format(d).toUpperCase()}`;
-      } else if (dayKey === yesterdayKey) {
-        dateLabel = `AYER · ${fmtShort.format(d).toUpperCase()}`;
-      } else {
-        dateLabel = fmtLong.format(d);
-      }
+      if (dayKey === todayKey)      dateLabel = `HOY · ${fmtShort.format(d).toUpperCase()}`;
+      else if (dayKey === yesterdayKey) dateLabel = `AYER · ${fmtShort.format(d).toUpperCase()}`;
+      else dateLabel = fmtLong.format(d);
       if (!map.has(dayKey)) map.set(dayKey, { label: dayKey, dateLabel, txs: [] });
       map.get(dayKey)!.txs.push(t);
     }
@@ -276,16 +293,20 @@ export default function TransaccionesView({ transactions, initialTipo = "", init
   }, [filtered]);
 
   const allCategories = Array.from(new Set(transactions.map((t) => t.category))).sort();
-  const hasFilters = typeFilter || catFilter || search;
 
   return (
     <div>
       {/* ── Header ──────────────────────────────────────────────── */}
       <header style={{ paddingBottom: 16, borderBottom: "1px solid var(--rule2)", marginBottom: 28 }}>
         <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.18em", color: "var(--ink3)", margin: 0, textTransform: "uppercase" }}>II · Movimientos — libro de asientos</p>
-        <h1 style={{ fontFamily: "var(--font-display)", fontSize: 40, color: "var(--ink)", margin: "4px 0 0", lineHeight: 0.95, fontStyle: "italic", letterSpacing: "-0.02em" }}>
-          Bitácora del mes
-        </h1>
+        <div style={{ display: "flex", alignItems: "baseline", gap: 16, marginTop: 4, flexWrap: "wrap" }}>
+          <h1 style={{ fontFamily: "var(--font-display)", fontSize: 40, color: "var(--ink)", margin: 0, lineHeight: 0.95, fontStyle: "italic", letterSpacing: "-0.02em" }}>
+            {mesLabel}
+          </h1>
+          <div style={{ marginLeft: "auto" }}>
+            <MonthFilter selected={mesYM} prevHasData={prevHasData} nextHasData={nextHasData} />
+          </div>
+        </div>
       </header>
 
       {/* ── KPIs ────────────────────────────────────────────────── */}
@@ -317,8 +338,8 @@ export default function TransaccionesView({ transactions, initialTipo = "", init
         </div>
       </div>
 
-      {/* ── Filtros — typewriter form vibe ──────────────────────── */}
-      <div style={{ display: "flex", gap: 12, alignItems: "center", padding: "12px 0", borderBottom: "1px solid var(--rule2)", background: "var(--paper2)", marginBottom: 20, paddingLeft: 0, flexWrap: "wrap" }}>
+      {/* ── Filtros ─────────────────────────────────────────────── */}
+      <div style={{ display: "flex", gap: 12, alignItems: "center", padding: "12px 0", borderBottom: "1px solid var(--rule2)", marginBottom: 20, flexWrap: "wrap" }}>
         {/* Búsqueda */}
         <div style={{ display: "flex", alignItems: "center", gap: 8, flex: 1, minWidth: 200, maxWidth: 320, padding: "3px 0", borderBottom: "1px solid var(--ink)" }}>
           <LuSearch size={13} style={{ color: "var(--ink3)", flexShrink: 0 }} />
@@ -335,31 +356,8 @@ export default function TransaccionesView({ transactions, initialTipo = "", init
           )}
         </div>
 
-        {/* Rango */}
-        <div style={{ display: "flex", gap: 0, border: "1px solid var(--rule2)" }}>
-          {RANGES.map((r) => (
-            <button
-              key={r.key}
-              onClick={() => setRange(r.key)}
-              style={{
-                padding: "4px 10px",
-                background: range === r.key ? "var(--ink)" : "transparent",
-                color: range === r.key ? "var(--paper)" : "var(--ink3)",
-                border: "none",
-                borderRight: "1px solid var(--rule2)",
-                fontFamily: "var(--font-mono)",
-                fontSize: 10,
-                letterSpacing: "0.06em",
-                cursor: "pointer",
-              }}
-            >
-              {r.label}
-            </button>
-          ))}
-        </div>
-
         {/* Tipo */}
-        <div style={{ display: "flex", gap: 0, border: "1px solid var(--rule2)" }}>
+        <div style={{ display: "flex", border: "1px solid var(--rule2)" }}>
           {(["", "EXPENSE", "INCOME"] as const).map((v) => (
             <button
               key={v}
@@ -401,12 +399,16 @@ export default function TransaccionesView({ transactions, initialTipo = "", init
           </select>
         )}
 
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ink3)", marginLeft: "auto" }}>fol. {filtered.length}</span>
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ink3)", marginLeft: "auto" }}>
+          fol. {filtered.length}
+        </span>
       </div>
 
       {/* ── Ledger agrupado por día ──────────────────────────────── */}
       {grouped.length === 0 ? (
-        <p style={{ fontFamily: "var(--font-serif)", fontStyle: "italic", fontSize: 14, color: "var(--ink3)" }}>No hay transacciones en este período.</p>
+        <p style={{ fontFamily: "var(--font-serif)", fontStyle: "italic", fontSize: 14, color: "var(--ink3)" }}>
+          No hay transacciones en {mesLabel}.
+        </p>
       ) : (
         <div>
           {grouped.map(({ label, dateLabel, txs }, gi) => (
@@ -428,7 +430,7 @@ export default function TransaccionesView({ transactions, initialTipo = "", init
                     editingId === t.id ? (
                       <tr key={t.id}><EditRow id={t.id} description={t.description} category={t.category} amount={t.amount} type={t.type} date={t.date} onDone={() => setEditingId(null)} userCategories={userCategories} /></tr>
                     ) : (
-                      <TxRow key={t.id} tx={t} onEdit={() => setEditingId(t.id)} onOpenRule={setRuleModalId} />
+                      <TxRow key={t.id} tx={t} onEdit={() => setEditingId(t.id)} onOpenRule={setRuleModalId} userCategories={userCategories} />
                     )
                   )}
                 </tbody>

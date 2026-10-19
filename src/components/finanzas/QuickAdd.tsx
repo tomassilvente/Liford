@@ -30,6 +30,33 @@ interface Suggestion {
   confidence: "high" | "low";
 }
 
+function AccountSelect({
+  value, onChange, placeholder, wallets, foreignAccounts, style,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  placeholder: string;
+  wallets: Account[];
+  foreignAccounts: Account[];
+  style: React.CSSProperties;
+}) {
+  return (
+    <select value={value} onChange={(e) => onChange(e.target.value)} style={style}>
+      <option value="">{placeholder}</option>
+      {wallets.length > 0 && (
+        <optgroup label="Billeteras">
+          {wallets.map((w) => <option key={w.id} value={`w:${w.id}`}>{w.name} ({w.currency})</option>)}
+        </optgroup>
+      )}
+      {foreignAccounts.length > 0 && (
+        <optgroup label="Cuentas foráneas">
+          {foreignAccounts.map((a) => <option key={a.id} value={`f:${a.id}`}>{a.name} ({a.currency})</option>)}
+        </optgroup>
+      )}
+    </select>
+  );
+}
+
 function useDebounce<T>(value: T, delay: number): T {
   const [debounced, setDebounced] = useState(value);
   useEffect(() => {
@@ -279,55 +306,55 @@ export default function QuickAdd({ wallets, foreignAccounts, categories }: Quick
               </div>
             )}
 
-            <div style={{ display: "flex", gap: 8 }}>
-              <input
-                type="number"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                placeholder="Monto"
-                style={{ ...inputSt, flex: 1, minWidth: 0 }}
-              />
-              <div style={{ display: "flex", border: "1px solid var(--rule2)" }}>
-                {(["ARS", "USD", "EUR"] as DisplayCurrency[]).map((c) => (
-                  <button
-                    key={c}
-                    onClick={() => setDisplayCurrency(c)}
-                    style={{ padding: "0 8px", background: displayCurrency === c ? "var(--ink)" : "transparent", color: displayCurrency === c ? "var(--paper)" : "var(--ink3)", border: "none", borderRight: c !== "EUR" ? "1px solid var(--rule2)" : "none", fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.06em", cursor: "pointer" }}
-                  >
-                    {c}
-                  </button>
-                ))}
+            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+              <div style={{ display: "flex", gap: 8 }}>
+                <input
+                  type="number"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  placeholder="Monto"
+                  style={{ ...inputSt, flex: 1, minWidth: 0 }}
+                />
+                <div style={{ display: "flex", border: "1px solid var(--rule2)" }}>
+                  {(["ARS", "USD", "EUR"] as DisplayCurrency[]).map((c) => (
+                    <button
+                      key={c}
+                      onClick={() => setDisplayCurrency(c)}
+                      style={{ padding: "0 8px", background: displayCurrency === c ? "var(--ink)" : "transparent", color: displayCurrency === c ? "var(--paper)" : "var(--ink3)", border: "none", borderRight: c !== "EUR" ? "1px solid var(--rule2)" : "none", fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.06em", cursor: "pointer" }}
+                    >
+                      {c}
+                    </button>
+                  ))}
+                </div>
               </div>
+              {amount && Number(amount) > 0 && (
+                <p style={{ margin: 0, fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ink3)", letterSpacing: "0.04em", paddingLeft: 2 }}>
+                  {displayCurrency === "ARS"
+                    ? new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", maximumFractionDigits: 0 }).format(Number(amount))
+                    : new Intl.NumberFormat("en-US", { style: "currency", currency: displayCurrency, minimumFractionDigits: 2 }).format(Number(amount))
+                  }
+                </p>
+              )}
             </div>
 
-            <select value={accountRaw} onChange={(e) => setAccountRaw(e.target.value)} style={inputSt}>
-              <option value="">{type === "TRANSFER" ? "Desde (cuenta origen)" : "Cuenta"}</option>
-              {wallets.length > 0 && (
-                <optgroup label="Billeteras">
-                  {wallets.map((w) => <option key={w.id} value={`w:${w.id}`}>{w.name} ({w.currency})</option>)}
-                </optgroup>
-              )}
-              {foreignAccounts.length > 0 && (
-                <optgroup label="Cuentas foráneas">
-                  {foreignAccounts.map((a) => <option key={a.id} value={`f:${a.id}`}>{a.name} ({a.currency})</option>)}
-                </optgroup>
-              )}
-            </select>
+            <AccountSelect
+              value={accountRaw}
+              onChange={setAccountRaw}
+              placeholder={type === "TRANSFER" ? "Desde (cuenta origen)" : "Cuenta"}
+              wallets={wallets}
+              foreignAccounts={foreignAccounts}
+              style={inputSt}
+            />
 
             {type === "TRANSFER" && (
-              <select value={toAccountRaw} onChange={(e) => setToAccountRaw(e.target.value)} style={inputSt}>
-                <option value="">Hacia (cuenta destino)</option>
-                {wallets.length > 0 && (
-                  <optgroup label="Billeteras">
-                    {wallets.map((w) => <option key={w.id} value={`w:${w.id}`}>{w.name} ({w.currency})</option>)}
-                  </optgroup>
-                )}
-                {foreignAccounts.length > 0 && (
-                  <optgroup label="Cuentas foráneas">
-                    {foreignAccounts.map((a) => <option key={a.id} value={`f:${a.id}`}>{a.name} ({a.currency})</option>)}
-                  </optgroup>
-                )}
-              </select>
+              <AccountSelect
+                value={toAccountRaw}
+                onChange={setToAccountRaw}
+                placeholder="Hacia (cuenta destino)"
+                wallets={wallets}
+                foreignAccounts={foreignAccounts}
+                style={inputSt}
+              />
             )}
 
             {type !== "TRANSFER" && (

@@ -4,11 +4,11 @@ import BottomNav from "@/components/ui/BottomNav";
 import QuickAdd from "@/components/finanzas/QuickAdd";
 import AlertsCenterServer from "@/components/ui/AlertsCenterServer";
 import { CurrencyProvider } from "@/context/CurrencyContext";
-import { db } from "@/lib/db";
 import { requireSession } from "@/lib/auth";
 import { applyRecurringExpenses } from "@/lib/apply-recurring";
 import { saveWealthSnapshotIfNeeded } from "@/lib/save-wealth-snapshot";
 import { fetchDolarBlue } from "@/lib/dolar";
+import { getUserWallets, getUserForeignAccounts, getUserCategories } from "@/lib/queries";
 
 const navItems = [
   { href: "/finanzas",                     label: "Inicio",      num: "I"   },
@@ -27,13 +27,10 @@ export default async function FinanzasLayout({
 }) {
   const session = await requireSession();
   const [wallets, foreignAccounts, usdArs, categories] = await Promise.all([
-    db.wallet.findMany({ where: { userId: session.userId }, orderBy: { name: "asc" } }),
-    db.foreignAccount.findMany({ where: { userId: session.userId }, orderBy: { name: "asc" } }),
+    getUserWallets(session.userId),
+    getUserForeignAccounts(session.userId),
     fetchDolarBlue(),
-    db.category.findMany({
-      where: { userId: session.userId },
-      orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
-    }),
+    getUserCategories(session.userId),
     applyRecurringExpenses(session.userId),
     saveWealthSnapshotIfNeeded(session.userId),
   ]);

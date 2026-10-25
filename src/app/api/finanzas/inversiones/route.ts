@@ -15,14 +15,17 @@ export async function POST(request: NextRequest) {
   if (!session) return Response.json({ error: "No autenticado" }, { status: 401 });
 
   const body = await request.json();
-  const { ticker, name, type, quantity, avgBuyPrice } = body;
+  const { ticker, name, type, currency, quantity, avgBuyPrice } = body;
 
   if (!ticker || !type || !quantity || !avgBuyPrice) {
     return Response.json({ error: "Faltan campos requeridos" }, { status: 400 });
   }
 
+  const tickerUpper = ticker.toUpperCase();
+  const investCurrency: "ARS" | "USD" = currency === "ARS" ? "ARS" : "USD";
+
   const existing = await db.investment.findFirst({
-    where: { ticker: ticker.toUpperCase(), userId: session.userId },
+    where: { ticker: tickerUpper, userId: session.userId, currency: investCurrency },
   });
 
   if (existing) {
@@ -40,9 +43,10 @@ export async function POST(request: NextRequest) {
   const inversion = await db.investment.create({
     data: {
       userId: session.userId,
-      ticker: ticker.toUpperCase(),
+      ticker: tickerUpper,
       name: name ?? null,
       type,
+      currency: investCurrency,
       quantity: Number(quantity),
       avgBuyPrice: Number(avgBuyPrice),
     },

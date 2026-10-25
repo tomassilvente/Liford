@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { LuTrendingUp, LuCoins, LuPlus } from "react-icons/lu";
 
 const EJEMPLOS: Record<string, string[]> = {
-  STOCK: ["AAPL", "MSFT", "GOOGL", "AMZN", "TSLA", "GGAL", "YPF"],
+  STOCK_USD: ["AAPL", "MSFT", "GOOGL", "AMZN", "TSLA", "MELI"],
+  STOCK_ARS: ["MELI.BA", "GGAL.BA", "YPF.BA", "PAMP.BA", "BMA.BA"],
   CRYPTO: ["BTC-USD", "ETH-USD", "SOL-USD", "ADA-USD"],
 };
 
@@ -15,6 +16,11 @@ export default function InversionForm() {
   const [error, setError] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
   const [type, setType] = useState<"STOCK" | "CRYPTO">("STOCK");
+  const [market, setMarket] = useState<"USD" | "ARS">("USD");
+
+  const currency = type === "CRYPTO" ? "USD" : market;
+  const exampleKey = type === "CRYPTO" ? "CRYPTO" : type === "STOCK" && currency === "ARS" ? "STOCK_ARS" : "STOCK_USD";
+  const tickerPlaceholder = currency === "ARS" ? "ej: MELI.BA, GGAL.BA" : type === "CRYPTO" ? "ej: BTC-USD, ETH-USD" : "ej: AAPL, MELI";
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -26,6 +32,7 @@ export default function InversionForm() {
       ticker: (form.elements.namedItem("ticker") as HTMLInputElement).value.trim().toUpperCase(),
       name: (form.elements.namedItem("name") as HTMLInputElement).value,
       type,
+      currency,
       quantity: (form.elements.namedItem("quantity") as HTMLInputElement).value,
       avgBuyPrice: (form.elements.namedItem("avgBuyPrice") as HTMLInputElement).value,
     };
@@ -67,7 +74,8 @@ export default function InversionForm() {
     <form onSubmit={handleSubmit} className="rounded-xl bg-neutral-800 p-6 ring-1 ring-blue-500">
       <p className="mb-4 text-sm font-medium text-white">Nueva inversión</p>
 
-      <div className="mb-4 flex gap-2">
+      {/* Tipo: Acción / Crypto */}
+      <div className="mb-3 flex gap-2">
         {(["STOCK", "CRYPTO"] as const).map((t) => (
           <button
             key={t}
@@ -85,6 +93,34 @@ export default function InversionForm() {
         ))}
       </div>
 
+      {/* Mercado: USD / ARS — solo para acciones */}
+      {type === "STOCK" && (
+        <div className="mb-4">
+          <p className="mb-1.5 text-xs text-neutral-500">Mercado</p>
+          <div className="flex gap-2">
+            {(["USD", "ARS"] as const).map((m) => (
+              <button
+                key={m}
+                type="button"
+                onClick={() => setMarket(m)}
+                className={`rounded-lg px-3 py-1 text-xs font-medium transition-colors ${
+                  market === m
+                    ? "bg-neutral-600 text-white"
+                    : "bg-neutral-700 text-neutral-400 hover:text-white"
+                }`}
+              >
+                {m === "USD" ? "🇺🇸 EE.UU. (USD)" : "🇦🇷 Argentina (ARS)"}
+              </button>
+            ))}
+          </div>
+          {market === "ARS" && (
+            <p className="mt-1.5 text-xs text-neutral-500">
+              CEDEARs — usá el ticker con sufijo .BA (ej: MELI.BA)
+            </p>
+          )}
+        </div>
+      )}
+
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <label htmlFor="ticker" className="mb-1.5 block text-sm text-neutral-400">
@@ -95,11 +131,11 @@ export default function InversionForm() {
             name="ticker"
             type="text"
             required
-            placeholder={type === "STOCK" ? "ej: AAPL, GGAL" : "ej: BTC-USD, ETH-USD"}
+            placeholder={tickerPlaceholder}
             className="w-full rounded-lg bg-neutral-900 px-3 py-2 text-sm uppercase text-white placeholder-neutral-600 outline-none ring-1 ring-neutral-700 focus:ring-blue-500"
           />
           <p className="mt-1 text-xs text-neutral-600">
-            {EJEMPLOS[type].slice(0, 4).join(" · ")}
+            {EJEMPLOS[exampleKey].slice(0, 4).join(" · ")}
           </p>
         </div>
 
@@ -111,7 +147,7 @@ export default function InversionForm() {
             id="name"
             name="name"
             type="text"
-            placeholder={type === "STOCK" ? "ej: Apple Inc." : "ej: Bitcoin"}
+            placeholder={currency === "ARS" ? "ej: MercadoLibre CEDEAR" : type === "CRYPTO" ? "ej: Bitcoin" : "ej: Apple Inc."}
             className="w-full rounded-lg bg-neutral-900 px-3 py-2 text-sm text-white placeholder-neutral-600 outline-none ring-1 ring-neutral-700 focus:ring-blue-500"
           />
         </div>
@@ -134,7 +170,7 @@ export default function InversionForm() {
 
         <div>
           <label htmlFor="avgBuyPrice" className="mb-1.5 block text-sm text-neutral-400">
-            Precio promedio de compra (USD)
+            Precio promedio de compra ({currency})
           </label>
           <input
             id="avgBuyPrice"
@@ -143,7 +179,7 @@ export default function InversionForm() {
             required
             min="0.000001"
             step="any"
-            placeholder="ej: 150.00"
+            placeholder={currency === "ARS" ? "ej: 24995" : "ej: 150.00"}
             className="w-full rounded-lg bg-neutral-900 px-3 py-2 text-sm text-white placeholder-neutral-600 outline-none ring-1 ring-neutral-700 focus:ring-blue-500"
           />
         </div>
@@ -169,7 +205,7 @@ export default function InversionForm() {
       </div>
 
       <p className="mt-3 text-xs text-neutral-600">
-        Si ya tenés ese ticker cargado, se acumulará ajustando el precio promedio automáticamente.
+        Si ya tenés ese ticker en la misma moneda, se acumulará ajustando el precio promedio.
       </p>
     </form>
   );

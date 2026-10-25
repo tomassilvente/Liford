@@ -7,7 +7,6 @@ const navItems = [
   { href: "/fotografia",           label: "Sesiones",  num: "I" },
   { href: "/fotografia/clientes",  label: "Clientes",  num: "II" },
   { href: "/fotografia/servicios", label: "Servicios", num: "III" },
-  { href: "/fotografia/editor",    label: "Editor",    num: "IV" },
 ];
 
 export default async function FotografiaLayout({

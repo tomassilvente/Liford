@@ -18,6 +18,7 @@ export async function PATCH(
       ...(body.name !== undefined && { name: body.name }),
       ...(body.quantity !== undefined && { quantity: Number(body.quantity) }),
       ...(body.avgBuyPrice !== undefined && { avgBuyPrice: Number(body.avgBuyPrice) }),
+      ...(body.currency !== undefined && { currency: body.currency }),
     },
   });
 

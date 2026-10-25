@@ -12,12 +12,14 @@ interface InversionCardProps {
   cotizacion: Cotizacion | null;
 }
 
-function fmt(n: number, decimals = 2) {
+function fmt(n: number, currency: string = "USD") {
+  if (currency === "ARS") {
+    return new Intl.NumberFormat("es-AR", {
+      style: "currency", currency: "ARS", maximumFractionDigits: 0,
+    }).format(n);
+  }
   return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: decimals,
-    maximumFractionDigits: decimals,
+    style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 2,
   }).format(n);
 }
 
@@ -56,6 +58,7 @@ export default function InversionCard({ investment, cotizacion }: InversionCardP
   const [loading, setLoading] = useState(false);
 
   const cp = cotizacion?.price ?? null;
+  const displayCurrency = cotizacion?.currency ?? investment.currency ?? "USD";
   const costoBasis = investment.quantity * investment.avgBuyPrice;
   const valorActual = cp !== null ? investment.quantity * cp : null;
   const pnl = valorActual !== null ? valorActual - costoBasis : null;
@@ -141,7 +144,7 @@ export default function InversionCard({ investment, cotizacion }: InversionCardP
               )}
             </div>
             <p style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ink3)", marginTop: 4 }}>
-              {fmtNum(investment.quantity, 6)} u. · Compra prom: {fmt(investment.avgBuyPrice)}
+              {fmtNum(investment.quantity, 6)} u. · Compra prom: {fmt(investment.avgBuyPrice, displayCurrency)}
             </p>
           </div>
           <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -158,7 +161,7 @@ export default function InversionCard({ investment, cotizacion }: InversionCardP
 
         <div className="mt-3 flex items-end gap-3">
           <p style={{ fontFamily: "var(--font-mono)", fontSize: 22, fontWeight: 700, color: "var(--ink)" }}>
-            {valorActual !== null ? fmt(valorActual) : "—"}
+            {valorActual !== null ? fmt(valorActual, displayCurrency) : "—"}
           </p>
           {cotizacion?.changePct !== null && cotizacion?.changePct !== undefined && (
             <div className="mb-0.5 flex items-center gap-1" style={{ color: cotizacion.changePct >= 0 ? "var(--olive)" : "var(--brick)", fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 600 }}>
@@ -169,7 +172,7 @@ export default function InversionCard({ investment, cotizacion }: InversionCardP
               <span>{cotizacion.changePct >= 0 ? "+" : ""}{cotizacion.changePct.toFixed(2)}%</span>
               {cotizacion.changeAmount !== null && (
                 <span style={{ fontSize: 10, color: "var(--ink3)", fontWeight: 400 }}>
-                  ({cotizacion.changeAmount >= 0 ? "+" : ""}{fmt(cotizacion.changeAmount)})
+                  ({cotizacion.changeAmount >= 0 ? "+" : ""}{fmt(cotizacion.changeAmount, displayCurrency)})
                 </span>
               )}
             </div>
@@ -180,18 +183,18 @@ export default function InversionCard({ investment, cotizacion }: InversionCardP
           <div style={{ background: "var(--paper3)", padding: "8px 12px" }}>
             <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ink3)" }}>Valor actual</p>
             <p style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 600, color: "var(--ink)", marginTop: 2 }}>
-              {cp !== null ? fmt(cp) : "—"}
+              {cp !== null ? fmt(cp, displayCurrency) : "—"}
             </p>
           </div>
           <div style={{ background: "var(--paper3)", padding: "8px 12px" }}>
             <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ink3)" }}>Invertido</p>
-            <p style={{ fontFamily: "var(--font-mono)", fontSize: 13, color: "var(--ink2)", marginTop: 2 }}>{fmt(costoBasis)}</p>
+            <p style={{ fontFamily: "var(--font-mono)", fontSize: 13, color: "var(--ink2)", marginTop: 2 }}>{fmt(costoBasis, displayCurrency)}</p>
           </div>
           <div className="col-span-2" style={{ background: "var(--paper3)", padding: "8px 12px" }}>
             <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ink3)" }}>P&L de tu posición</p>
             {pnl !== null ? (
               <p style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color: pnl >= 0 ? "var(--olive)" : "var(--brick)", marginTop: 2 }}>
-                {pnl >= 0 ? "+" : ""}{fmt(pnl)}{" "}
+                {pnl >= 0 ? "+" : ""}{fmt(pnl, displayCurrency)}{" "}
                 <span style={{ fontWeight: 400, color: "var(--ink3)" }}>({pnlPct! >= 0 ? "+" : ""}{pnlPct!.toFixed(2)}%)</span>
               </p>
             ) : (
@@ -215,12 +218,12 @@ export default function InversionCard({ investment, cotizacion }: InversionCardP
           <PriceHistoryChart ticker={investment.ticker} currentPrice={cp} />
           <div className="grid grid-cols-2 gap-x-4 gap-y-3">
             {[
-              { label: "Cierre anterior", value: cotizacion.previousClose !== null ? fmt(cotizacion.previousClose) : "—", color: "var(--ink)" },
+              { label: "Cierre anterior", value: cotizacion.previousClose !== null ? fmt(cotizacion.previousClose, displayCurrency) : "—", color: "var(--ink)" },
               { label: "Exchange", value: cotizacion.exchangeName ?? "—", color: "var(--ink)" },
-              { label: "Máximo del día", value: cotizacion.dayHigh !== null ? fmt(cotizacion.dayHigh) : "—", color: "var(--olive)" },
-              { label: "Mínimo del día", value: cotizacion.dayLow !== null ? fmt(cotizacion.dayLow) : "—", color: "var(--brick)" },
-              { label: "Máx. 52 semanas", value: cotizacion.week52High !== null ? fmt(cotizacion.week52High) : "—", color: "var(--olive)" },
-              { label: "Mín. 52 semanas", value: cotizacion.week52Low !== null ? fmt(cotizacion.week52Low) : "—", color: "var(--brick)" },
+              { label: "Máximo del día", value: cotizacion.dayHigh !== null ? fmt(cotizacion.dayHigh, displayCurrency) : "—", color: "var(--olive)" },
+              { label: "Mínimo del día", value: cotizacion.dayLow !== null ? fmt(cotizacion.dayLow, displayCurrency) : "—", color: "var(--brick)" },
+              { label: "Máx. 52 semanas", value: cotizacion.week52High !== null ? fmt(cotizacion.week52High, displayCurrency) : "—", color: "var(--olive)" },
+              { label: "Mín. 52 semanas", value: cotizacion.week52Low !== null ? fmt(cotizacion.week52Low, displayCurrency) : "—", color: "var(--brick)" },
             ].map(({ label, value, color }) => (
               <div key={label}>
                 <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ink3)" }}>{label}</p>
@@ -246,8 +249,8 @@ export default function InversionCard({ investment, cotizacion }: InversionCardP
                   />
                 </div>
                 <div className="mt-1 flex justify-between" style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ink3)" }}>
-                  <span>{cotizacion.week52Low !== null ? fmt(cotizacion.week52Low) : "—"}</span>
-                  <span>{fmt(cotizacion.week52High)}</span>
+                  <span>{cotizacion.week52Low !== null ? fmt(cotizacion.week52Low, displayCurrency) : "—"}</span>
+                  <span>{fmt(cotizacion.week52High, displayCurrency)}</span>
                 </div>
               </div>
             )}

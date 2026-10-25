@@ -29,7 +29,7 @@ export default async function ClientesPage() {
       {clients.length === 0 ? (
         <p style={{ fontFamily: "var(--font-serif)", fontStyle: "italic", fontSize: 14, color: "var(--foto-rule)" }}>No hay clientes todavía.</p>
       ) : (
-        <div style={{ border: "1px solid var(--foto-rule)" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 16 }}>
           {clients.map((c) => (
             <ClientRow
               key={c.id}

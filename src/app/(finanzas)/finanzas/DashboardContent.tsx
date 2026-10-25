@@ -1,9 +1,12 @@
 "use client";
 
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import type { MonthlyDataPoint } from "@/components/finanzas/MonthlyChart";
 import type { WealthDataPoint } from "@/components/finanzas/WealthChart";
 import MonthFilter from "@/components/finanzas/MonthFilter";
+import { catIcon, type TxRowData, type CatData } from "@/components/finanzas/MovementRow";
+import DetailPanel from "@/components/finanzas/DetailPanel";
 
 interface BudgetAlert {
   category: string;
@@ -26,6 +29,9 @@ interface RecentTransaction {
   amount: number;
   currency: string;
   type: string;
+  source: string;
+  isRecurring: boolean;
+  recurrentRuleId: string | null;
 }
 
 interface Props {
@@ -63,6 +69,7 @@ interface Props {
   monthlyData: MonthlyDataPoint[];
   wealthData: WealthDataPoint[];
   recentTransactions: RecentTransaction[];
+  userCategories: CatData[];
   budgetAlerts: BudgetAlert[];
   sessionsToday: SessionToday[];
   deltaARSPct: number | null;
@@ -84,6 +91,7 @@ function DashboardMobile({
   balanceMes, tasaAhorro,
   recentTransactions,
   mesLabel, diasRestantesMes,
+  selectedTxId, setSelectedTxId,
 }: {
   totalARS: number; totalUSD: number;
   deltaARSPct: number | null; deltaUSDPct: number | null;
@@ -91,6 +99,8 @@ function DashboardMobile({
   balanceMes: number; tasaAhorro: number | null;
   recentTransactions: RecentTransaction[];
   mesLabel: string; diasRestantesMes: number;
+  selectedTxId: string | null;
+  setSelectedTxId: (id: string | null) => void;
 }) {
   const semanaDeltaPct = promedioSemana4w && promedioSemana4w > 0
     ? (gastoSemana / promedioSemana4w - 1) * 100
@@ -160,35 +170,45 @@ function DashboardMobile({
         )}
       </div>
 
-      <h2 style={{ fontFamily: "var(--font-display)", fontStyle: "italic", fontSize: 22, margin: "22px 0 4px", letterSpacing: "-0.02em" }}>Últimos</h2>
-      {top4.map((t) => {
-        const isExpense = t.type === "EXPENSE" || t.type === "STOCK_PURCHASE" || t.type === "CRYPTO_PURCHASE";
-        const date = new Date(t.date);
-        const today = new Date();
-        const yesterday = new Date(today);
-        yesterday.setDate(yesterday.getDate() - 1);
-        const isToday = date.toDateString() === today.toDateString();
-        const isYest = date.toDateString() === yesterday.toDateString();
-        const timeStr = new Intl.DateTimeFormat("es-AR", { hour: "2-digit", minute: "2-digit", timeZone: "UTC" }).format(date);
-        const shortDate = new Intl.DateTimeFormat("es-AR", { day: "2-digit", month: "2-digit", timeZone: "UTC" }).format(date);
-        const dateLabel = isToday ? `Hoy ${timeStr}` : isYest ? "Ayer" : shortDate;
-        return (
-          <Link key={t.id} href="/finanzas/transacciones" style={{ display: "block", textDecoration: "none" }}>
-            <div style={{ padding: "11px 0", borderBottom: "1px dashed var(--rule)", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
-              <div style={{ minWidth: 0, flex: 1 }}>
-                <p style={{ fontFamily: "var(--font-serif)", fontSize: 15, margin: 0, color: "var(--ink)", lineHeight: 1.2 }}>{t.description ?? t.category}</p>
-                <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ink3)", margin: "2px 0 0", letterSpacing: "0.06em", textTransform: "uppercase" }}>
+      <h2 style={{ fontFamily: "var(--font-display)", fontStyle: "italic", fontSize: 22, margin: "22px 0 8px", letterSpacing: "-0.02em" }}>Últimos</h2>
+      <div style={{ border: "1px solid var(--rule)" }}>
+        {top4.map((t, i) => {
+          const isExpense = t.type !== "INCOME";
+          const date = new Date(t.date);
+          const todayD = new Date();
+          const isToday = date.toLocaleDateString("en-CA", { timeZone: "UTC" }) === todayD.toLocaleDateString("en-CA");
+          const yestD = new Date(todayD); yestD.setDate(yestD.getDate() - 1);
+          const isYest = date.toLocaleDateString("en-CA", { timeZone: "UTC" }) === yestD.toLocaleDateString("en-CA");
+          const shortDate = date.toLocaleDateString("es-AR", { day: "2-digit", month: "short", timeZone: "UTC" });
+          const dateLabel = isToday ? "Hoy" : isYest ? "Ayer" : shortDate;
+          const sel = selectedTxId === t.id;
+          return (
+            <div
+              key={t.id}
+              onClick={() => setSelectedTxId(sel ? null : t.id)}
+              style={{ display: "flex", alignItems: "center", gap: 12, padding: "11px 14px", borderBottom: i < top4.length - 1 ? "1px solid var(--rule)" : "none", cursor: "pointer", background: sel ? "var(--paper2)" : "transparent", borderLeft: sel ? "3px solid var(--ink)" : "3px solid transparent" }}
+              onMouseEnter={e => { if (!sel) (e.currentTarget as HTMLElement).style.background = "var(--paper2)"; }}
+              onMouseLeave={e => { if (!sel) (e.currentTarget as HTMLElement).style.background = "transparent"; }}
+            >
+              <div style={{ width: 32, height: 32, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, border: "1.5px solid var(--rule2)", background: "var(--paper)", userSelect: "none" }}>
+                {catIcon(undefined, t.category)}
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p style={{ fontFamily: "var(--font-serif)", fontSize: 15, color: "var(--ink)", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {t.description ?? t.category}
+                </p>
+                <p style={{ fontFamily: "var(--font-serif)", fontStyle: "italic", fontSize: 12, color: "var(--ink3)", margin: "1px 0 0" }}>
                   {dateLabel} · {t.category}
                 </p>
               </div>
-              <p style={{ fontFamily: "var(--font-mono)", fontSize: 14, color: isExpense ? "var(--ink)" : "#586e3d", margin: 0, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>
-                {isExpense ? "−" : "+"}{" "}{t.currency === "USD" ? `${fmtUSD(t.amount)} USD` : fmtARS(t.amount)}
+              <p style={{ fontFamily: "var(--font-mono)", fontSize: 14, color: isExpense ? "var(--brick)" : "var(--olive)", margin: 0, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap", flexShrink: 0 }}>
+                {isExpense ? "−" : "+"}&thinsp;{t.currency === "USD" ? `${fmtUSD(t.amount)} USD` : fmtARS(t.amount)}
               </p>
             </div>
-          </Link>
-        );
-      })}
-      <p style={{ fontFamily: "var(--font-serif)", fontStyle: "italic", fontSize: 12, margin: "14px 0 0", textAlign: "center" }}>
+          );
+        })}
+      </div>
+      <p style={{ fontFamily: "var(--font-serif)", fontStyle: "italic", fontSize: 12, margin: "12px 0 0", textAlign: "center" }}>
         <Link href="/finanzas/transacciones" style={{ color: "var(--navy)", textDecoration: "none" }}>ver todos →</Link>
       </p>
     </div>
@@ -201,8 +221,8 @@ export default function DashboardContent({
   totalARS, walletsUSD, foreignUSD, portfolioUSD,
   ingresosMes, gastosMes, balanceMes, tasaAhorro,
   diffGastos, diffIngresos, mesLabel, diasRestantesMes,
-  categoryData, ingresosUSD, gastosUSD,
-  recentTransactions,
+  categoryData, incomeCategoryData, ingresosUSD, gastosUSD,
+  recentTransactions, userCategories,
   deltaARSPct, deltaUSDPct,
   gastoSemana, promedioSemana4w,
 }: Props) {
@@ -211,6 +231,37 @@ export default function DashboardContent({
     ...c,
     pct: ingresosMes > 0 ? (c.total / ingresosMes) * 100 : 0,
   }));
+
+  const [selectedTxId, setSelectedTxId] = useState<string | null>(null);
+  const selectedTx = selectedTxId
+    ? recentTransactions.find(t => t.id === selectedTxId) ?? null
+    : null;
+
+  const catMap = useMemo(() => {
+    const m = new Map<string, CatData>();
+    for (const c of userCategories) m.set(c.name, c);
+    return m;
+  }, [userCategories]);
+
+  const catTotal = useMemo(() => {
+    if (!selectedTx) return 0;
+    if (selectedTx.type === "INCOME") {
+      return incomeCategoryData.find(c => c.category === selectedTx.category)?.ars ?? 0;
+    }
+    return categoryData.find(c => c.category === selectedTx.category)?.total ?? 0;
+  }, [selectedTx, categoryData, incomeCategoryData]);
+
+  const totalOut = selectedTx?.type === "INCOME" ? ingresosMes : gastosMes;
+
+  function asTxRowData(t: RecentTransaction): TxRowData {
+    return {
+      id: t.id, type: t.type as TxRowData["type"],
+      amount: t.amount, currency: t.currency,
+      category: t.category, description: t.description,
+      source: t.source, date: t.date,
+      isRecurring: t.isRecurring, recurrentRuleId: t.recurrentRuleId,
+    };
+  }
 
   return (
     <div>
@@ -228,6 +279,8 @@ export default function DashboardContent({
           recentTransactions={recentTransactions}
           mesLabel={mesLabel}
           diasRestantesMes={diasRestantesMes}
+          selectedTxId={selectedTxId}
+          setSelectedTxId={setSelectedTxId}
         />
       </div>
 
@@ -345,18 +398,32 @@ export default function DashboardContent({
               <h2 style={{ fontFamily: "var(--font-display)", fontStyle: "italic", fontSize: 24, margin: 0, letterSpacing: "-0.02em" }}>En qué se va</h2>
               <p style={{ fontFamily: "var(--font-serif)", fontStyle: "italic", fontSize: 12, color: "var(--ink3)", margin: 0 }}>% sobre tus ingresos del mes</p>
             </div>
-            {catConPct.map((c, idx) => (
-              <div key={idx} style={{ display: "grid", gridTemplateColumns: "180px 1fr 90px 50px", alignItems: "center", gap: 16, padding: "12px 0", borderBottom: "1px dashed var(--rule)" }}>
-                <span style={{ fontFamily: "var(--font-serif)", fontSize: 16, color: "var(--ink)" }}>{c.category}</span>
-                <div style={{ height: 4, background: "var(--paper2)" }}>
-                  <div style={{ height: "100%", width: `${Math.min((c.pct / 20) * 100, 100)}%`, background: c.pct > 15 ? "#c14a3a" : c.pct > 8 ? "var(--rust)" : "var(--ink2)" }} />
+            <div style={{ border: "1px solid var(--rule)" }}>
+              {catConPct.map((c, idx) => (
+                <div
+                  key={idx}
+                  style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", borderBottom: idx < catConPct.length - 1 ? "1px solid var(--rule)" : "none", background: "transparent" }}
+                  onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = "var(--paper2)"}
+                  onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = "transparent"}
+                >
+                  <div style={{ width: 34, height: 34, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, border: "1.5px solid var(--rule2)", background: "var(--paper)", userSelect: "none" }}>
+                    {catIcon(undefined, c.category)}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 5 }}>
+                      <span style={{ fontFamily: "var(--font-serif)", fontSize: 15, fontWeight: 600, color: "var(--ink)" }}>{c.category}</span>
+                      <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: c.pct > 15 ? "var(--brick)" : "var(--ink3)", letterSpacing: "0.04em" }}>{c.pct.toFixed(0)}%</span>
+                    </div>
+                    <div style={{ height: 4, background: "var(--paper3)", position: "relative" }}>
+                      <div style={{ position: "absolute", left: 0, top: 0, height: "100%", width: `${Math.min((c.pct / 20) * 100, 100)}%`, background: c.pct > 15 ? "var(--brick)" : "var(--ink2)", opacity: 0.65, transition: "width 0.3s" }} />
+                    </div>
+                  </div>
+                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 14, color: "var(--brick)", fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap", flexShrink: 0 }}>
+                    −&thinsp;{fmtARS(c.total)}
+                  </span>
                 </div>
-                <span style={{ fontFamily: "var(--font-mono)", fontSize: 13, textAlign: "right", color: "var(--ink)", fontVariantNumeric: "tabular-nums" }}>{fmtARS(c.total)}</span>
-                <span style={{ fontFamily: "var(--font-mono)", fontSize: 13, textAlign: "right", fontVariantNumeric: "tabular-nums", color: c.pct > 15 ? "#c14a3a" : c.pct > 8 ? "var(--rust)" : "var(--ink3)" }}>
-                  {c.pct.toFixed(0)}%
-                </span>
-              </div>
-            ))}
+              ))}
+            </div>
           </section>
         )}
 
@@ -367,33 +434,92 @@ export default function DashboardContent({
               <h2 style={{ fontFamily: "var(--font-display)", fontStyle: "italic", fontSize: 24, margin: 0, letterSpacing: "-0.02em" }}>Últimos movimientos</h2>
               <Link href="/finanzas/transacciones" style={{ fontFamily: "var(--font-serif)", fontStyle: "italic", fontSize: 13, color: "var(--navy)", textDecoration: "none" }}>ver todos →</Link>
             </div>
-            <table style={{ width: "100%", borderCollapse: "collapse" }}>
-              <tbody>
-                {recentTransactions.map((t, i) => {
-                  const isExpense = t.type === "EXPENSE" || t.type === "STOCK_PURCHASE" || t.type === "CRYPTO_PURCHASE";
-                  return (
-                    <tr key={t.id} style={{ borderBottom: "1px dashed var(--rule)" }}>
-                      <td style={{ padding: "10px 0", fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ink3)", letterSpacing: "0.06em", width: 70 }}>
-                        {new Intl.DateTimeFormat("es-AR", { day: "2-digit", month: "short", timeZone: "UTC" }).format(new Date(t.date)).toUpperCase()}
-                      </td>
-                      <td style={{ padding: "10px 0", fontFamily: "var(--font-serif)", fontSize: 15, color: "var(--ink)" }}>
+            <div style={{ border: "1px solid var(--rule)" }}>
+              {recentTransactions.map((t, i) => {
+                const isExpense = t.type !== "INCOME";
+                const date = new Date(t.date);
+                const todayD = new Date();
+                const isToday = date.toLocaleDateString("en-CA", { timeZone: "UTC" }) === todayD.toLocaleDateString("en-CA");
+                const yestD = new Date(todayD); yestD.setDate(yestD.getDate() - 1);
+                const isYest = date.toLocaleDateString("en-CA", { timeZone: "UTC" }) === yestD.toLocaleDateString("en-CA");
+                const shortDate = date.toLocaleDateString("es-AR", { day: "numeric", month: "short", timeZone: "UTC" });
+                const dateLabel = isToday ? "Hoy" : isYest ? "Ayer" : shortDate;
+                const sel = selectedTxId === t.id;
+                return (
+                  <div
+                    key={t.id}
+                    onClick={() => setSelectedTxId(sel ? null : t.id)}
+                    style={{ display: "flex", alignItems: "center", gap: 12, padding: "11px 16px", borderBottom: i < recentTransactions.length - 1 ? "1px solid var(--rule)" : "none", cursor: "pointer", background: sel ? "var(--paper2)" : "transparent", borderLeft: sel ? "3px solid var(--ink)" : "3px solid transparent" }}
+                    onMouseEnter={e => { if (!sel) (e.currentTarget as HTMLElement).style.background = "var(--paper2)"; }}
+                    onMouseLeave={e => { if (!sel) (e.currentTarget as HTMLElement).style.background = "transparent"; }}
+                  >
+                    <div style={{ width: 34, height: 34, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, border: "1.5px solid var(--rule2)", background: "var(--paper)", userSelect: "none" }}>
+                      {catIcon(undefined, t.category)}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ fontFamily: "var(--font-serif)", fontSize: 15, color: "var(--ink)", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                         {t.description ?? t.category}
-                      </td>
-                      <td style={{ padding: "10px 0", fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ink3)", letterSpacing: "0.1em", textTransform: "uppercase", width: 130 }}>
-                        {t.category}
-                      </td>
-                      <td style={{ padding: "10px 0", textAlign: "right", fontFamily: "var(--font-mono)", fontSize: 14, color: isExpense ? "var(--ink)" : "#586e3d", fontVariantNumeric: "tabular-nums", width: 160 }}>
-                        {isExpense ? "−" : "+"}{" "}{t.currency === "USD" ? `${fmtUSD(t.amount)} USD` : `${fmtARS(t.amount)} ARS`}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                      </p>
+                      <p style={{ fontFamily: "var(--font-serif)", fontStyle: "italic", fontSize: 13, color: "var(--ink3)", margin: "2px 0 0" }}>
+                        {dateLabel} · {t.category}
+                      </p>
+                    </div>
+                    <p style={{ fontFamily: "var(--font-mono)", fontSize: 15, color: isExpense ? "var(--brick)" : "var(--olive)", margin: 0, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap", flexShrink: 0 }}>
+                      {isExpense ? "−" : "+"}&thinsp;{t.currency === "USD" ? `${fmtUSD(t.amount)} USD` : fmtARS(t.amount)}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
           </section>
         )}
 
       </div>{/* end desktop */}
+
+      {/* ── Detail panel (desktop fixed right + mobile bottom sheet) ── */}
+      {selectedTx && (
+        <>
+          {/* Backdrop — click to close */}
+          <div
+            onClick={() => setSelectedTxId(null)}
+            className="hidden md:block"
+            style={{ position: "fixed", inset: 0, zIndex: 48 }}
+          />
+
+          {/* Desktop: fixed right panel */}
+          <div
+            className="hidden md:block"
+            style={{ position: "fixed", top: 0, right: 0, height: "100vh", width: 320, background: "var(--paper)", borderLeft: "1px solid var(--rule2)", overflowY: "auto", zIndex: 49 }}
+            key={selectedTx.id}
+          >
+            <DetailPanel
+              tx={asTxRowData(selectedTx)}
+              userCategories={userCategories}
+              catMap={catMap}
+              catTotal={catTotal}
+              totalOut={totalOut}
+              onClose={() => setSelectedTxId(null)}
+            />
+          </div>
+
+          {/* Mobile: bottom sheet */}
+          <div
+            className="md:hidden"
+            style={{ position: "fixed", bottom: 0, left: 0, right: 0, background: "var(--paper)", borderTop: "2px solid var(--ink)", maxHeight: "70vh", overflowY: "auto", zIndex: 50 }}
+            key={selectedTx.id + "-m"}
+          >
+            <div style={{ width: 32, height: 4, background: "var(--ink3)", margin: "8px auto 4px", borderRadius: 2 }} />
+            <DetailPanel
+              tx={asTxRowData(selectedTx)}
+              userCategories={userCategories}
+              catMap={catMap}
+              catTotal={catTotal}
+              totalOut={totalOut}
+              onClose={() => setSelectedTxId(null)}
+            />
+          </div>
+        </>
+      )}
     </div>
   );
 }

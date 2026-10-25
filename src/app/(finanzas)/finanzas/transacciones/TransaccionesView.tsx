@@ -1,233 +1,69 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { useRouter } from "next/navigation";
-import { LuSearch, LuX, LuCheck, LuPencil, LuTrash2, LuEllipsis } from "react-icons/lu";
-import { toast } from "sonner";
-import RecurrentRuleModal from "@/components/finanzas/RecurrentRuleModal";
+import { LuSearch, LuX, LuPlus } from "react-icons/lu";
 import MonthFilter from "@/components/finanzas/MonthFilter";
+import RecurrentRuleModal from "@/components/finanzas/RecurrentRuleModal";
+import MovementRow, { type TxRowData, type CatData } from "@/components/finanzas/MovementRow";
+import DetailPanel from "@/components/finanzas/DetailPanel";
+import CategoryView from "@/components/finanzas/CategoryView";
+import CalendarView from "@/components/finanzas/CalendarView";
 
-const fmtARS = (n: number) =>
+// KPI numbers shown without currency symbol — just plain es-AR numbers
+const fmtNum = (n: number) =>
   new Intl.NumberFormat("es-AR", { maximumFractionDigits: 0 }).format(n);
-const fmtUSD = (n: number) =>
-  new Intl.NumberFormat("en-US", { minimumFractionDigits: 2 }).format(n);
-const fmtNative = (n: number, currency: string) => currency === "USD" ? fmtUSD(n) : fmtARS(n);
-
-type TxType = "EXPENSE" | "INCOME" | "STOCK_PURCHASE" | "CRYPTO_PURCHASE";
-
-interface Transaction {
-  id: string;
-  type: TxType;
-  amount: number;
-  currency: string;
-  category: string;
-  description: string | null;
-  source: string;
-  date: string;
-  isRecurring?: boolean;
-  recurrentRuleId?: string | null;
-}
-
-interface UserCategory { name: string; icon: string; type: string; }
+// Row amounts keep the currency symbol
+const fmtARS = (n: number) =>
+  new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", maximumFractionDigits: 0 }).format(n);
 
 interface Props {
-  transactions: Transaction[];
+  transactions: TxRowData[];
   mesYM: string;
   prevHasData?: boolean;
   nextHasData?: boolean;
   wallets: { id: string; name: string; currency: string }[];
   foreignAccounts: { id: string; name: string; currency: string }[];
   initialTipo?: "" | "EXPENSE" | "INCOME";
-  userCategories?: UserCategory[];
+  userCategories?: CatData[];
 }
 
-const FALLBACK_GASTO   = ["Alimentación","Transporte","Entretenimiento","Salud","Servicios","Ropa","Educación","Suscripciones","Otro"];
-const FALLBACK_INGRESO = ["Sueldo","Freelance","Fotografía","Venta","Inversión","Transferencia recibida","Reembolso","Otro"];
+type Vista = "list" | "cat" | "cal";
 
-const inputStyle: React.CSSProperties = {
-  background: "var(--paper2)",
-  border: "1px solid var(--rule2)",
-  borderRadius: 0,
-  padding: "6px 10px",
-  fontFamily: "var(--font-serif)",
-  fontSize: 13,
-  color: "var(--ink)",
-  outline: "none",
-};
+// Mini sparkline: daily ARS expenses as SVG bars
+function Sparkline({ transactions, mesYM }: { transactions: TxRowData[]; mesYM: string }) {
+  const [year, month] = mesYM.split("-").map(Number);
+  const daysInMonth = new Date(year, month, 0).getDate();
+  const todayStr = new Date().toLocaleDateString("en-CA");
+  const prefix = `${year}-${String(month).padStart(2, "0")}-`;
 
-function adjacentYM(ym: string, delta: number): string {
-  const [y, m] = ym.split("-").map(Number);
-  const d = new Date(y, m - 1 + delta, 1);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-}
+  const daily = useMemo(() => {
+    const m = new Map<number, number>();
+    for (const tx of transactions) {
+      if (tx.type === "INCOME" || tx.currency !== "ARS") continue;
+      const day = parseInt(tx.date.slice(8, 10));
+      m.set(day, (m.get(day) ?? 0) + tx.amount);
+    }
+    return Array.from({ length: daysInMonth }, (_, i) => m.get(i + 1) ?? 0);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [transactions, mesYM]);
 
-function EditRow({
-  id, description, category, amount, type, date, onDone, userCategories,
-}: {
-  id: string; description: string | null; category: string; amount: number; type: TxType; date: string; onDone: () => void;
-  userCategories: UserCategory[];
-}) {
-  const router = useRouter();
-  const [desc, setDesc]     = useState(description ?? "");
-  const [cat, setCat]       = useState(category);
-  const [amt, setAmt]       = useState(String(amount));
-  const [dateStr, setDateStr] = useState(date.slice(0, 10));
-  const [loading, setLoading] = useState(false);
-
-  const userCatsForType = userCategories.filter((c) =>
-    type === "EXPENSE" ? c.type === "EXPENSE" || c.type === "BOTH" : c.type === "INCOME" || c.type === "BOTH"
-  ).map((c) => c.name);
-  const fallback = type === "EXPENSE" ? FALLBACK_GASTO : FALLBACK_INGRESO;
-  const cats = userCatsForType.length > 0 ? userCatsForType : fallback;
-  const catsWithCurrent = cats.includes(category) ? cats : [category, ...cats];
-
-  async function save() {
-    setLoading(true);
-    const res = await fetch(`/api/finanzas/transactions/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ description: desc, category: cat, amount: amt, date: dateStr }),
-    });
-    setLoading(false);
-    if (res.ok) { toast.success("Guardado"); onDone(); router.refresh(); }
-    else toast.error("No se pudo guardar");
-  }
+  const maxVal = Math.max(...daily, 1);
+  const H = 36, bw = 3, gap = 1;
+  const W = daysInMonth * (bw + gap) - gap;
+  const todayDay = todayStr.startsWith(prefix) ? parseInt(todayStr.slice(8)) : -1;
 
   return (
-    <td colSpan={4} style={{ padding: "8px 0" }}>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 8, padding: "4px 0" }}>
-        <input value={desc} onChange={(e) => setDesc(e.target.value)} style={{ ...inputStyle, flex: 1, minWidth: 120 }} placeholder="Descripción" />
-        <input type="number" value={amt} onChange={(e) => setAmt(e.target.value)} style={{ ...inputStyle, width: 90 }} />
-        <select value={cat} onChange={(e) => setCat(e.target.value)} style={{ ...inputStyle, flex: 1 }}>
-          {catsWithCurrent.map((c) => <option key={c}>{c}</option>)}
-        </select>
-        <input type="date" value={dateStr} onChange={(e) => setDateStr(e.target.value)} style={{ ...inputStyle, width: 140 }} />
-        <button onClick={save} disabled={loading} style={{ background: "var(--ink)", color: "var(--paper)", border: "none", padding: "6px 12px", fontFamily: "var(--font-mono)", fontSize: 10, cursor: "pointer", letterSpacing: "0.06em", textTransform: "uppercase" }}>
-          <LuCheck size={13} />
-        </button>
-        <button onClick={onDone} style={{ background: "transparent", color: "var(--ink3)", border: "1px solid var(--rule2)", padding: "6px 10px", fontFamily: "var(--font-mono)", fontSize: 10, cursor: "pointer" }}>
-          <LuX size={13} />
-        </button>
-      </div>
-    </td>
-  );
-}
-
-function TxRow({ tx, onEdit, onOpenRule, userCategories }: {
-  tx: Transaction;
-  onEdit: () => void;
-  onOpenRule: (id: string) => void;
-  userCategories: UserCategory[];
-}) {
-  const router = useRouter();
-  const [menuOpen, setMenuOpen]     = useState(false);
-  const [confirming, setConfirming] = useState(false);
-  const [editingCat, setEditingCat] = useState(false);
-
-  const isExpense = tx.type === "EXPENSE" || tx.type === "STOCK_PURCHASE" || tx.type === "CRYPTO_PURCHASE";
-  const isPhoto   = tx.source === "PHOTOGRAPHY";
-
-  const catsForType = userCategories
-    .filter((c) => isExpense ? c.type === "EXPENSE" || c.type === "BOTH" : c.type === "INCOME" || c.type === "BOTH")
-    .map((c) => c.name);
-  const cats = catsForType.includes(tx.category) ? catsForType : [tx.category, ...catsForType];
-
-  async function handleCategoryChange(newCat: string) {
-    if (newCat === tx.category) { setEditingCat(false); return; }
-    setEditingCat(false);
-    const res = await fetch(`/api/finanzas/transactions/${tx.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ category: newCat }),
-    });
-    if (res.ok) { toast.success("Categoría actualizada"); router.refresh(); }
-    else toast.error("No se pudo actualizar");
-  }
-
-  async function handleDelete() {
-    const res = await fetch(`/api/finanzas/transactions/${tx.id}`, { method: "DELETE" });
-    if (res.ok) { toast.success("Eliminada"); router.refresh(); }
-    else toast.error("No se pudo eliminar");
-  }
-
-  return (
-    <tr style={{ borderBottom: "1px dashed var(--rule)" }}>
-      <td style={{ padding: "8px 12px 8px 0", fontFamily: "var(--font-serif)", fontSize: 14, color: "var(--ink)", maxWidth: 0 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, overflow: "hidden" }}>
-          <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{tx.description ?? tx.category}</span>
-          {isPhoto && (
-            <span style={{ flexShrink: 0, fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--navy)", letterSpacing: "0.08em", textTransform: "uppercase", border: "1px solid var(--navy)", padding: "1px 5px" }}>FOTO</span>
-          )}
-          {tx.isRecurring && tx.recurrentRuleId && (
-            <button
-              onClick={() => onOpenRule(tx.recurrentRuleId!)}
-              style={{ flexShrink: 0, background: "transparent", border: "none", color: "var(--ink3)", cursor: "pointer", fontFamily: "var(--font-serif)", fontSize: 16, fontStyle: "italic", lineHeight: 1 }}
-              title="Ver regla recurrente"
-            >
-              ↻
-            </button>
-          )}
-        </div>
-      </td>
-      <td style={{ padding: "8px 12px 8px 0", whiteSpace: "nowrap" }}>
-        {editingCat ? (
-          <select
-            autoFocus
-            defaultValue={tx.category}
-            onChange={(e) => handleCategoryChange(e.target.value)}
-            onBlur={() => setEditingCat(false)}
-            style={{ ...inputStyle, padding: "2px 6px", fontSize: 9 }}
-          >
-            {cats.map((c) => <option key={c} value={c}>{c}</option>)}
-          </select>
-        ) : (
-          <span
-            onClick={() => !isPhoto && setEditingCat(true)}
-            title={isPhoto ? undefined : "Click para cambiar categoría"}
-            style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ink3)", letterSpacing: "0.1em", textTransform: "uppercase", cursor: isPhoto ? "default" : "pointer" }}
-          >
-            {tx.category}
-          </span>
-        )}
-      </td>
-      <td style={{ padding: "8px 0", textAlign: "right", fontFamily: "var(--font-mono)", fontSize: 14, color: isExpense ? "var(--ink)" : "var(--olive)", fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>
-        {isExpense ? "−" : "+"} {fmtNative(tx.amount, tx.currency)} <span style={{ fontSize: 9, color: "var(--ink3)" }}>{tx.currency}</span>
-      </td>
-      {!isPhoto ? (
-        <td style={{ padding: "8px 0 8px 12px", width: 28 }}>
-          <div style={{ position: "relative" }}>
-            <button onClick={() => setMenuOpen((v) => !v)} style={{ background: "transparent", border: "none", color: "var(--ink3)", cursor: "pointer", lineHeight: 1 }}>
-              <LuEllipsis size={14} />
-            </button>
-            {menuOpen && (
-              <>
-                <div className="fixed inset-0 z-10" onClick={() => { setMenuOpen(false); setConfirming(false); }} />
-                <div style={{ position: "absolute", right: 0, bottom: "100%", zIndex: 20, marginBottom: 4, background: "var(--paper2)", border: "1px solid var(--rule2)", minWidth: 130 }}>
-                  {!confirming ? (
-                    <>
-                      <button onClick={() => { setMenuOpen(false); onEdit(); }} style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "10px 14px", background: "transparent", border: "none", fontFamily: "var(--font-serif)", fontSize: 13, color: "var(--ink)", cursor: "pointer", textAlign: "left" }}>
-                        <LuPencil size={12} /> Editar
-                      </button>
-                      <button onClick={() => setConfirming(true)} style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "10px 14px", background: "transparent", border: "none", borderTop: "1px solid var(--rule)", fontFamily: "var(--font-serif)", fontSize: 13, color: "var(--brick)", cursor: "pointer", textAlign: "left" }}>
-                        <LuTrash2 size={12} /> Eliminar
-                      </button>
-                    </>
-                  ) : (
-                    <div style={{ padding: 10 }}>
-                      <p style={{ fontFamily: "var(--font-serif)", fontStyle: "italic", fontSize: 12, color: "var(--ink3)", margin: "0 0 8px" }}>¿Eliminar?</p>
-                      <button onClick={() => { setMenuOpen(false); setConfirming(false); handleDelete(); }} style={{ display: "block", width: "100%", background: "var(--brick)", color: "var(--paper)", border: "none", padding: "7px 0", fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer", marginBottom: 4 }}>Sí</button>
-                      <button onClick={() => setConfirming(false)} style={{ display: "block", width: "100%", background: "transparent", border: "1px solid var(--rule2)", color: "var(--ink3)", padding: "7px 0", fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.08em", cursor: "pointer" }}>No</button>
-                    </div>
-                  )}
-                </div>
-              </>
-            )}
-          </div>
-        </td>
-      ) : (
-        <td style={{ width: 28 }} />
-      )}
-    </tr>
+    <svg width={W} height={H} style={{ display: "block", flexShrink: 0 }} aria-hidden="true">
+      {daily.map((v, i) => {
+        const h = v > 0 ? Math.max(Math.round((v / maxVal) * H), 2) : 0;
+        const isToday = i + 1 === todayDay;
+        return (
+          <rect key={i} x={i * (bw + gap)} y={H - h} width={bw} height={h}
+            fill={isToday ? "var(--ink)" : "var(--ink3)"}
+            opacity={isToday ? 0.85 : 0.28} />
+        );
+      })}
+    </svg>
   );
 }
 
@@ -242,202 +78,349 @@ export default function TransaccionesView({
   const [search, setSearch]           = useState("");
   const [typeFilter, setTypeFilter]   = useState<"" | "EXPENSE" | "INCOME">(initialTipo);
   const [catFilter, setCatFilter]     = useState("");
-  const [editingId, setEditingId]     = useState<string | null>(null);
+  const [selectedId, setSelectedId]   = useState<string | null>(null);
+  const [vista, setVista]             = useState<Vista>("list");
   const [ruleModalId, setRuleModalId] = useState<string | null>(null);
-
 
   const mesLabel = (() => {
     const [y, m] = mesYM.split("-").map(Number);
     return new Date(y, m - 1, 1).toLocaleDateString("es-AR", { month: "long", year: "numeric" });
   })();
 
-  const filtered = useMemo(() => {
-    return transactions.filter((t) => {
-      if (typeFilter && t.type !== typeFilter) return false;
-      if (catFilter && t.category !== catFilter) return false;
-      if (search) {
-        const q = search.toLowerCase();
-        if (!t.description?.toLowerCase().includes(q) && !t.category.toLowerCase().includes(q)) return false;
-      }
-      return true;
-    });
-  }, [transactions, typeFilter, catFilter, search]);
+  const catMap = useMemo(() => {
+    const m = new Map<string, CatData>();
+    for (const c of userCategories) m.set(c.name, c);
+    return m;
+  }, [userCategories]);
+
+  const filtered = useMemo(() => transactions.filter((t) => {
+    if (typeFilter && t.type !== typeFilter) return false;
+    if (catFilter && t.category !== catFilter) return false;
+    if (search) {
+      const q = search.toLowerCase();
+      if (!t.description?.toLowerCase().includes(q) && !t.category.toLowerCase().includes(q)) return false;
+    }
+    return true;
+  }), [transactions, typeFilter, catFilter, search]);
 
   const kpis = useMemo(() => {
-    const ingresosARS = filtered.filter((t) => t.type === "INCOME"  && t.currency === "ARS").reduce((s, t) => s + t.amount, 0);
-    const ingresosUSD = filtered.filter((t) => t.type === "INCOME"  && t.currency === "USD").reduce((s, t) => s + t.amount, 0);
-    const gastosARS   = filtered.filter((t) => t.type === "EXPENSE" && t.currency === "ARS").reduce((s, t) => s + t.amount, 0);
-    const gastosUSD   = filtered.filter((t) => t.type === "EXPENSE" && t.currency === "USD").reduce((s, t) => s + t.amount, 0);
-    return { ingresosARS, ingresosUSD, gastosARS, gastosUSD, balanceARS: ingresosARS - gastosARS, balanceUSD: ingresosUSD - gastosUSD };
-  }, [filtered]);
+    const inARS  = transactions.filter(t => t.type === "INCOME"  && t.currency === "ARS").reduce((s, t) => s + t.amount, 0);
+    const inUSD  = transactions.filter(t => t.type === "INCOME"  && t.currency === "USD").reduce((s, t) => s + t.amount, 0);
+    const outARS = transactions.filter(t => t.type !== "INCOME"  && t.currency === "ARS").reduce((s, t) => s + t.amount, 0);
+    const outUSD = transactions.filter(t => t.type !== "INCOME"  && t.currency === "USD").reduce((s, t) => s + t.amount, 0);
+    return { inARS, inUSD, outARS, outUSD, netARS: inARS - outARS, netUSD: inUSD - outUSD };
+  }, [transactions]);
 
   const grouped = useMemo(() => {
-    const map = new Map<string, { label: string; dateLabel: string; txs: Transaction[] }>();
+    const map = new Map<string, { dayKey: string; label: string; subLabel: string; txs: TxRowData[] }>();
     const todayKey     = new Date().toISOString().slice(0, 10);
     const yDate = new Date(); yDate.setUTCDate(yDate.getUTCDate() - 1);
     const yesterdayKey = yDate.toISOString().slice(0, 10);
-    const fmtShort = new Intl.DateTimeFormat("es-AR", { day: "2-digit", month: "short", timeZone: "UTC" });
-    const fmtLong  = new Intl.DateTimeFormat("es-AR", { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" });
+    const fmtFull = new Intl.DateTimeFormat("es-AR", { weekday: "long", day: "numeric", timeZone: "UTC" });
+    const fmtSub  = new Intl.DateTimeFormat("es-AR", { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" });
 
     for (const t of filtered) {
       const d = new Date(t.date);
       const dayKey = d.toISOString().slice(0, 10);
-      let dateLabel: string;
-      if (dayKey === todayKey)      dateLabel = `HOY · ${fmtShort.format(d).toUpperCase()}`;
-      else if (dayKey === yesterdayKey) dateLabel = `AYER · ${fmtShort.format(d).toUpperCase()}`;
-      else dateLabel = fmtLong.format(d);
-      if (!map.has(dayKey)) map.set(dayKey, { label: dayKey, dateLabel, txs: [] });
+      if (!map.has(dayKey)) {
+        let label: string;
+        const sub = fmtSub.format(d);
+        if (dayKey === todayKey)          { label = "Hoy"; }
+        else if (dayKey === yesterdayKey) { label = "Ayer"; }
+        else {
+          const raw = fmtFull.format(d);
+          label = raw.charAt(0).toUpperCase() + raw.slice(1);
+        }
+        map.set(dayKey, { dayKey, label, subLabel: sub, txs: [] });
+      }
       map.get(dayKey)!.txs.push(t);
     }
     return Array.from(map.values());
   }, [filtered]);
 
-  const allCategories = Array.from(new Set(transactions.map((t) => t.category))).sort();
+  const selectedTx = selectedId ? transactions.find(t => t.id === selectedId) ?? null : null;
+
+  // Category stats for detail panel
+  const catTotal = useMemo(() => {
+    if (!selectedTx) return 0;
+    return transactions
+      .filter(t => t.category === selectedTx.category && t.type !== "INCOME" && t.currency === "ARS")
+      .reduce((s, t) => s + t.amount, 0);
+  }, [transactions, selectedTx]);
+
+  function handleSelect(id: string) {
+    setSelectedId(prev => prev === id ? null : id);
+  }
+
+  function handleCatClick(cat: string) {
+    setCatFilter(prev => prev === cat ? "" : cat);
+  }
+
+  const segBtn = (active: boolean): React.CSSProperties => ({
+    padding: "4px 11px",
+    background: active ? "var(--ink)" : "transparent",
+    color: active ? "var(--paper)" : "var(--ink3)",
+    border: "none",
+    fontFamily: "var(--font-mono)", fontSize: 10,
+    letterSpacing: "0.06em", textTransform: "uppercase" as const,
+    cursor: "pointer",
+  });
+
+  const viewBtn = (active: boolean): React.CSSProperties => ({
+    padding: "4px 12px",
+    background: active ? "var(--paper2)" : "transparent",
+    color: active ? "var(--ink)" : "var(--ink3)",
+    border: "1px solid var(--rule2)",
+    fontFamily: "var(--font-mono)", fontSize: 10,
+    letterSpacing: "0.06em", textTransform: "uppercase" as const,
+    cursor: "pointer",
+    whiteSpace: "nowrap" as const,
+  });
 
   return (
     <div>
-      {/* ── Header ──────────────────────────────────────────────── */}
-      <header style={{ paddingBottom: 16, borderBottom: "1px solid var(--rule2)", marginBottom: 28 }}>
-        <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.18em", color: "var(--ink3)", margin: 0, textTransform: "uppercase" }}>II · Movimientos — libro de asientos</p>
-        <div style={{ display: "flex", alignItems: "baseline", gap: 16, marginTop: 4, flexWrap: "wrap" }}>
-          <h1 style={{ fontFamily: "var(--font-display)", fontSize: 40, color: "var(--ink)", margin: 0, lineHeight: 0.95, fontStyle: "italic", letterSpacing: "-0.02em" }}>
-            {mesLabel}
-          </h1>
-          <div style={{ marginLeft: "auto" }}>
-            <MonthFilter selected={mesYM} prevHasData={prevHasData} nextHasData={nextHasData} />
-          </div>
+      {/* ── Header ─────────────────────────────────────────────── */}
+      <header style={{ marginBottom: 20 }}>
+        {/* Top row: month nav (left) + new button (right) */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 6 }}>
+          <MonthFilter selected={mesYM} prevHasData={prevHasData} nextHasData={nextHasData} />
+          <button
+            onClick={() => window.dispatchEvent(new CustomEvent("quickadd:open"))}
+            style={{
+              display: "flex", alignItems: "center", gap: 6,
+              background: "var(--ink)", color: "var(--paper)", border: "none",
+              padding: "8px 14px", fontFamily: "var(--font-mono)", fontSize: 10,
+              letterSpacing: "0.1em", textTransform: "uppercase", cursor: "pointer",
+              whiteSpace: "nowrap", flexShrink: 0,
+            }}
+          >
+            <LuPlus size={12} /> Nuevo movimiento
+          </button>
         </div>
+        {/* Title */}
+        <h1 style={{ fontFamily: "var(--font-display)", fontSize: 40, color: "var(--ink)", margin: 0, lineHeight: 0.95, fontStyle: "italic", letterSpacing: "-0.02em" }}>
+          Movimientos
+        </h1>
       </header>
 
-      {/* ── KPIs ────────────────────────────────────────────────── */}
-      <div style={{ display: "flex", gap: 32, fontFamily: "var(--font-mono)", fontSize: 12, marginBottom: 24, flexWrap: "wrap" }}>
-        <div>
-          <span style={{ color: "var(--ink3)", letterSpacing: "0.08em", textTransform: "uppercase", fontSize: 9, marginRight: 8 }}>Entr.</span>
-          {kpis.ingresosARS > 0 && <span style={{ color: "var(--olive)", fontVariantNumeric: "tabular-nums" }}>+ {fmtARS(kpis.ingresosARS)} ARS</span>}
-          {kpis.ingresosUSD > 0 && <span style={{ color: "var(--olive)", fontVariantNumeric: "tabular-nums", marginLeft: 8 }}>+ {fmtUSD(kpis.ingresosUSD)} USD</span>}
-          {kpis.ingresosARS === 0 && kpis.ingresosUSD === 0 && <span style={{ color: "var(--ink3)" }}>—</span>}
+      {/* ── KPIs + sparkline ───────────────────────────────────── */}
+      <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 16, marginBottom: 20, flexWrap: "wrap" }}>
+        <div style={{ display: "flex", gap: 28, fontFamily: "var(--font-mono)", fontSize: 18, flexWrap: "wrap", fontVariantNumeric: "tabular-nums" }}>
+          <div>
+            <span style={{ color: "var(--ink3)", letterSpacing: "0.08em", textTransform: "uppercase", fontSize: 9, marginRight: 8 }}>Entró</span>
+            {kpis.inARS > 0 && <span style={{ color: "var(--olive)" }}>+ {fmtNum(kpis.inARS)}</span>}
+            {kpis.inUSD > 0 && <span style={{ color: "var(--olive)", marginLeft: 8 }}>+ {kpis.inUSD.toFixed(2)} USD</span>}
+            {kpis.inARS === 0 && kpis.inUSD === 0 && <span style={{ color: "var(--ink3)" }}>—</span>}
+          </div>
+          <div>
+            <span style={{ color: "var(--ink3)", letterSpacing: "0.08em", textTransform: "uppercase", fontSize: 9, marginRight: 8 }}>Salió</span>
+            {kpis.outARS > 0 && <span style={{ color: "var(--brick)" }}>− {fmtNum(kpis.outARS)}</span>}
+            {kpis.outUSD > 0 && <span style={{ color: "var(--brick)", marginLeft: 8 }}>− {kpis.outUSD.toFixed(2)} USD</span>}
+            {kpis.outARS === 0 && kpis.outUSD === 0 && <span style={{ color: "var(--ink3)" }}>—</span>}
+          </div>
+          <div>
+            <span style={{ color: "var(--ink3)", letterSpacing: "0.08em", textTransform: "uppercase", fontSize: 9, marginRight: 8 }}>Neto</span>
+            {(kpis.inARS > 0 || kpis.outARS > 0) && (
+              <span style={{ color: kpis.netARS >= 0 ? "var(--olive)" : "var(--brick)" }}>
+                {kpis.netARS >= 0 ? "+" : "−"} {fmtNum(Math.abs(kpis.netARS))}
+              </span>
+            )}
+            {(kpis.inUSD > 0 || kpis.outUSD > 0) && (
+              <span style={{ color: kpis.netUSD >= 0 ? "var(--olive)" : "var(--brick)", marginLeft: 8 }}>
+                {kpis.netUSD >= 0 ? "+" : "−"} {Math.abs(kpis.netUSD).toFixed(2)} USD
+              </span>
+            )}
+            {kpis.inARS === 0 && kpis.outARS === 0 && kpis.inUSD === 0 && kpis.outUSD === 0 && (
+              <span style={{ color: "var(--ink3)" }}>—</span>
+            )}
+          </div>
         </div>
-        <div>
-          <span style={{ color: "var(--ink3)", letterSpacing: "0.08em", textTransform: "uppercase", fontSize: 9, marginRight: 8 }}>Sal.</span>
-          {kpis.gastosARS > 0 && <span style={{ color: "var(--brick)", fontVariantNumeric: "tabular-nums" }}>− {fmtARS(kpis.gastosARS)} ARS</span>}
-          {kpis.gastosUSD > 0 && <span style={{ color: "var(--brick)", fontVariantNumeric: "tabular-nums", marginLeft: 8 }}>− {fmtUSD(kpis.gastosUSD)} USD</span>}
-          {kpis.gastosARS === 0 && kpis.gastosUSD === 0 && <span style={{ color: "var(--ink3)" }}>—</span>}
-        </div>
-        <div>
-          <span style={{ color: "var(--ink3)", letterSpacing: "0.08em", textTransform: "uppercase", fontSize: 9, marginRight: 8 }}>Bal.</span>
-          {(kpis.ingresosARS > 0 || kpis.gastosARS > 0) && (
-            <span style={{ color: kpis.balanceARS >= 0 ? "var(--olive)" : "var(--brick)", fontVariantNumeric: "tabular-nums" }}>
-              {kpis.balanceARS >= 0 ? "+" : "−"} {fmtARS(Math.abs(kpis.balanceARS))} ARS
-            </span>
-          )}
-          {(kpis.ingresosUSD > 0 || kpis.gastosUSD > 0) && (
-            <span style={{ color: kpis.balanceUSD >= 0 ? "var(--olive)" : "var(--brick)", fontVariantNumeric: "tabular-nums", marginLeft: 8 }}>
-              {kpis.balanceUSD >= 0 ? "+" : "−"} {fmtUSD(Math.abs(kpis.balanceUSD))} USD
-            </span>
-          )}
-        </div>
+        <Sparkline transactions={transactions} mesYM={mesYM} />
       </div>
 
-      {/* ── Filtros ─────────────────────────────────────────────── */}
-      <div style={{ display: "flex", gap: 12, alignItems: "center", padding: "12px 0", borderBottom: "1px solid var(--rule2)", marginBottom: 20, flexWrap: "wrap" }}>
-        {/* Búsqueda */}
-        <div style={{ display: "flex", alignItems: "center", gap: 8, flex: 1, minWidth: 200, maxWidth: 320, padding: "3px 0", borderBottom: "1px solid var(--ink)" }}>
-          <LuSearch size={13} style={{ color: "var(--ink3)", flexShrink: 0 }} />
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="buscar concepto…"
-            style={{ flex: 1, background: "transparent", border: "none", outline: "none", fontFamily: "var(--font-serif)", fontStyle: "italic", fontSize: 14, color: "var(--ink)" }}
-          />
-          {search && (
-            <button onClick={() => setSearch("")} style={{ background: "transparent", border: "none", color: "var(--ink3)", cursor: "pointer", lineHeight: 1 }}>
-              <LuX size={12} />
-            </button>
-          )}
-        </div>
-
-        {/* Tipo */}
+      {/* ── Toolbar ────────────────────────────────────────────── */}
+      <div style={{ display: "flex", gap: 10, alignItems: "center", padding: "10px 0", borderTop: "1px solid var(--rule2)", borderBottom: "1px solid var(--rule2)", marginBottom: 20, flexWrap: "wrap" }}>
+        {/* Type segmented */}
         <div style={{ display: "flex", border: "1px solid var(--rule2)" }}>
-          {(["", "EXPENSE", "INCOME"] as const).map((v) => (
-            <button
-              key={v}
-              onClick={() => setTypeFilter(v)}
-              style={{
-                padding: "4px 10px",
-                background: typeFilter === v ? "var(--ink)" : "transparent",
-                color: typeFilter === v ? "var(--paper)" : "var(--ink3)",
-                border: "none",
-                borderRight: v !== "INCOME" ? "1px solid var(--rule2)" : "none",
-                fontFamily: "var(--font-mono)",
-                fontSize: 10,
-                letterSpacing: "0.06em",
-                textTransform: "uppercase",
-                cursor: "pointer",
-              }}
-            >
+          {(["", "EXPENSE", "INCOME"] as const).map((v, i) => (
+            <button key={v} onClick={() => setTypeFilter(v)} style={{
+              ...segBtn(typeFilter === v),
+              borderRight: i < 2 ? "1px solid var(--rule2)" : "none",
+            }}>
               {v === "" ? "Todo" : v === "EXPENSE" ? "Gastos" : "Ingresos"}
             </button>
           ))}
         </div>
 
-        {/* Categoría */}
-        {catFilter ? (
-          <button
-            onClick={() => setCatFilter("")}
-            style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 10px", border: "1px solid var(--ink)", background: "var(--ink)", color: "var(--paper)", fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.06em", textTransform: "uppercase", cursor: "pointer" }}
-          >
-            {catFilter} <LuX size={10} />
+        {/* Search */}
+        <div style={{ display: "flex", alignItems: "center", gap: 6, flex: 1, minWidth: 120, maxWidth: 260, borderBottom: "1px solid var(--ink)", padding: "2px 0" }}>
+          <LuSearch size={12} style={{ color: "var(--ink3)", flexShrink: 0 }} />
+          <input
+            value={search} onChange={e => setSearch(e.target.value)}
+            placeholder="buscar…"
+            style={{ flex: 1, background: "transparent", border: "none", outline: "none", fontFamily: "var(--font-serif)", fontStyle: "italic", fontSize: 14, color: "var(--ink)" }}
+          />
+          {search && (
+            <button onClick={() => setSearch("")} style={{ background: "transparent", border: "none", color: "var(--ink3)", cursor: "pointer", lineHeight: 1 }}>
+              <LuX size={11} />
+            </button>
+          )}
+        </div>
+
+        {/* Active category chip */}
+        {catFilter && (
+          <button onClick={() => setCatFilter("")}
+            style={{ display: "flex", alignItems: "center", gap: 5, padding: "4px 10px", border: "1px solid var(--ink)", background: "var(--ink)", color: "var(--paper)", fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.06em", textTransform: "uppercase", cursor: "pointer" }}>
+            {catFilter} <LuX size={9} />
           </button>
-        ) : (
-          <select
-            value=""
-            onChange={(e) => setCatFilter(e.target.value)}
-            style={{ padding: "4px 10px", background: "transparent", border: "1px solid var(--rule2)", color: "var(--ink3)", fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.06em", cursor: "pointer", outline: "none" }}
-          >
-            <option value="">Cat. · todas</option>
-            {allCategories.map((c) => <option key={c} value={c}>{c}</option>)}
-          </select>
         )}
 
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ink3)", marginLeft: "auto" }}>
-          fol. {filtered.length}
+        {/* View buttons */}
+        <div style={{ display: "flex", gap: 6, marginLeft: "auto", flexWrap: "wrap" }}>
+          <button onClick={() => setVista("list")} style={{ ...viewBtn(vista === "list") }}>
+            Lista
+          </button>
+          <button onClick={() => setVista("cat")} style={{ ...viewBtn(vista === "cat") }}>
+            Por categorías
+          </button>
+          <button onClick={() => setVista("cal")} style={{ ...viewBtn(vista === "cal") }}>
+            Calendario
+          </button>
+        </div>
+
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ink3)", flexShrink: 0 }}>
+          {filtered.length} mov.
         </span>
       </div>
 
-      {/* ── Ledger agrupado por día ──────────────────────────────── */}
-      {grouped.length === 0 ? (
-        <p style={{ fontFamily: "var(--font-serif)", fontStyle: "italic", fontSize: 14, color: "var(--ink3)" }}>
-          No hay transacciones en {mesLabel}.
-        </p>
-      ) : (
-        <div>
-          {grouped.map(({ label, dateLabel, txs }, gi) => (
-            <section key={label} style={{ marginTop: gi === 0 ? 0 : 28 }}>
-              <div style={{ display: "flex", alignItems: "baseline", gap: 12, marginBottom: 8, paddingBottom: 4, borderBottom: "2px solid var(--ink)" }}>
-                <h3 style={{ fontFamily: "var(--font-display)", fontSize: 22, fontStyle: "italic", color: "var(--ink)", margin: 0, lineHeight: 1 }}>{dateLabel}</h3>
-                <span style={{ flex: 1 }} />
-                <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ink3)", letterSpacing: "0.06em" }}>{txs.length} asiento{txs.length !== 1 ? "s" : ""}</span>
+      {/* ── Main content + panel ───────────────────────────────── */}
+      <div style={{ display: "flex", alignItems: "flex-start", gap: 0 }}>
+        {/* Content */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+
+          {/* LIST view */}
+          {vista === "list" && (
+            grouped.length === 0 ? (
+              <p style={{ fontFamily: "var(--font-serif)", fontStyle: "italic", fontSize: 14, color: "var(--ink3)" }}>
+                No hay movimientos en {mesLabel}.
+              </p>
+            ) : (
+              <div>
+                {grouped.map(({ dayKey, label, subLabel, txs }, gi) => {
+                  const dayNetARS = txs.reduce((s, t) =>
+                    t.currency === "ARS" ? s + (t.type === "INCOME" ? t.amount : -t.amount) : s, 0);
+
+                  return (
+                    <section key={dayKey} style={{ marginTop: gi === 0 ? 0 : 24 }}>
+                      {/* Day header */}
+                      <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 4, paddingBottom: 5, borderBottom: "1px solid var(--rule2)" }}>
+                        <span style={{ fontFamily: "var(--font-serif)", fontSize: 15, fontWeight: 600, color: "var(--ink)" }}>
+                          {label}
+                        </span>
+                        <span style={{ fontFamily: "var(--font-serif)", fontStyle: "italic", fontSize: 13, color: "var(--ink3)" }}>
+                          {subLabel}
+                        </span>
+                        <span style={{
+                          fontFamily: "var(--font-mono)", fontSize: 11, marginLeft: "auto",
+                          color: dayNetARS >= 0 ? "var(--olive)" : "var(--brick)",
+                          fontVariantNumeric: "tabular-nums",
+                        }}>
+                          {dayNetARS >= 0 ? "+" : "−"}&thinsp;{fmtARS(Math.abs(dayNetARS))}
+                        </span>
+                      </div>
+
+                      {/* Rows */}
+                      <div style={{ border: "1px solid var(--rule)" }}>
+                        {txs.map((t, i) => (
+                          <div key={t.id} style={{ borderBottom: i < txs.length - 1 ? "1px solid var(--rule)" : "none" }}>
+                            <MovementRow
+                              tx={t}
+                              catMap={catMap}
+                              selected={selectedId === t.id}
+                              onSelect={() => handleSelect(t.id)}
+                              onOpenRule={setRuleModalId}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </section>
+                  );
+                })}
               </div>
-              <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                <colgroup>
-                  <col />
-                  <col style={{ width: 100 }} />
-                  <col style={{ width: 120 }} />
-                  <col style={{ width: 28 }} />
-                </colgroup>
-                <tbody>
-                  {txs.map((t) =>
-                    editingId === t.id ? (
-                      <tr key={t.id}><EditRow id={t.id} description={t.description} category={t.category} amount={t.amount} type={t.type} date={t.date} onDone={() => setEditingId(null)} userCategories={userCategories} /></tr>
-                    ) : (
-                      <TxRow key={t.id} tx={t} onEdit={() => setEditingId(t.id)} onOpenRule={setRuleModalId} userCategories={userCategories} />
-                    )
-                  )}
-                </tbody>
-              </table>
-            </section>
-          ))}
+            )
+          )}
+
+          {/* CATEGORY view */}
+          {vista === "cat" && (
+            <CategoryView
+              transactions={filtered}
+              catMap={catMap}
+              selectedId={selectedId}
+              onSelect={handleSelect}
+              onOpenRule={setRuleModalId}
+            />
+          )}
+
+          {/* CALENDAR view */}
+          {vista === "cal" && (
+            <CalendarView
+              transactions={filtered}
+              mesYM={mesYM}
+              catMap={catMap}
+              selectedId={selectedId}
+              onSelect={handleSelect}
+              onOpenRule={setRuleModalId}
+            />
+          )}
         </div>
+
+        {/* Desktop detail panel */}
+        {selectedTx && (
+          <div
+            className="hidden md:block"
+            style={{
+              width: 300, flexShrink: 0,
+              position: "sticky", top: 0,
+              maxHeight: "100vh", overflowY: "auto",
+              borderLeft: "1px solid var(--rule2)",
+              marginLeft: 24,
+            }}
+          >
+            <DetailPanel
+              key={selectedTx.id}
+              tx={selectedTx}
+              userCategories={userCategories}
+              catMap={catMap}
+              catTotal={catTotal}
+              totalOut={kpis.outARS}
+              onClose={() => setSelectedId(null)}
+            />
+          </div>
+        )}
+      </div>
+
+      {/* Mobile bottom sheet */}
+      {selectedTx && (
+        <>
+          <div className="fixed inset-0 z-40 md:hidden"
+            style={{ background: "rgba(26,26,26,.28)" }}
+            onClick={() => setSelectedId(null)}
+          />
+          <div className="fixed bottom-0 left-0 right-0 z-50 md:hidden"
+            style={{ background: "var(--paper)", borderTop: "2px solid var(--ink)", maxHeight: "80vh", overflowY: "auto" }}
+          >
+            <div style={{ width: 32, height: 3, background: "var(--rule2)", borderRadius: 2, margin: "10px auto 0" }} />
+            <DetailPanel
+              key={`m-${selectedTx.id}`}
+              tx={selectedTx}
+              userCategories={userCategories}
+              catMap={catMap}
+              catTotal={catTotal}
+              totalOut={kpis.outARS}
+              onClose={() => setSelectedId(null)}
+            />
+          </div>
+        </>
       )}
 
       {ruleModalId && (

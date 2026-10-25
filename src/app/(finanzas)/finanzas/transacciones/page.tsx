@@ -69,7 +69,7 @@ export default async function TransaccionesPage({
       nextHasData={nextFirst != null}
       wallets={wallets.map((w) => ({ id: w.id, name: w.name, currency: w.currency }))}
       foreignAccounts={foreignAccounts.map((a) => ({ id: a.id, name: a.name, currency: a.currency }))}
-      userCategories={userCategories.map((c) => ({ name: c.name, icon: c.icon ?? "", type: c.type }))}
+      userCategories={userCategories.map((c) => ({ name: c.name, icon: c.icon ?? "", type: c.type, color: c.color ?? "" }))}
       initialTipo={(tipo === "expense" ? "EXPENSE" : tipo === "income" ? "INCOME" : "") as "" | "EXPENSE" | "INCOME"}
     />
   );

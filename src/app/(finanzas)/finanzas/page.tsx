@@ -4,7 +4,7 @@ import { db } from "@/lib/db";
 import { TransactionType, TransactionSource } from "@/generated/prisma/enums";
 import { requireSession } from "@/lib/auth";
 import { fetchCotizaciones } from "@/lib/cotizaciones";
-import { getUserWallets, getUserForeignAccounts } from "@/lib/queries";
+import { getUserWallets, getUserForeignAccounts, getUserCategories } from "@/lib/queries";
 import type { MonthlyDataPoint } from "@/components/finanzas/MonthlyChart";
 import type { WealthDataPoint } from "@/components/finanzas/WealthChart";
 import DashboardContent from "./DashboardContent";
@@ -71,6 +71,8 @@ export default async function FinanzasDashboard({
     delta30d,
     // 4-week averages
     weeklyRaw,
+    // Categories for detail panel
+    rawCategories,
   ] = await Promise.all([
     getUserWallets(userId),
     getUserForeignAccounts(userId),
@@ -128,6 +130,8 @@ export default async function FinanzasDashboard({
         db.transaction.aggregate({ where: { userId, type: TransactionType.EXPENSE, currency: "ARS", date: { gte: start, lt: end } }, _sum: { amount: true } })
       )
     ),
+    // Categories (cached — no extra DB hit)
+    getUserCategories(userId),
   ]);
 
   // ── Portfolio ──────────────────────────────────────────────────────────────
@@ -298,14 +302,18 @@ export default async function FinanzasDashboard({
       gastosUSD={gastosUSD}
       monthlyData={monthlyData}
       wealthData={wealthData}
+      userCategories={rawCategories.map((c) => ({ name: c.name, icon: c.icon ?? "", type: c.type, color: c.color ?? "" }))}
       recentTransactions={recentTransactions.map((t) => ({
-        id:          t.id,
-        description: t.description,
-        category:    t.category,
-        date:        t.date.toISOString(),
-        amount:      t.amount,
-        currency:    t.currency,
-        type:        t.type,
+        id:              t.id,
+        description:     t.description,
+        category:        t.category,
+        date:            t.date.toISOString(),
+        amount:          t.amount,
+        currency:        t.currency,
+        type:            t.type,
+        source:          t.source,
+        isRecurring:     t.recurrentRuleId !== null,
+        recurrentRuleId: t.recurrentRuleId ?? null,
       }))}
       budgetAlerts={budgetAlerts}
       sessionsToday={sessionsTodayData}

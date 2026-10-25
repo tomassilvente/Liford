@@ -116,6 +116,12 @@ export default function QuickAdd({ wallets, foreignAccounts, categories }: Quick
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
+  useEffect(() => {
+    const h = () => setOpen(true);
+    window.addEventListener("quickadd:open", h);
+    return () => window.removeEventListener("quickadd:open", h);
+  }, []);
+
   // Sugerencia desde historial
   useEffect(() => {
     if (type === "TRANSFER" || !debouncedDesc || debouncedDesc.trim().length < 2) {

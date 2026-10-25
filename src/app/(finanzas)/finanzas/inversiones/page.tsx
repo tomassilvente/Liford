@@ -20,7 +20,7 @@ export default async function InversionesPage() {
   for (const inv of inversiones) {
     const costo = inv.quantity * inv.avgBuyPrice;
     const precio = cotizaciones[inv.ticker]?.price;
-    const invCurrency = cotizaciones[inv.ticker]?.currency ?? inv.currency ?? "USD";
+    const invCurrency = inv.currency ?? cotizaciones[inv.ticker]?.currency ?? "USD";
 
     if (invCurrency === "ARS") {
       totalInvertidoARS += costo;
@@ -43,8 +43,8 @@ export default async function InversionesPage() {
     return new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", maximumFractionDigits: 0 }).format(n);
   }
 
-  const usdInversiones = inversiones.filter((inv) => (cotizaciones[inv.ticker]?.currency ?? inv.currency ?? "USD") !== "ARS");
-  const arsInversiones = inversiones.filter((inv) => (cotizaciones[inv.ticker]?.currency ?? inv.currency ?? "USD") === "ARS");
+  const usdInversiones = inversiones.filter((inv) => (inv.currency ?? cotizaciones[inv.ticker]?.currency ?? "USD") !== "ARS");
+  const arsInversiones = inversiones.filter((inv) => (inv.currency ?? cotizaciones[inv.ticker]?.currency ?? "USD") === "ARS");
 
   return (
     <div>

@@ -21,8 +21,12 @@ export async function POST(request: NextRequest) {
     return Response.json({ error: "Faltan campos requeridos" }, { status: 400 });
   }
 
-  const tickerUpper = ticker.toUpperCase();
   const investCurrency: "ARS" | "USD" = currency === "ARS" ? "ARS" : "USD";
+  let tickerUpper = ticker.trim().toUpperCase();
+  // Acciones/CEDEARs en pesos cotizan en BYMA: sin el sufijo .BA, Yahoo devuelve la cotización en USD (NASDAQ/NYSE)
+  if (type === "STOCK" && investCurrency === "ARS" && !tickerUpper.includes(".")) {
+    tickerUpper = `${tickerUpper}.BA`;
+  }
 
   const existing = await db.investment.findFirst({
     where: { ticker: tickerUpper, userId: session.userId, currency: investCurrency },

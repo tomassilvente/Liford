@@ -115,7 +115,7 @@ export default function InversionForm() {
           </div>
           {market === "ARS" && (
             <p className="mt-1.5 text-xs text-neutral-500">
-              CEDEARs — usá el ticker con sufijo .BA (ej: MELI.BA)
+              CEDEARs / acciones en BYMA — si no ponés el sufijo .BA se agrega solo (MELI → MELI.BA)
             </p>
           )}
         </div>
